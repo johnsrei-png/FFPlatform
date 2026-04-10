@@ -1,0 +1,119 @@
+╔════════════════════════════════════════════════════════════════╗
+║        NETLIFY DEPLOYMENT - QUICK REFERENCE GUIDE              ║
+╚════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 1: EXTRACT FILES                                       │
+└─────────────────────────────────────────────────────────────┘
+  📦 fantasy-salary-app.tar.gz
+       ↓ (extract)
+  📁 fantasy-salary-app/
+     ├── public/index.html
+     ├── netlify/functions/
+     ├── netlify.toml
+     └── package.json
+
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 2: PUSH TO GITHUB                                      │
+└─────────────────────────────────────────────────────────────┘
+  
+  OPTION A - GitHub Desktop (Recommended for beginners):
+    1. Download: https://desktop.github.com/
+    2. File → Add Local Repository
+    3. Select fantasy-salary-app folder
+    4. Click "Publish repository"
+  
+  OPTION B - Command Line:
+    cd fantasy-salary-app
+    git init
+    git add .
+    git commit -m "Initial commit"
+    git remote add origin https://github.com/USERNAME/REPO.git
+    git push -u origin main
+
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 3: DEPLOY ON NETLIFY                                   │
+└─────────────────────────────────────────────────────────────┘
+
+  1. Go to: https://app.netlify.com/
+  
+  2. Click: "Add new site" → "Import an existing project"
+  
+  3. Choose: "Deploy with GitHub"
+  
+  4. Select: Your repository (fantasy-salary-manager)
+  
+  5. Settings (should auto-fill from netlify.toml):
+     ✓ Build command: (empty)
+     ✓ Publish directory: public
+     ✓ Functions directory: netlify/functions
+  
+  6. Click: "Deploy site"
+  
+  7. Wait ~30 seconds
+  
+  8. Done! Get your URL: https://YOUR-SITE.netlify.app
+
+┌─────────────────────────────────────────────────────────────┐
+│ STEP 4: TEST IT                                             │
+└─────────────────────────────────────────────────────────────┘
+
+  1. Open your Netlify URL
+  2. Enter League ID: 1044679539959214080 (test league)
+  3. Click "Connect League"
+  4. See your teams and salary caps! ✅
+
+┌─────────────────────────────────────────────────────────────┐
+│ MAKING UPDATES LATER                                        │
+└─────────────────────────────────────────────────────────────┘
+
+  1. Edit files locally
+  2. Commit changes:
+     - GitHub Desktop: Commit → Push
+     - Command line: git add . && git commit -m "message" && git push
+  3. Netlify auto-deploys in ~30 seconds! 🚀
+
+┌─────────────────────────────────────────────────────────────┐
+│ IMPORTANT URLS                                              │
+└─────────────────────────────────────────────────────────────┘
+
+  • Netlify Dashboard: https://app.netlify.com/
+  • GitHub: https://github.com/
+  • GitHub Desktop: https://desktop.github.com/
+  • Your Site: https://[your-custom-name].netlify.app
+
+┌─────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                             │
+└─────────────────────────────────────────────────────────────┘
+
+  ❌ Deploy Failed?
+     → Check Netlify deploy logs (look for red errors)
+     → Verify all files uploaded to GitHub
+  
+  ❌ "Failed to fetch"?
+     → Check Functions tab in Netlify
+     → Verify League ID is correct (numbers only)
+     → Try test ID: 1044679539959214080
+  
+  ❌ Blank page?
+     → Open browser console (F12)
+     → Look for JavaScript errors
+     → Clear cache and reload
+
+┌─────────────────────────────────────────────────────────────┐
+│ COST: 100% FREE! ✅                                         │
+└─────────────────────────────────────────────────────────────┘
+
+  GitHub Free:
+    ✓ Unlimited public repositories
+    ✓ Unlimited private repositories
+  
+  Netlify Free Tier:
+    ✓ 100 GB bandwidth/month
+    ✓ 300 build minutes/month
+    ✓ 125,000 function requests/month
+    ✓ Perfect for personal league use!
+
+═══════════════════════════════════════════════════════════════
+Need help? Check DEPLOYMENT-GUIDE.md for detailed walkthrough
+═══════════════════════════════════════════════════════════════

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fantasy Salary Manager - Sleeper Integration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0a0e16;
+            --bg-secondary: #141925;
+            --bg-card: #1a2030;
+            --accent-primary: #00ff88;
+            --accent-secondary: #0088ff;
+            --accent-danger: #ff3366;
+            --text-primary: #ffffff;
+            --text-secondary: #8b96a8;
+            --border: #2a3444;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .bg-grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 136, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        .setup-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-primary);
+        }
+
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .league-info {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .league-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .league-meta {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-primary);
+        }
+
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .team-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            animation: fadeIn 0.6s ease;
+            animation-fill-mode: both;
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .team-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .team-owner {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .cap-space {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .cap-space.positive {
+            color: var(--accent-primary);
+        }
+
+        .cap-space.negative {
+            color: var(--accent-danger);
+        }
+
+        .cap-bar {
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .cap-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 4px;
+        }
+
+        .cap-bar-fill.warning {
+            background: linear-gradient(90deg, #ffaa00, #ff6600);
+        }
+
+        .cap-bar-fill.danger {
+            background: linear-gradient(90deg, #ff3366, #ff0044);
+        }
+
+        .player-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .player-item:hover {
+            background: var(--border);
+            transform: translateX(4px);
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .player-position {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .player-salary {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .keeper-badge {
+            display: inline-block;
+            background: var(--accent-secondary);
+            color: var(--bg-primary);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-left: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .transactions-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-top: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+            margin-right: 1rem;
+            border-radius: 2px;
+        }
+
+        .transaction-item {
+            background: var(--bg-secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .transaction-type {
+            font-size: 0.75rem;
+            color: var(--accent-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .transaction-details {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid var(--accent-danger);
+            color: var(--accent-danger);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grain"></div>
+    
+    <div class="container">
+        <header>
+            <h1>Fantasy Salary Manager</h1>
+            <p class="subtitle">Sleeper Integration • $200 Salary Cap • Keeper Escalation</p>
+        </header>
+
+        <div id="setup" class="setup-section">
+            <h2 class="section-title">Connect Your League</h2>
+
+            <div class="input-group">
+                <label>Sleeper League ID</label>
+                <input type="text" id="leagueId" placeholder="e.g., 1044679539959214080" value="1044679539959214080">
+                <p class="help-text">Find your League ID in your Sleeper league URL: sleeper.com/leagues/<strong>YOUR_ID</strong></p>
+            </div>
+            <div class="input-group">
+                <label>Keeper Escalation Amount ($)</label>
+                <input type="number" id="keeperIncrease" value="5" min="1" max="50">
+                <p class="help-text">Amount added to each keeper's salary per year kept</p>
+            </div>
+            <button id="connectBtn" onclick="connectLeague()">Connect League</button>
+            <div id="error" style="display: none;" class="error"></div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p id="loadingText">Syncing with Sleeper...</p>
+        </div>
+
+        <div id="dashboard" class="dashboard">
+            <div class="league-info">
+                <div>
+                    <h2 id="leagueName">League Name</h2>
+                    <div class="league-meta">
+                        <span id="leagueSeason">2024</span> • 
+                        <span id="leagueSize">12 Teams</span>
+                    </div>
+                </div>
+                <button class="btn-secondary" onclick="resetConnection()">Change League</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card" style="animation-delay: 0.1s;">
+                    <div class="stat-label">Total Teams</div>
+                    <div class="stat-value" id="totalTeams">0</div>
+                </div>
+                <div class="stat-card" style="animation-delay: 0.2s;">
+                    <div class="stat-label">Avg Cap Space</div>
+                    <div class="stat-value" id="avgCapSpace">$0</div>
+                </div>
+                <div class="stat-card" style="animation-delay: 0.3s;">
+                    <div class="stat-label">Total Players</div>
+                    <div class="stat-value" id="totalPlayers">0</div>
+                </div>
+                <div class="stat-card" style="animation-delay: 0.4s;">
+                    <div class="stat-label">League Cap</div>
+                    <div class="stat-value">$200</div>
+                </div>
+            </div>
+
+            <h2 class="section-title">Team Salary Caps</h2>
+            <div id="teamsGrid" class="teams-grid"></div>
+
+            <div class="transactions-section">
+                <h2 class="section-title">Recent Transactions</h2>
+                <div id="transactionsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SALARY_CAP = 200;
+        
+        let leagueData = null;
+        let allPlayers = {};
+        let keeperEscalation = 5;
+        let playerSalaries = {};
+
+        function loadSavedData(leagueId) {
+            const saved = localStorage.getItem(`league_${leagueId}`);
+            if (saved) {
+                const data = JSON.parse(saved);
+                playerSalaries = data.playerSalaries || {};
+                return true;
+            }
+            return false;
+        }
+
+        function saveData(leagueId) {
+            const data = {
+                playerSalaries: playerSalaries,
+                lastUpdated: new Date().toISOString()
+            };
+            localStorage.setItem(`league_${leagueId}`, JSON.stringify(data));
+        }
+
+        async function connectLeague() {
+            const leagueId = document.getElementById('leagueId').value.trim();
+            keeperEscalation = parseInt(document.getElementById('keeperIncrease').value);
+
+            if (!leagueId) {
+                showError('Please enter a League ID');
+                return;
+            }
+
+            document.getElementById('error').style.display = 'none';
+            document.getElementById('setup').style.display = 'none';
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                loadSavedData(leagueId);
+
+                updateLoadingText('Fetching league data from Sleeper...');
+                
+                // Call our Netlify function instead of Sleeper API directly
+                const response = await fetch(`/api/get-league?leagueId=${leagueId}`);
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Failed to fetch league data');
+                }
+
+                const data = await response.json();
+                
+                leagueData = {
+                    league: data.league,
+                    rosters: data.rosters,
+                    users: data.users,
+                    transactions: data.transactions
+                };
+                
+                allPlayers = data.players;
+
+                document.getElementById('loading').style.display = 'none';
+                displayDashboard(leagueId);
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('setup').style.display = 'block';
+                showError(`Error: ${error.message}`);
+            }
+        }
+
+        function updateLoadingText(text) {
+            document.getElementById('loadingText').textContent = text;
+        }
+
+        function displayDashboard(leagueId) {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.classList.add('active');
+
+            document.getElementById('leagueName').textContent = leagueData.league.name;
+            document.getElementById('leagueSeason').textContent = `Season ${leagueData.league.season}`;
+            document.getElementById('leagueSize').textContent = `${leagueData.league.total_rosters} Teams`;
+
+            const teams = leagueData.rosters.map(roster => {
+                const user = leagueData.users.find(u => u.user_id === roster.owner_id);
+                const teamName = user?.metadata?.team_name || user?.display_name || 'Unknown Team';
+                const ownerName = user?.display_name || 'Unknown Owner';
+
+                const players = (roster.players || []).map(playerId => {
+                    const player = allPlayers[playerId];
+                    if (!player) return null;
+
+                    let salary = playerSalaries[playerId];
+                    if (!salary) {
+                        salary = Math.floor(Math.random() * 40) + 1;
+                        playerSalaries[playerId] = salary;
+                    }
+
+                    return {
+                        id: playerId,
+                        name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Unknown',
+                        position: player.position || 'N/A',
+                        team: player.team || 'FA',
+                        salary: salary,
+                        isKeeper: false
+                    };
+                }).filter(p => p !== null);
+
+                const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
+                const capSpace = SALARY_CAP - totalSalary;
+
+                return {
+                    rosterId: roster.roster_id,
+                    name: teamName,
+                    owner: ownerName,
+                    players: players,
+                    totalSalary: totalSalary,
+                    capSpace: capSpace,
+                    wins: roster.settings?.wins || 0,
+                    losses: roster.settings?.losses || 0
+                };
+            });
+
+            document.getElementById('totalTeams').textContent = teams.length;
+            const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
+            document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
+            const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
+            document.getElementById('totalPlayers').textContent = totalPlayers;
+
+            const teamsGrid = document.getElementById('teamsGrid');
+            teamsGrid.innerHTML = '';
+
+            teams.forEach((team, idx) => {
+                const capPercentage = (team.totalSalary / SALARY_CAP) * 100;
+                let barClass = '';
+                if (capPercentage > 95) barClass = 'danger';
+                else if (capPercentage > 85) barClass = 'warning';
+
+                const teamCard = document.createElement('div');
+                teamCard.className = 'team-card';
+                teamCard.style.animationDelay = `${idx * 0.1}s`;
+
+                teamCard.innerHTML = `
+                    <div class="team-header">
+                        <div>
+                            <div class="team-name">${team.name}</div>
+                            <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
+                        </div>
+                        <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
+                            $${team.capSpace}
+                        </div>
+                    </div>
+                    <div class="cap-bar">
+                        <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Total Salary: $${team.totalSalary} / $${SALARY_CAP}
+                    </div>
+                    <div class="player-list">
+                        ${team.players.slice(0, 10).map(player => `
+                            <div class="player-item">
+                                <div class="player-info">
+                                    <div class="player-name">
+                                        ${player.name}
+                                        ${player.isKeeper ? `<span class="keeper-badge">Keeper</span>` : ''}
+                                    </div>
+                                    <div class="player-position">${player.position} • ${player.team}</div>
+                                </div>
+                                <div class="player-salary">$${player.salary}</div>
+                            </div>
+                        `).join('')}
+                        ${team.players.length > 10 ? `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">+${team.players.length - 10} more players</div>` : ''}
+                    </div>
+                `;
+
+                teamsGrid.appendChild(teamCard);
+            });
+
+            displayTransactions();
+            saveData(leagueId);
+        }
+
+        function displayTransactions() {
+            const transactionsList = document.getElementById('transactionsList');
+            
+            if (!leagueData.transactions || leagueData.transactions.length === 0) {
+                transactionsList.innerHTML = '<p style="color: var(--text-secondary);">No recent transactions found.</p>';
+                return;
+            }
+
+            const transactionTypes = {
+                'trade': 'Trade',
+                'waiver': 'Waiver',
+                'free_agent': 'Free Agent'
+            };
+
+            transactionsList.innerHTML = leagueData.transactions
+                .filter(t => t.type !== 'commissioner')
+                .slice(0, 15)
+                .map(trans => {
+                    const type = transactionTypes[trans.type] || trans.type;
+                    let details = '';
+
+                    if (trans.type === 'trade') {
+                        details = 'Trade processed between teams';
+                    } else if (trans.adds) {
+                        const addedPlayers = Object.keys(trans.adds).map(playerId => {
+                            const player = allPlayers[playerId];
+                            return player ? `${player.first_name} ${player.last_name}` : 'Unknown Player';
+                        });
+                        details = `Added: ${addedPlayers.join(', ')}`;
+                    } else if (trans.drops) {
+                        const droppedPlayers = Object.keys(trans.drops).map(playerId => {
+                            const player = allPlayers[playerId];
+                            return player ? `${player.first_name} ${player.last_name}` : 'Unknown Player';
+                        });
+                        details = `Dropped: ${droppedPlayers.join(', ')}`;
+                    }
+
+                    return `
+                        <div class="transaction-item">
+                            <div class="transaction-type">${type}</div>
+                            <div class="transaction-details">${details}</div>
+                        </div>
+                    `;
+                }).join('');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function resetConnection() {
+            document.getElementById('setup').style.display = 'block';
+            document.getElementById('dashboard').classList.remove('active');
+            leagueData = null;
+        }
+
+        document.getElementById('leagueId').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') connectLeague();
+        });
+    </script>
+</body>
+</html>
