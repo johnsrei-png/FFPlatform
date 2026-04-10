@@ -27,12 +27,11 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // Fetch all data in parallel
-    const [leagueResponse, rostersResponse, usersResponse, playersResponse] = await Promise.all([
+    // Fetch league, rosters, and users (NOT players - too big!)
+    const [leagueResponse, rostersResponse, usersResponse] = await Promise.all([
       fetch(`${SLEEPER_API_BASE}/league/${leagueId}`),
       fetch(`${SLEEPER_API_BASE}/league/${leagueId}/rosters`),
-      fetch(`${SLEEPER_API_BASE}/league/${leagueId}/users`),
-      fetch(`${SLEEPER_API_BASE}/players/nfl`)
+      fetch(`${SLEEPER_API_BASE}/league/${leagueId}/users`)
     ]);
 
     // Check for errors
@@ -44,11 +43,10 @@ exports.handler = async (event, context) => {
       };
     }
 
-    const [league, rosters, users, players] = await Promise.all([
+    const [league, rosters, users] = await Promise.all([
       leagueResponse.json(),
       rostersResponse.json(),
-      usersResponse.json(),
-      playersResponse.json()
+      usersResponse.json()
     ]);
 
     // Fetch recent transactions (last 3 weeks)
@@ -66,6 +64,26 @@ exports.handler = async (event, context) => {
     const transactionsArrays = await Promise.all(transactionsPromises);
     const transactions = transactionsArrays.flat().slice(0, 20);
 
+    // Get unique player IDs from rosters
+    const playerIds = new Set();
+    rosters.forEach(roster => {
+      if (roster.players) {
+        roster.players.forEach(pid => playerIds.add(pid));
+      }
+    });
+
+    // Fetch only the players we need
+    const allPlayersResponse = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
+    const allPlayers = await allPlayersResponse.json();
+    
+    // Filter to only players in this league
+    const leaguePlayers = {};
+    playerIds.forEach(pid => {
+      if (allPlayers[pid]) {
+        leaguePlayers[pid] = allPlayers[pid];
+      }
+    });
+
     return {
       statusCode: 200,
       headers,
@@ -73,7 +91,7 @@ exports.handler = async (event, context) => {
         league,
         rosters,
         users,
-        players,
+        players: leaguePlayers,  // Only players in this league
         transactions
       })
     };
