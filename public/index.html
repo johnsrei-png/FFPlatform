@@ -1,9 +1,10 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fantasy Salary Manager - Sleeper Integration</title>
+    <title>Fantasy Salary Manager - Keeper Edition</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * {
@@ -19,6 +20,7 @@
             --accent-primary: #00ff88;
             --accent-secondary: #0088ff;
             --accent-danger: #ff3366;
+            --accent-warning: #ffaa00;
             --text-primary: #ffffff;
             --text-secondary: #8b96a8;
             --border: #2a3444;
@@ -47,7 +49,7 @@
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
             position: relative;
@@ -128,7 +130,7 @@
             margin-top: 0.25rem;
         }
 
-        input[type="text"], input[type="number"] {
+        input[type="text"], input[type="number"], input[type="file"] {
             width: 100%;
             padding: 1rem;
             background: var(--bg-secondary);
@@ -171,6 +173,17 @@
             transform: none;
         }
 
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            box-shadow: none;
+        }
+
         .dashboard {
             display: none;
         }
@@ -189,6 +202,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
         }
 
         .league-info h2 {
@@ -199,6 +214,11 @@
         .league-meta {
             font-size: 0.9rem;
             color: var(--text-secondary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
         }
 
         .stats-grid {
@@ -250,7 +270,7 @@
 
         .teams-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 1.5rem;
             margin-bottom: 2rem;
         }
@@ -322,7 +342,7 @@
         }
 
         .player-list {
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
             margin-top: 1rem;
         }
@@ -346,6 +366,7 @@
         .player-info {
             display: flex;
             flex-direction: column;
+            flex: 1;
         }
 
         .player-name {
@@ -359,30 +380,23 @@
             font-family: 'JetBrains Mono', monospace;
         }
 
+        .player-salary-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+        }
+
         .player-salary {
             font-family: 'JetBrains Mono', monospace;
             font-weight: 600;
             color: var(--accent-primary);
         }
 
-        .keeper-badge {
-            display: inline-block;
-            background: var(--accent-secondary);
-            color: var(--bg-primary);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-left: 0.5rem;
-            text-transform: uppercase;
-        }
-
-        .transactions-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 2rem;
-            margin-top: 2rem;
+        .keeper-cost {
+            font-size: 0.75rem;
+            color: var(--accent-warning);
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .section-title {
@@ -400,28 +414,6 @@
             background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
             margin-right: 1rem;
             border-radius: 2px;
-        }
-
-        .transaction-item {
-            background: var(--bg-secondary);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 0.75rem;
-            border-left: 3px solid var(--accent-primary);
-        }
-
-        .transaction-type {
-            font-size: 0.75rem;
-            color: var(--accent-primary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-
-        .transaction-details {
-            color: var(--text-primary);
-            font-size: 0.95rem;
         }
 
         .loading {
@@ -480,15 +472,23 @@
             background: var(--accent-primary);
         }
 
-        .btn-secondary {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
+        .file-upload {
+            border: 2px dashed var(--border);
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .btn-secondary:hover {
-            background: var(--border);
-            box-shadow: none;
+        .file-upload:hover {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .file-upload.active {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.1);
         }
     </style>
 </head>
@@ -498,7 +498,7 @@
     <div class="container">
         <header>
             <h1>Fantasy Salary Manager</h1>
-            <p class="subtitle">Sleeper Integration • $200 Salary Cap • Keeper Escalation</p>
+            <p class="subtitle">Keeper Edition • Sleeper Integration • $200 Salary Cap</p>
         </header>
 
         <div id="setup" class="setup-section">
@@ -506,16 +506,23 @@
 
             <div class="input-group">
                 <label>Sleeper League ID</label>
-                <input type="text" id="leagueId" placeholder="e.g., 1044679539959214080" value="1044679539959214080">
+                <input type="text" id="leagueId" placeholder="e.g., 1044679539959214080">
                 <p class="help-text">Find your League ID in your Sleeper league URL: sleeper.com/leagues/<strong>YOUR_ID</strong></p>
             </div>
+
             <div class="input-group">
-                <label>Keeper Escalation Amount ($)</label>
-                <input type="number" id="keeperIncrease" value="5" min="1" max="50">
-                <p class="help-text">Amount added to each keeper's salary per year kept</p>
+                <label>Import Keeper Salaries (CSV)</label>
+                <div class="file-upload" onclick="document.getElementById('csvFile').click()">
+                    <p>Click to upload CSV or drag and drop</p>
+                    <p class="help-text" style="margin-top: 0.5rem;">CSV should have: team, player, position, current_salary</p>
+                </div>
+                <input type="file" id="csvFile" accept=".csv" style="display: none;" onchange="handleFileUpload(event)">
+                <p class="help-text" id="fileName" style="margin-top: 0.5rem;"></p>
             </div>
+
             <button id="connectBtn" onclick="connectLeague()">Connect League</button>
             <div id="error" style="display: none;" class="error"></div>
+            <div id="successMsg" style="display: none;" class="success"></div>
         </div>
 
         <div id="loading" class="loading" style="display: none;">
@@ -532,7 +539,10 @@
                         <span id="leagueSize">12 Teams</span>
                     </div>
                 </div>
-                <button class="btn-secondary" onclick="resetConnection()">Change League</button>
+                <div class="action-buttons">
+                    <button class="btn-secondary" onclick="refreshData()">Refresh Data</button>
+                    <button class="btn-secondary" onclick="resetConnection()">Change League</button>
+                </div>
             </div>
 
             <div class="stats-grid">
@@ -556,11 +566,6 @@
 
             <h2 class="section-title">Team Salary Caps</h2>
             <div id="teamsGrid" class="teams-grid"></div>
-
-            <div class="transactions-section">
-                <h2 class="section-title">Recent Transactions</h2>
-                <div id="transactionsList"></div>
-            </div>
         </div>
     </div>
 
@@ -569,8 +574,56 @@
         
         let leagueData = null;
         let allPlayers = {};
-        let keeperEscalation = 5;
         let playerSalaries = {};
+        let csvData = null;
+
+        // Keeper escalation rules
+        function getKeeperEscalation(salary) {
+            if (salary >= 1 && salary <= 5) return 2;
+            if (salary >= 6 && salary <= 10) return 4;
+            if (salary >= 11 && salary <= 20) return 6;
+            if (salary >= 21 && salary <= 30) return 7;
+            if (salary >= 31 && salary <= 40) return 8;
+            if (salary >= 41 && salary <= 50) return 9;
+            if (salary >= 51 && salary <= 60) return 10;
+            if (salary >= 61 && salary <= 70) return 11;
+            return 0;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('fileName').textContent = `Selected: ${file.name}`;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            
+            csvData = {};
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',').map(v => v.trim());
+                const player = values[1]; // player name
+                const salary = parseInt(values[3]); // current_salary
+                
+                if (player && !isNaN(salary)) {
+                    csvData[player.toLowerCase()] = salary;
+                }
+            }
+            
+            showSuccess(`Loaded ${Object.keys(csvData).length} player salaries from CSV`);
+        }
 
         function loadSavedData(leagueId) {
             const saved = localStorage.getItem(`league_${leagueId}`);
@@ -592,7 +645,6 @@
 
         async function connectLeague() {
             const leagueId = document.getElementById('leagueId').value.trim();
-            keeperEscalation = parseInt(document.getElementById('keeperIncrease').value);
 
             if (!leagueId) {
                 showError('Please enter a League ID');
@@ -600,6 +652,7 @@
             }
 
             document.getElementById('error').style.display = 'none';
+            document.getElementById('successMsg').style.display = 'none';
             document.getElementById('setup').style.display = 'none';
             document.getElementById('loading').style.display = 'block';
 
@@ -608,7 +661,6 @@
 
                 updateLoadingText('Fetching league data from Sleeper...');
                 
-                // Call our Netlify function instead of Sleeper API directly
                 const response = await fetch(`/api/get-league?leagueId=${leagueId}`);
                 
                 if (!response.ok) {
@@ -637,8 +689,25 @@
             }
         }
 
+        async function refreshData() {
+            const leagueId = document.getElementById('leagueId').value.trim();
+            if (!leagueId) return;
+            
+            await connectLeague();
+        }
+
         function updateLoadingText(text) {
             document.getElementById('loadingText').textContent = text;
+        }
+
+        function matchPlayerName(sleeperName, csvName) {
+            const normalize = (name) => name.toLowerCase().replace(/[^a-z]/g, '');
+            const sleeperNorm = normalize(sleeperName);
+            const csvNorm = normalize(csvName);
+            
+            return sleeperNorm === csvNorm || 
+                   sleeperNorm.includes(csvNorm) || 
+                   csvNorm.includes(sleeperNorm);
         }
 
         function displayDashboard(leagueId) {
@@ -658,19 +727,41 @@
                     const player = allPlayers[playerId];
                     if (!player) return null;
 
-                    let salary = playerSalaries[playerId];
+                    const playerFullName = `${player.first_name || ''} ${player.last_name || ''}`.trim();
+                    
+                    // Try to get salary from CSV first
+                    let salary = null;
+                    if (csvData) {
+                        for (const [csvPlayer, csvSalary] of Object.entries(csvData)) {
+                            if (matchPlayerName(playerFullName, csvPlayer)) {
+                                salary = csvSalary;
+                                break;
+                            }
+                        }
+                    }
+                    
+                    // Fall back to saved data or random
                     if (!salary) {
-                        salary = Math.floor(Math.random() * 40) + 1;
+                        salary = playerSalaries[playerId];
+                        if (!salary) {
+                            salary = Math.floor(Math.random() * 40) + 1;
+                            playerSalaries[playerId] = salary;
+                        }
+                    } else {
                         playerSalaries[playerId] = salary;
                     }
 
+                    const escalation = getKeeperEscalation(salary);
+                    const keeperCost = salary + escalation;
+
                     return {
                         id: playerId,
-                        name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Unknown',
+                        name: playerFullName || 'Unknown',
                         position: player.position || 'N/A',
                         team: player.team || 'FA',
                         salary: salary,
-                        isKeeper: false
+                        keeperCost: keeperCost,
+                        escalation: escalation
                     };
                 }).filter(p => p !== null);
 
@@ -725,79 +816,38 @@
                         Total Salary: $${team.totalSalary} / $${SALARY_CAP}
                     </div>
                     <div class="player-list">
-                        ${team.players.slice(0, 10).map(player => `
+                        ${team.players.slice(0, 12).map(player => `
                             <div class="player-item">
                                 <div class="player-info">
-                                    <div class="player-name">
-                                        ${player.name}
-                                        ${player.isKeeper ? `<span class="keeper-badge">Keeper</span>` : ''}
-                                    </div>
+                                    <div class="player-name">${player.name}</div>
                                     <div class="player-position">${player.position} • ${player.team}</div>
                                 </div>
-                                <div class="player-salary">$${player.salary}</div>
+                                <div class="player-salary-info">
+                                    <div class="player-salary">$${player.salary}</div>
+                                    <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
+                                </div>
                             </div>
                         `).join('')}
-                        ${team.players.length > 10 ? `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">+${team.players.length - 10} more players</div>` : ''}
+                        ${team.players.length > 12 ? `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">+${team.players.length - 12} more players</div>` : ''}
                     </div>
                 `;
 
                 teamsGrid.appendChild(teamCard);
             });
 
-            displayTransactions();
             saveData(leagueId);
-        }
-
-        function displayTransactions() {
-            const transactionsList = document.getElementById('transactionsList');
-            
-            if (!leagueData.transactions || leagueData.transactions.length === 0) {
-                transactionsList.innerHTML = '<p style="color: var(--text-secondary);">No recent transactions found.</p>';
-                return;
-            }
-
-            const transactionTypes = {
-                'trade': 'Trade',
-                'waiver': 'Waiver',
-                'free_agent': 'Free Agent'
-            };
-
-            transactionsList.innerHTML = leagueData.transactions
-                .filter(t => t.type !== 'commissioner')
-                .slice(0, 15)
-                .map(trans => {
-                    const type = transactionTypes[trans.type] || trans.type;
-                    let details = '';
-
-                    if (trans.type === 'trade') {
-                        details = 'Trade processed between teams';
-                    } else if (trans.adds) {
-                        const addedPlayers = Object.keys(trans.adds).map(playerId => {
-                            const player = allPlayers[playerId];
-                            return player ? `${player.first_name} ${player.last_name}` : 'Unknown Player';
-                        });
-                        details = `Added: ${addedPlayers.join(', ')}`;
-                    } else if (trans.drops) {
-                        const droppedPlayers = Object.keys(trans.drops).map(playerId => {
-                            const player = allPlayers[playerId];
-                            return player ? `${player.first_name} ${player.last_name}` : 'Unknown Player';
-                        });
-                        details = `Dropped: ${droppedPlayers.join(', ')}`;
-                    }
-
-                    return `
-                        <div class="transaction-item">
-                            <div class="transaction-type">${type}</div>
-                            <div class="transaction-details">${details}</div>
-                        </div>
-                    `;
-                }).join('');
         }
 
         function showError(message) {
             const errorDiv = document.getElementById('error');
             errorDiv.textContent = message;
             errorDiv.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMsg');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
         }
 
         function resetConnection() {
