@@ -360,6 +360,168 @@
         .player-item.editing:hover {
             background: rgba(0, 255, 136, 0.1);
         }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .subtitle {
+                font-size: 0.875rem;
+            }
+
+            .league-info {
+                padding: 1rem;
+            }
+
+            .league-info h2 {
+                font-size: 1.25rem;
+            }
+
+            .league-info > div:last-child {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .league-info button {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .stat-card {
+                padding: 1rem;
+            }
+
+            .stat-value {
+                font-size: 2rem;
+            }
+
+            .stat-label {
+                font-size: 0.75rem;
+            }
+
+            .section-title {
+                font-size: 1.125rem;
+                margin: 1.5rem 0 1rem;
+                padding-left: 0.5rem;
+            }
+
+            .teams-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .team-card {
+                padding: 1rem;
+            }
+
+            .team-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .team-name {
+                font-size: 1.125rem;
+            }
+
+            .team-owner {
+                font-size: 0.8125rem;
+            }
+
+            .cap-space {
+                font-size: 1rem;
+            }
+
+            .player-list {
+                max-height: 500px;
+            }
+
+            .player-item {
+                padding: 0.625rem;
+            }
+
+            .player-name {
+                font-size: 0.875rem;
+            }
+
+            .player-position {
+                font-size: 0.75rem;
+            }
+
+            .player-salary {
+                font-size: 0.9375rem;
+            }
+
+            .keeper-cost {
+                font-size: 0.75rem;
+            }
+
+            .edit-modal-content {
+                width: 95%;
+                padding: 1.5rem;
+            }
+
+            button {
+                padding: 0.625rem 1.25rem;
+                font-size: 0.875rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            .button-group button {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .subtitle {
+                font-size: 0.8125rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .stat-card {
+                padding: 0.875rem;
+            }
+
+            .team-card {
+                padding: 0.875rem;
+            }
+
+            .team-name {
+                font-size: 1rem;
+            }
+
+            .player-item {
+                padding: 0.5rem;
+            }
+
+            .section-title {
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
