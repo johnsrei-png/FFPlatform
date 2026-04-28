@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBR Fantasy Salary Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,100 +12,66 @@
         }
 
         :root {
-            --bg-primary: #0a0e16;
-            --bg-secondary: #141925;
-            --bg-card: #1a2030;
-            --accent-primary: #00ff88;
-            --accent-secondary: #0088ff;
-            --accent-danger: #ff3366;
-            --accent-warning: #ffaa00;
-            --text-primary: #ffffff;
-            --text-secondary: #8b96a8;
-            --border: #2a3444;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --bg-primary: #f8f9fa;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --accent-primary: #2563eb;
+            --accent-secondary: #1e40af;
+            --accent-success: #059669;
+            --accent-danger: #dc2626;
+            --accent-warning: #f59e0b;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --border: #e5e7eb;
+            --border-strong: #d1d5db;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
             overflow-x: hidden;
         }
 
-        .bg-grain {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(0, 136, 255, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
-        }
-
         .container {
             max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
-            position: relative;
-            z-index: 1;
         }
 
         header {
-            margin-bottom: 3rem;
-            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            margin-bottom: 2.5rem;
+            padding-bottom: 1.5rem;
+            border-bottom: 2px solid var(--border);
         }
 
         h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.025em;
         }
 
         .subtitle {
             color: var(--text-secondary);
-            font-size: 1.1rem;
-            font-weight: 300;
+            font-size: 1rem;
+            font-weight: 400;
         }
 
         .setup-section {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 2rem;
             margin-bottom: 2rem;
             box-shadow: var(--shadow);
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .input-group {
@@ -117,53 +82,53 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--accent-primary);
+            font-size: 0.875rem;
+            color: var(--text-primary);
         }
 
         .help-text {
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             color: var(--text-secondary);
             margin-top: 0.25rem;
         }
 
         input[type="text"], input[type="number"], input[type="file"] {
             width: 100%;
-            padding: 1rem;
+            padding: 0.75rem 1rem;
             background: var(--bg-secondary);
-            border: 2px solid var(--border);
+            border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text-primary);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem;
-            transition: all 0.3s ease;
+            font-size: 0.9375rem;
+            transition: all 0.2s ease;
         }
 
         input:focus {
             outline: none;
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
         button {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: var(--bg-primary);
+            background: var(--accent-primary);
+            color: white;
             border: none;
-            padding: 1rem 2rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 8px;
-            font-weight: 700;
-            font-size: 1rem;
+            font-weight: 600;
+            font-size: 0.9375rem;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            transition: all 0.2s ease;
         }
 
         button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
+            background: var(--accent-secondary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        button:active {
+            transform: translateY(0);
         }
 
         button:disabled {
@@ -179,8 +144,8 @@
         }
 
         .btn-secondary:hover {
-            background: var(--border);
-            box-shadow: none;
+            background: var(--bg-primary);
+            box-shadow: var(--shadow);
         }
 
         .dashboard {
@@ -189,7 +154,6 @@
 
         .dashboard.active {
             display: block;
-            animation: fadeIn 0.6s ease;
         }
 
         .league-info {
@@ -203,15 +167,18 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 1rem;
+            box-shadow: var(--shadow);
         }
 
         .league-info h2 {
             font-size: 1.5rem;
+            font-weight: 700;
             margin-bottom: 0.25rem;
+            color: var(--text-primary);
         }
 
         .league-meta {
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             color: var(--text-secondary);
         }
 
@@ -233,38 +200,25 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
         }
 
         .stat-label {
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-weight: 500;
             margin-bottom: 0.5rem;
         }
 
         .stat-value {
-            font-size: 2.5rem;
-            font-weight: 800;
-            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            font-weight: 700;
             color: var(--accent-primary);
         }
 
@@ -280,8 +234,12 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
-            animation: fadeIn 0.6s ease;
-            animation-fill-mode: both;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+
+        .team-card:hover {
+            box-shadow: var(--shadow-md);
         }
 
         .team-header {
@@ -294,24 +252,25 @@
         }
 
         .team-name {
-            font-size: 1.3rem;
+            font-size: 1.125rem;
             font-weight: 700;
+            color: var(--text-primary);
         }
 
         .team-owner {
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             color: var(--text-secondary);
             margin-top: 0.25rem;
         }
 
         .cap-space {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
-            font-size: 1.1rem;
+            font-weight: 700;
+            font-size: 1.25rem;
+            font-variant-numeric: tabular-nums;
         }
 
         .cap-space.positive {
-            color: var(--accent-primary);
+            color: var(--accent-success);
         }
 
         .cap-space.negative {
@@ -319,26 +278,26 @@
         }
 
         .cap-bar {
-            height: 8px;
-            background: var(--bg-secondary);
-            border-radius: 4px;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
             overflow: hidden;
             margin-bottom: 1rem;
         }
 
         .cap-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            border-radius: 4px;
+            background: var(--accent-primary);
+            transition: width 0.3s ease;
+            border-radius: 3px;
         }
 
         .cap-bar-fill.warning {
-            background: linear-gradient(90deg, #ffaa00, #ff6600);
+            background: var(--accent-warning);
         }
 
         .cap-bar-fill.danger {
-            background: linear-gradient(90deg, #ff3366, #ff0044);
+            background: var(--accent-danger);
         }
 
         .player-list {
@@ -353,20 +312,21 @@
             align-items: center;
             padding: 0.75rem;
             margin-bottom: 0.5rem;
-            background: var(--bg-secondary);
-            border-radius: 6px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
             transition: all 0.2s ease;
-            cursor: pointer;
         }
 
         .player-item:hover {
-            background: var(--border);
-            transform: translateX(4px);
+            background: var(--bg-secondary);
+            border-color: var(--border-strong);
+            box-shadow: var(--shadow-sm);
         }
 
         .player-item.editing {
-            background: rgba(0, 255, 136, 0.1);
-            border: 2px solid var(--accent-primary);
+            background: rgba(37, 99, 235, 0.05);
+            border-color: var(--accent-primary);
         }
 
         .player-info {
@@ -377,13 +337,14 @@
 
         .player-name {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.9375rem;
+            color: var(--text-primary);
         }
 
         .player-position {
-            font-size: 0.8rem;
+            font-size: 0.8125rem;
             color: var(--text-secondary);
-            font-family: 'JetBrains Mono', monospace;
+            margin-top: 0.125rem;
         }
 
         .player-salary-info {
@@ -394,32 +355,25 @@
         }
 
         .player-salary {
-            font-family: 'JetBrains Mono', monospace;
-            font-weight: 600;
+            font-weight: 700;
             color: var(--accent-primary);
+            font-size: 1rem;
+            font-variant-numeric: tabular-nums;
         }
 
         .keeper-cost {
-            font-size: 0.75rem;
-            color: var(--accent-warning);
-            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
         }
 
         .section-title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 24px;
-            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
-            margin-right: 1rem;
-            border-radius: 2px;
+            margin-bottom: 1.25rem;
+            color: var(--text-primary);
+            padding-left: 0.75rem;
+            border-left: 4px solid var(--accent-primary);
         }
 
         .loading {
@@ -444,7 +398,7 @@
         }
 
         .error {
-            background: rgba(255, 51, 102, 0.1);
+            background: rgba(220, 38, 38, 0.1);
             border: 1px solid var(--accent-danger);
             color: var(--accent-danger);
             padding: 1rem;
@@ -453,9 +407,9 @@
         }
 
         .success {
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid var(--accent-primary);
-            color: var(--accent-primary);
+            background: rgba(5, 150, 105, 0.1);
+            border: 1px solid var(--accent-success);
+            color: var(--accent-success);
             padding: 1rem;
             border-radius: 8px;
             margin-top: 1rem;
@@ -466,16 +420,16 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
+            background: var(--bg-primary);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--border);
+            background: var(--border-strong);
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-primary);
+            background: var(--text-muted);
         }
 
         .file-upload {
@@ -484,12 +438,13 @@
             text-align: center;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.2s ease;
+            background: var(--bg-primary);
         }
 
         .file-upload:hover {
             border-color: var(--accent-primary);
-            background: rgba(0, 255, 136, 0.05);
+            background: rgba(37, 99, 235, 0.05);
         }
 
         .admin-toggle {
@@ -501,15 +456,16 @@
             padding: 0.75rem 1.5rem;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
             z-index: 1000;
+            box-shadow: var(--shadow-md);
         }
 
         .admin-toggle:hover {
-            background: var(--border);
+            background: var(--bg-primary);
+            box-shadow: var(--shadow-lg);
         }
 
         .edit-modal {
@@ -519,10 +475,11 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.5);
             z-index: 2000;
             align-items: center;
             justify-content: center;
+            backdrop-filter: blur(4px);
         }
 
         .edit-modal.active {
@@ -532,34 +489,34 @@
         .edit-modal-content {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
             padding: 2rem;
             max-width: 500px;
             width: 90%;
-            box-shadow: var(--shadow);
+            box-shadow: var(--shadow-lg);
         }
 
         .edit-modal h3 {
             margin-bottom: 1.5rem;
-            color: var(--accent-primary);
+            color: var(--text-primary);
+            font-size: 1.25rem;
+            font-weight: 700;
         }
 
         .auto-refresh-indicator {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
         }
 
         .new-player-badge {
             display: inline-block;
             background: var(--accent-warning);
-            color: var(--bg-primary);
-            padding: 0.2rem 0.5rem;
+            color: white;
+            padding: 0.125rem 0.5rem;
             border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
+            font-size: 0.75rem;
+            font-weight: 600;
             margin-left: 0.5rem;
-            text-transform: uppercase;
         }
 
         .transactions-panel {
@@ -568,6 +525,7 @@
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 2rem;
+            box-shadow: var(--shadow);
         }
 
         .transaction-item {
@@ -576,7 +534,8 @@
             align-items: center;
             padding: 1rem;
             margin-bottom: 0.75rem;
-            background: var(--bg-secondary);
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
             border-radius: 8px;
             border-left: 4px solid var(--accent-warning);
         }
@@ -587,12 +546,12 @@
 
         .transaction-player {
             font-weight: 600;
-            font-size: 1rem;
+            font-size: 0.9375rem;
             margin-bottom: 0.25rem;
         }
 
         .transaction-details {
-            font-size: 0.85rem;
+            font-size: 0.875rem;
             color: var(--text-secondary);
         }
 
@@ -605,12 +564,11 @@
         .quick-salary-input {
             width: 80px;
             padding: 0.5rem;
-            background: var(--bg-primary);
-            border: 2px solid var(--border);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
             border-radius: 6px;
             color: var(--text-primary);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             text-align: center;
         }
 
@@ -621,19 +579,17 @@
 
         .btn-small {
             padding: 0.5rem 1rem;
-            font-size: 0.85rem;
+            font-size: 0.875rem;
         }
 
         .transaction-timestamp {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8125rem;
+            color: var(--text-muted);
             margin-top: 0.25rem;
         }
     </style>
 </head>
 <body>
-    <div class="bg-grain"></div>
     
     <div class="container">
         <header>
@@ -1031,7 +987,8 @@
                         escalation: escalation,
                         isNew: isNew
                     };
-                }).filter(p => p !== null);
+                }).filter(p => p !== null)
+                  .sort((a, b) => b.salary - a.salary); // Sort by salary: highest to lowest
 
                 const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
                 const capSpace = SALARY_CAP - totalSalary;
