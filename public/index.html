@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBR Fantasy Salary Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -12,66 +13,100 @@
         }
 
         :root {
-            --bg-primary: #f8f9fa;
-            --bg-secondary: #ffffff;
-            --bg-card: #ffffff;
-            --accent-primary: #2563eb;
-            --accent-secondary: #1e40af;
-            --accent-success: #059669;
-            --accent-danger: #dc2626;
-            --accent-warning: #f59e0b;
-            --text-primary: #111827;
-            --text-secondary: #6b7280;
-            --text-muted: #9ca3af;
-            --border: #e5e7eb;
-            --border-strong: #d1d5db;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --bg-primary: #0a0e16;
+            --bg-secondary: #141925;
+            --bg-card: #1a2030;
+            --accent-primary: #00ff88;
+            --accent-secondary: #0088ff;
+            --accent-danger: #ff3366;
+            --accent-warning: #ffaa00;
+            --text-primary: #ffffff;
+            --text-secondary: #8b96a8;
+            --border: #2a3444;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            font-family: 'Outfit', sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
             overflow-x: hidden;
         }
 
+        .bg-grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 136, 255, 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
         .container {
             max-width: 1600px;
             margin: 0 auto;
             padding: 2rem;
+            position: relative;
+            z-index: 1;
         }
 
         header {
-            margin-bottom: 2.5rem;
-            padding-bottom: 1.5rem;
-            border-bottom: 2px solid var(--border);
+            margin-bottom: 3rem;
+            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         h1 {
-            font-size: 2.25rem;
-            font-weight: 700;
-            color: var(--text-primary);
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 0.5rem;
-            letter-spacing: -0.025em;
+            letter-spacing: -0.02em;
         }
 
         .subtitle {
             color: var(--text-secondary);
-            font-size: 1rem;
-            font-weight: 400;
+            font-size: 1.1rem;
+            font-weight: 300;
         }
 
         .setup-section {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 2rem;
             margin-bottom: 2rem;
             box-shadow: var(--shadow);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .input-group {
@@ -82,53 +117,53 @@
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 600;
-            font-size: 0.875rem;
-            color: var(--text-primary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-primary);
         }
 
         .help-text {
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
             margin-top: 0.25rem;
         }
 
         input[type="text"], input[type="number"], input[type="file"] {
             width: 100%;
-            padding: 0.75rem 1rem;
+            padding: 1rem;
             background: var(--bg-secondary);
-            border: 1px solid var(--border);
+            border: 2px solid var(--border);
             border-radius: 8px;
             color: var(--text-primary);
-            font-size: 0.9375rem;
-            transition: all 0.2s ease;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
 
         input:focus {
             outline: none;
             border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
         }
 
         button {
-            background: var(--accent-primary);
-            color: white;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
             border: none;
-            padding: 0.75rem 1.5rem;
+            padding: 1rem 2rem;
             border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.9375rem;
+            font-weight: 700;
+            font-size: 1rem;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
         }
 
         button:hover {
-            background: var(--accent-secondary);
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-md);
-        }
-
-        button:active {
-            transform: translateY(0);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
         }
 
         button:disabled {
@@ -144,8 +179,8 @@
         }
 
         .btn-secondary:hover {
-            background: var(--bg-primary);
-            box-shadow: var(--shadow);
+            background: var(--border);
+            box-shadow: none;
         }
 
         .dashboard {
@@ -154,6 +189,7 @@
 
         .dashboard.active {
             display: block;
+            animation: fadeIn 0.6s ease;
         }
 
         .league-info {
@@ -167,18 +203,15 @@
             align-items: center;
             flex-wrap: wrap;
             gap: 1rem;
-            box-shadow: var(--shadow);
         }
 
         .league-info h2 {
             font-size: 1.5rem;
-            font-weight: 700;
             margin-bottom: 0.25rem;
-            color: var(--text-primary);
         }
 
         .league-meta {
-            font-size: 0.875rem;
+            font-size: 0.9rem;
             color: var(--text-secondary);
         }
 
@@ -200,25 +233,38 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
-            box-shadow: var(--shadow);
-            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
         }
 
         .stat-card:hover {
-            box-shadow: var(--shadow-md);
-            transform: translateY(-2px);
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
         }
 
         .stat-label {
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
-            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
 
         .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
             color: var(--accent-primary);
         }
 
@@ -234,12 +280,8 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
-            box-shadow: var(--shadow);
-            transition: all 0.2s ease;
-        }
-
-        .team-card:hover {
-            box-shadow: var(--shadow-md);
+            animation: fadeIn 0.6s ease;
+            animation-fill-mode: both;
         }
 
         .team-header {
@@ -252,25 +294,24 @@
         }
 
         .team-name {
-            font-size: 1.125rem;
+            font-size: 1.3rem;
             font-weight: 700;
-            color: var(--text-primary);
         }
 
         .team-owner {
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
             margin-top: 0.25rem;
         }
 
         .cap-space {
-            font-weight: 700;
-            font-size: 1.25rem;
-            font-variant-numeric: tabular-nums;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 1.1rem;
         }
 
         .cap-space.positive {
-            color: var(--accent-success);
+            color: var(--accent-primary);
         }
 
         .cap-space.negative {
@@ -278,30 +319,30 @@
         }
 
         .cap-bar {
-            height: 6px;
-            background: var(--border);
-            border-radius: 3px;
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
             overflow: hidden;
             margin-bottom: 1rem;
         }
 
         .cap-bar-fill {
             height: 100%;
-            background: var(--accent-primary);
-            transition: width 0.3s ease;
-            border-radius: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 4px;
         }
 
         .cap-bar-fill.warning {
-            background: var(--accent-warning);
+            background: linear-gradient(90deg, #ffaa00, #ff6600);
         }
 
         .cap-bar-fill.danger {
-            background: var(--accent-danger);
+            background: linear-gradient(90deg, #ff3366, #ff0044);
         }
 
         .player-list {
-            max-height: 600px;
+            max-height: 400px;
             overflow-y: auto;
             margin-top: 1rem;
         }
@@ -312,21 +353,20 @@
             align-items: center;
             padding: 0.75rem;
             margin-bottom: 0.5rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
             transition: all 0.2s ease;
+            cursor: pointer;
         }
 
         .player-item:hover {
-            background: var(--bg-secondary);
-            border-color: var(--border-strong);
-            box-shadow: var(--shadow-sm);
+            background: var(--border);
+            transform: translateX(4px);
         }
 
         .player-item.editing {
-            background: rgba(37, 99, 235, 0.05);
-            border-color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.1);
+            border: 2px solid var(--accent-primary);
         }
 
         .player-info {
@@ -337,14 +377,13 @@
 
         .player-name {
             font-weight: 600;
-            font-size: 0.9375rem;
-            color: var(--text-primary);
+            font-size: 0.95rem;
         }
 
         .player-position {
-            font-size: 0.8125rem;
+            font-size: 0.8rem;
             color: var(--text-secondary);
-            margin-top: 0.125rem;
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .player-salary-info {
@@ -355,25 +394,32 @@
         }
 
         .player-salary {
-            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
             color: var(--accent-primary);
-            font-size: 1rem;
-            font-variant-numeric: tabular-nums;
         }
 
         .keeper-cost {
-            font-size: 0.8125rem;
-            color: var(--text-muted);
-            font-variant-numeric: tabular-nums;
+            font-size: 0.75rem;
+            color: var(--accent-warning);
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .section-title {
-            font-size: 1.25rem;
+            font-size: 1.5rem;
             font-weight: 700;
-            margin-bottom: 1.25rem;
-            color: var(--text-primary);
-            padding-left: 0.75rem;
-            border-left: 4px solid var(--accent-primary);
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+            margin-right: 1rem;
+            border-radius: 2px;
         }
 
         .loading {
@@ -398,7 +444,7 @@
         }
 
         .error {
-            background: rgba(220, 38, 38, 0.1);
+            background: rgba(255, 51, 102, 0.1);
             border: 1px solid var(--accent-danger);
             color: var(--accent-danger);
             padding: 1rem;
@@ -407,9 +453,9 @@
         }
 
         .success {
-            background: rgba(5, 150, 105, 0.1);
-            border: 1px solid var(--accent-success);
-            color: var(--accent-success);
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
             padding: 1rem;
             border-radius: 8px;
             margin-top: 1rem;
@@ -420,16 +466,16 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: var(--bg-primary);
+            background: var(--bg-secondary);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: var(--border-strong);
+            background: var(--border);
             border-radius: 4px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-muted);
+            background: var(--accent-primary);
         }
 
         .file-upload {
@@ -438,13 +484,12 @@
             text-align: center;
             border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            background: var(--bg-primary);
+            transition: all 0.3s ease;
         }
 
         .file-upload:hover {
             border-color: var(--accent-primary);
-            background: rgba(37, 99, 235, 0.05);
+            background: rgba(0, 255, 136, 0.05);
         }
 
         .admin-toggle {
@@ -456,16 +501,15 @@
             padding: 0.75rem 1.5rem;
             border-radius: 8px;
             cursor: pointer;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
             z-index: 1000;
-            box-shadow: var(--shadow-md);
         }
 
         .admin-toggle:hover {
-            background: var(--bg-primary);
-            box-shadow: var(--shadow-lg);
+            background: var(--border);
         }
 
         .edit-modal {
@@ -475,11 +519,10 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.8);
             z-index: 2000;
             align-items: center;
             justify-content: center;
-            backdrop-filter: blur(4px);
         }
 
         .edit-modal.active {
@@ -489,34 +532,34 @@
         .edit-modal-content {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
+            border-radius: 16px;
             padding: 2rem;
             max-width: 500px;
             width: 90%;
-            box-shadow: var(--shadow-lg);
+            box-shadow: var(--shadow);
         }
 
         .edit-modal h3 {
             margin-bottom: 1.5rem;
-            color: var(--text-primary);
-            font-size: 1.25rem;
-            font-weight: 700;
+            color: var(--accent-primary);
         }
 
         .auto-refresh-indicator {
-            font-size: 0.8125rem;
-            color: var(--text-muted);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
         }
 
         .new-player-badge {
             display: inline-block;
             background: var(--accent-warning);
-            color: white;
-            padding: 0.125rem 0.5rem;
+            color: var(--bg-primary);
+            padding: 0.2rem 0.5rem;
             border-radius: 4px;
-            font-size: 0.75rem;
-            font-weight: 600;
+            font-size: 0.7rem;
+            font-weight: 700;
             margin-left: 0.5rem;
+            text-transform: uppercase;
         }
 
         .transactions-panel {
@@ -525,7 +568,6 @@
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            box-shadow: var(--shadow);
         }
 
         .transaction-item {
@@ -534,8 +576,7 @@
             align-items: center;
             padding: 1rem;
             margin-bottom: 0.75rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
+            background: var(--bg-secondary);
             border-radius: 8px;
             border-left: 4px solid var(--accent-warning);
         }
@@ -546,12 +587,12 @@
 
         .transaction-player {
             font-weight: 600;
-            font-size: 0.9375rem;
+            font-size: 1rem;
             margin-bottom: 0.25rem;
         }
 
         .transaction-details {
-            font-size: 0.875rem;
+            font-size: 0.85rem;
             color: var(--text-secondary);
         }
 
@@ -564,11 +605,12 @@
         .quick-salary-input {
             width: 80px;
             padding: 0.5rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
             border-radius: 6px;
             color: var(--text-primary);
-            font-size: 0.875rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
             text-align: center;
         }
 
@@ -579,442 +621,19 @@
 
         .btn-small {
             padding: 0.5rem 1rem;
-            font-size: 0.875rem;
+            font-size: 0.85rem;
         }
 
         .transaction-timestamp {
-            font-size: 0.8125rem;
-            color: var(--text-muted);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
             margin-top: 0.25rem;
-        }
-
-        /* New Feature Styles */
-        .controls-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-        }
-
-        .controls-row {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 200px;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 0.75rem 1rem 0.75rem 2.5rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.9375rem;
-        }
-
-        .search-box::before {
-            content: "🔍";
-            position: absolute;
-            left: 0.875rem;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1rem;
-        }
-
-        .sort-controls {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .sort-controls label {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin: 0;
-        }
-
-        .sort-controls select {
-            padding: 0.625rem 2rem 0.625rem 0.75rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.625rem center;
-        }
-
-        .comparison-view {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            display: none;
-        }
-
-        .comparison-view.active {
-            display: block;
-        }
-
-        .comparison-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .comparison-selects {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .comparison-selects select {
-            padding: 0.625rem 2rem 0.625rem 0.75rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.625rem center;
-            min-width: 200px;
-        }
-
-        .comparison-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-
-        .comparison-team {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.25rem;
-        }
-
-        .comparison-stat {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .comparison-stat:last-child {
-            border-bottom: none;
-        }
-
-        .comparison-stat-label {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .comparison-stat-value {
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .projected-cap-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            margin-left: 0.75rem;
-            padding: 0.25rem 0.75rem;
-            background: rgba(37, 99, 235, 0.1);
-            border: 1px solid rgba(37, 99, 235, 0.2);
-            border-radius: 6px;
-            font-size: 0.8125rem;
-            color: var(--accent-primary);
-            font-weight: 600;
-        }
-
-        .highlight-match {
-            background: rgba(37, 99, 235, 0.1) !important;
-            border-color: var(--accent-primary) !important;
-        }
-
-        .no-results {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.9375rem;
-        }
-
-        .feature-badge {
-            display: inline-block;
-            background: var(--accent-success);
-            color: white;
-            padding: 0.125rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.6875rem;
-            font-weight: 600;
-            margin-left: 0.5rem;
-            text-transform: uppercase;
-        }
-
-        /* Mobile Responsive Styles */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
-
-            header {
-                margin-bottom: 1.5rem;
-                padding-bottom: 1rem;
-            }
-
-            h1 {
-                font-size: 1.75rem;
-            }
-
-            .subtitle {
-                font-size: 0.875rem;
-            }
-
-            .league-info {
-                flex-direction: column;
-                align-items: flex-start;
-                padding: 1rem;
-            }
-
-            .league-info h2 {
-                font-size: 1.25rem;
-            }
-
-            .action-buttons {
-                width: 100%;
-                flex-direction: column;
-            }
-
-            .action-buttons button {
-                width: 100%;
-            }
-
-            .stats-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 1rem;
-            }
-
-            .stat-card {
-                padding: 1rem;
-            }
-
-            .stat-value {
-                font-size: 1.5rem;
-            }
-
-            .stat-label {
-                font-size: 0.8125rem;
-            }
-
-            .teams-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .team-card {
-                padding: 1rem;
-            }
-
-            .team-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.75rem;
-            }
-
-            .cap-space {
-                font-size: 1.125rem;
-            }
-
-            .team-name {
-                font-size: 1rem;
-            }
-
-            .team-owner {
-                font-size: 0.8125rem;
-            }
-
-            .player-list {
-                max-height: 500px;
-            }
-
-            .player-item {
-                padding: 0.625rem;
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-
-            .player-info {
-                flex: 1;
-                min-width: 0;
-            }
-
-            .player-name {
-                font-size: 0.875rem;
-            }
-
-            .player-position {
-                font-size: 0.75rem;
-            }
-
-            .player-salary {
-                font-size: 0.9375rem;
-            }
-
-            .keeper-cost {
-                font-size: 0.75rem;
-            }
-
-            .section-title {
-                font-size: 1.125rem;
-                margin-bottom: 1rem;
-                padding-left: 0.5rem;
-            }
-
-            .transactions-panel {
-                padding: 1rem;
-            }
-
-            .transaction-item {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 0.75rem;
-                padding: 0.875rem;
-            }
-
-            .transaction-actions {
-                width: 100%;
-                justify-content: space-between;
-            }
-
-            .quick-salary-input {
-                flex: 1;
-                max-width: 100px;
-            }
-
-            .edit-modal-content {
-                padding: 1.5rem;
-                width: 95%;
-            }
-
-            .edit-modal h3 {
-                font-size: 1.125rem;
-            }
-
-            .admin-toggle {
-                bottom: 1rem;
-                right: 1rem;
-                padding: 0.625rem 1.25rem;
-                font-size: 0.8125rem;
-            }
-
-            .setup-section {
-                padding: 1.5rem;
-            }
-
-            button {
-                width: 100%;
-            }
-
-            .btn-small {
-                width: auto;
-                padding: 0.5rem 0.875rem;
-            }
-
-            .new-player-badge {
-                font-size: 0.6875rem;
-                padding: 0.125rem 0.375rem;
-            }
-
-            .controls-panel {
-                padding: 1rem;
-            }
-
-            .controls-row {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-box {
-                min-width: 100%;
-            }
-
-            .sort-controls {
-                width: 100%;
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .sort-controls select {
-                width: 100%;
-            }
-
-            .comparison-view {
-                padding: 1rem;
-            }
-
-            .comparison-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .comparison-selects {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .comparison-selects select {
-                width: 100%;
-                min-width: 100%;
-            }
-
-            .projected-cap-indicator {
-                font-size: 0.75rem;
-                padding: 0.25rem 0.5rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            h1 {
-                font-size: 1.5rem;
-            }
-
-            .stats-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .stat-value {
-                font-size: 1.75rem;
-            }
-
-            .player-salary-info {
-                align-items: flex-start;
-            }
         }
     </style>
 </head>
 <body>
+    <div class="bg-grain"></div>
     
     <div class="container">
         <header>
@@ -1065,43 +684,6 @@
                     <button class="btn-secondary" onclick="loadPublicData()">🔄 Refresh Now</button>
                     <button class="btn-secondary" id="commissionerModeBtn" onclick="toggleCommissionerMode()" style="display: none;">✏️ Edit Mode: OFF</button>
                 </div>
-            </div>
-
-            <div class="controls-panel">
-                <div class="controls-row">
-                    <div class="search-box">
-                        <input type="text" id="playerSearch" placeholder="Search players..." oninput="filterPlayers()">
-                    </div>
-                    <div class="sort-controls">
-                        <label>Sort teams by:</label>
-                        <select id="teamSort" onchange="sortTeams()">
-                            <option value="name">Team Name</option>
-                            <option value="capSpace">Cap Space (High to Low)</option>
-                            <option value="capSpaceAsc">Cap Space (Low to High)</option>
-                            <option value="totalSalary">Total Salary (High to Low)</option>
-                            <option value="wins">Wins</option>
-                            <option value="owner">Owner Name</option>
-                        </select>
-                    </div>
-                    <button class="btn-secondary" onclick="exportToCSV()">📥 Export CSV</button>
-                    <button class="btn-secondary" onclick="toggleComparison()">⚖️ Compare Teams</button>
-                </div>
-            </div>
-
-            <div class="comparison-view" id="comparisonView">
-                <div class="comparison-header">
-                    <h3 class="section-title" style="margin: 0;">Team Comparison</h3>
-                    <button class="btn-secondary btn-small" onclick="toggleComparison()">Close</button>
-                </div>
-                <div class="comparison-selects">
-                    <select id="compareTeam1" onchange="updateComparison()">
-                        <option value="">Select Team 1...</option>
-                    </select>
-                    <select id="compareTeam2" onchange="updateComparison()">
-                        <option value="">Select Team 2...</option>
-                    </select>
-                </div>
-                <div id="comparisonContent"></div>
             </div>
 
             <div class="stats-grid">
@@ -1164,8 +746,6 @@
         let commissionerMode = false;
         let autoRefreshInterval = null;
         let editingPlayer = null;
-        let allTeamsData = []; // Store all teams data for filtering/sorting
-        let currentDashboardData = null; // Store current dashboard data
 
         function getKeeperEscalation(salary) {
             if (salary >= 1 && salary <= 5) return 2;
@@ -1255,8 +835,9 @@
         }
 
         function startAutoRefresh() {
+            // Auto-refresh every 5 minutes
             autoRefreshInterval = setInterval(() => {
-                loadPublicData(true);
+                loadPublicData(true); // Silent refresh
             }, 5 * 60 * 1000);
         }
 
@@ -1293,6 +874,7 @@
                 
                 displayDashboard(data);
                 
+                // Start auto-refresh on first successful load
                 if (!autoRefreshInterval) {
                     startAutoRefresh();
                 }
@@ -1306,21 +888,13 @@
         }
 
         function toggleCommissionerMode() {
-            // If turning ON, require password
-            if (!commissionerMode) {
-                const password = prompt('Enter commissioner password:');
-                if (password !== 'gopackgo') {
-                    alert('Incorrect password');
-                    return;
-                }
-            }
-            
             commissionerMode = !commissionerMode;
             const btn = document.getElementById('commissionerModeBtn');
             btn.textContent = commissionerMode ? '✏️ Edit Mode: ON' : '✏️ Edit Mode: OFF';
             btn.style.background = commissionerMode ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' : '';
             btn.style.color = commissionerMode ? 'var(--bg-primary)' : '';
             
+            // Reload to show/hide edit buttons
             loadPublicData(true);
         }
 
@@ -1365,7 +939,7 @@
                 }
 
                 closeEditModal();
-                loadPublicData(true);
+                loadPublicData(true); // Refresh data
 
             } catch (error) {
                 document.getElementById('editError').textContent = error.message;
@@ -1399,12 +973,14 @@
                     throw new Error(result.error || 'Failed to update salary');
                 }
 
+                // Remove the transaction from the list
                 const item = document.getElementById(`transaction-${playerId}`);
                 if (item) {
                     item.style.opacity = '0';
                     setTimeout(() => item.remove(), 300);
                 }
 
+                // Refresh dashboard silently
                 loadPublicData(true);
 
             } catch (error) {
@@ -1412,219 +988,14 @@
             }
         }
 
-        // NEW FEATURE FUNCTIONS
-
-        function filterPlayers() {
-            const searchTerm = document.getElementById('playerSearch').value.toLowerCase();
-            const teamCards = document.querySelectorAll('.team-card');
-            
-            teamCards.forEach(card => {
-                const playerItems = card.querySelectorAll('.player-item');
-                let hasMatch = false;
-                
-                playerItems.forEach(item => {
-                    const playerName = item.querySelector('.player-name').textContent.toLowerCase();
-                    const isMatch = playerName.includes(searchTerm);
-                    
-                    if (searchTerm === '') {
-                        item.style.display = 'flex';
-                        item.classList.remove('highlight-match');
-                    } else if (isMatch) {
-                        item.style.display = 'flex';
-                        item.classList.add('highlight-match');
-                        hasMatch = true;
-                    } else {
-                        item.style.display = 'none';
-                        item.classList.remove('highlight-match');
-                    }
-                });
-                
-                // Show/hide team card based on matches
-                if (searchTerm !== '' && !hasMatch) {
-                    card.style.display = 'none';
-                } else {
-                    card.style.display = 'block';
-                }
-            });
-        }
-
-        function sortTeams() {
-            const sortBy = document.getElementById('teamSort').value;
-            const teamsGrid = document.getElementById('teamsGrid');
-            
-            // Sort the teams array
-            let sortedTeams = [...allTeamsData];
-            
-            switch(sortBy) {
-                case 'name':
-                    sortedTeams.sort((a, b) => a.name.localeCompare(b.name));
-                    break;
-                case 'capSpace':
-                    sortedTeams.sort((a, b) => b.capSpace - a.capSpace);
-                    break;
-                case 'capSpaceAsc':
-                    sortedTeams.sort((a, b) => a.capSpace - b.capSpace);
-                    break;
-                case 'totalSalary':
-                    sortedTeams.sort((a, b) => b.totalSalary - a.totalSalary);
-                    break;
-                case 'wins':
-                    sortedTeams.sort((a, b) => b.wins - a.wins);
-                    break;
-                case 'owner':
-                    sortedTeams.sort((a, b) => a.owner.localeCompare(b.owner));
-                    break;
-            }
-            
-            // Re-render teams
-            teamsGrid.innerHTML = '';
-            sortedTeams.forEach((team, idx) => {
-                const teamCard = createTeamCard(team, idx);
-                teamsGrid.appendChild(teamCard);
-            });
-        }
-
-        function exportToCSV() {
-            if (!allTeamsData || allTeamsData.length === 0) {
-                alert('No data to export');
-                return;
-            }
-            
-            let csv = 'Team,Owner,Player,Position,NFL Team,Salary,Keeper Cost,Escalation\n';
-            
-            allTeamsData.forEach(team => {
-                team.players.forEach(player => {
-                    csv += `"${team.name}","${team.owner}","${player.name}","${player.position}","${player.team}",${player.salary},${player.keeperCost},${player.escalation}\n`;
-                });
-            });
-            
-            // Download CSV
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `bbr-salaries-${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }
-
-        function toggleComparison() {
-            const view = document.getElementById('comparisonView');
-            view.classList.toggle('active');
-            
-            if (view.classList.contains('active')) {
-                populateComparisonSelects();
-            }
-        }
-
-        function populateComparisonSelects() {
-            const select1 = document.getElementById('compareTeam1');
-            const select2 = document.getElementById('compareTeam2');
-            
-            // Clear existing options except first
-            select1.innerHTML = '<option value="">Select Team 1...</option>';
-            select2.innerHTML = '<option value="">Select Team 2...</option>';
-            
-            allTeamsData.forEach((team, idx) => {
-                select1.innerHTML += `<option value="${idx}">${team.name} (${team.owner})</option>`;
-                select2.innerHTML += `<option value="${idx}">${team.name} (${team.owner})</option>`;
-            });
-        }
-
-        function updateComparison() {
-            const team1Idx = document.getElementById('compareTeam1').value;
-            const team2Idx = document.getElementById('compareTeam2').value;
-            const content = document.getElementById('comparisonContent');
-            
-            if (team1Idx === '' || team2Idx === '') {
-                content.innerHTML = '<p class="no-results">Select two teams to compare</p>';
-                return;
-            }
-            
-            const team1 = allTeamsData[team1Idx];
-            const team2 = allTeamsData[team2Idx];
-            
-            // Calculate projected cap space (if all keepers kept)
-            const team1Projected = SALARY_CAP - team1.players.reduce((sum, p) => sum + p.keeperCost, 0);
-            const team2Projected = SALARY_CAP - team2.players.reduce((sum, p) => sum + p.keeperCost, 0);
-            
-            content.innerHTML = `
-                <div class="comparison-grid" style="margin-top: 1.5rem;">
-                    <div class="comparison-team">
-                        <h4 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 1.125rem;">${team1.name}</h4>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Owner</span>
-                            <span class="comparison-stat-value">${team1.owner}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Record</span>
-                            <span class="comparison-stat-value">${team1.wins}-${team1.losses}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Total Salary</span>
-                            <span class="comparison-stat-value">$${team1.totalSalary}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Current Cap Space</span>
-                            <span class="comparison-stat-value" style="color: ${team1.capSpace >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">$${team1.capSpace}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Projected Cap (All Keepers)</span>
-                            <span class="comparison-stat-value" style="color: ${team1Projected >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">$${team1Projected}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Total Players</span>
-                            <span class="comparison-stat-value">${team1.players.length}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Avg Player Salary</span>
-                            <span class="comparison-stat-value">$${Math.round(team1.totalSalary / team1.players.length)}</span>
-                        </div>
-                    </div>
-                    <div class="comparison-team">
-                        <h4 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 1.125rem;">${team2.name}</h4>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Owner</span>
-                            <span class="comparison-stat-value">${team2.owner}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Record</span>
-                            <span class="comparison-stat-value">${team2.wins}-${team2.losses}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Total Salary</span>
-                            <span class="comparison-stat-value">$${team2.totalSalary}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Current Cap Space</span>
-                            <span class="comparison-stat-value" style="color: ${team2.capSpace >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">$${team2.capSpace}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Projected Cap (All Keepers)</span>
-                            <span class="comparison-stat-value" style="color: ${team2Projected >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">$${team2Projected}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Total Players</span>
-                            <span class="comparison-stat-value">${team2.players.length}</span>
-                        </div>
-                        <div class="comparison-stat">
-                            <span class="comparison-stat-label">Avg Player Salary</span>
-                            <span class="comparison-stat-value">$${Math.round(team2.totalSalary / team2.players.length)}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createTeamCard(team, idx) {
+        function displayDashboard(data) {
             const dashboard = document.getElementById('dashboard');
             dashboard.classList.add('active');
 
             SALARY_CAP = data.config.salaryCap;
             leagueId = data.league.league_id;
 
+            // Show commissioner button
             document.getElementById('commissionerModeBtn').style.display = 'block';
 
             document.getElementById('leagueName').textContent = data.league.name;
@@ -1643,7 +1014,7 @@
 
                     const salaryData = data.salaries[playerId];
                     const salary = salaryData ? salaryData.salary : 1;
-                    const isNew = !salaryData || salary === 1;
+                    const isNew = !salaryData || salary === 1; // New player if not in DB or default $1
                     const escalation = getKeeperEscalation(salary);
                     const keeperCost = salary + escalation;
 
@@ -1657,8 +1028,7 @@
                         escalation: escalation,
                         isNew: isNew
                     };
-                }).filter(p => p !== null)
-                  .sort((a, b) => b.salary - a.salary); // Sort by salary: highest to lowest
+                }).filter(p => p !== null);
 
                 const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
                 const capSpace = SALARY_CAP - totalSalary;
@@ -1680,6 +1050,7 @@
             const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
             document.getElementById('totalPlayers').textContent = totalPlayers;
 
+            // Display recent transactions with new players
             displayRecentTransactions(data, teams);
 
             const teamsGrid = document.getElementById('teamsGrid');
@@ -1712,7 +1083,7 @@
                         Total Salary: $${team.totalSalary} / $${SALARY_CAP}
                     </div>
                     <div class="player-list">
-                        ${team.players.map(player => `
+                        ${team.players.slice(0, 12).map(player => `
                             <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
                                  style="${commissionerMode ? 'cursor: pointer;' : ''}">
                                 <div class="player-info">
@@ -1728,6 +1099,7 @@
                                 </div>
                             </div>
                         `).join('')}
+                        ${team.players.length > 12 ? `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">+${team.players.length - 12} more players</div>` : ''}
                     </div>
                 `;
 
@@ -1736,6 +1108,7 @@
         }
 
         function displayRecentTransactions(data, teams) {
+            // Find all players with $1 salary (new pickups)
             const newPlayers = [];
             
             teams.forEach(team => {
@@ -1769,26 +1142,20 @@
                             ${player.position} • ${player.team} → Added to ${player.teamName}
                         </div>
                     </div>
-                    ${commissionerMode ? `
-                        <div class="transaction-actions">
-                            <span style="font-size: 0.9rem; color: var(--text-secondary); margin-right: 0.5rem;">$</span>
-                            <input 
-                                type="number" 
-                                id="salary-input-${player.id}" 
-                                class="quick-salary-input" 
-                                placeholder="0" 
-                                min="1" 
-                                max="200"
-                            >
-                            <button class="btn-small" onclick="quickSetSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', '${player.teamName.replace(/'/g, "\\'")}')">
-                                Set Salary
-                            </button>
-                        </div>
-                    ` : `
-                        <div class="transaction-actions">
-                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic;">Pending salary assignment</span>
-                        </div>
-                    `}
+                    <div class="transaction-actions">
+                        <span style="font-size: 0.9rem; color: var(--text-secondary); margin-right: 0.5rem;">$</span>
+                        <input 
+                            type="number" 
+                            id="salary-input-${player.id}" 
+                            class="quick-salary-input" 
+                            placeholder="0" 
+                            min="1" 
+                            max="200"
+                        >
+                        <button class="btn-small" onclick="quickSetSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', '${player.teamName.replace(/'/g, "\\'")}')">
+                            Set Salary
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -1818,6 +1185,7 @@
             loadPublicData();
         });
 
+        // Cleanup on page unload
         window.addEventListener('beforeunload', () => {
             stopAutoRefresh();
         });
