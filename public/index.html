@@ -148,11 +148,6 @@
             box-shadow: var(--shadow);
         }
 
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-        }
-
         .dashboard {
             display: none;
         }
@@ -191,180 +186,6 @@
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
-        }
-
-        /* NEW FEATURES STYLES */
-        .controls-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-        }
-
-        .controls-row {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        .search-box {
-            flex: 1;
-            min-width: 200px;
-            position: relative;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 0.75rem 1rem 0.75rem 2.5rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.9375rem;
-        }
-
-        .search-box::before {
-            content: "🔍";
-            position: absolute;
-            left: 0.875rem;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 1rem;
-        }
-
-        .sort-controls {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .sort-controls label {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            margin: 0;
-            font-weight: 500;
-        }
-
-        .sort-controls select {
-            padding: 0.625rem 2rem 0.625rem 0.75rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.625rem center;
-        }
-
-        .comparison-view {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            display: none;
-        }
-
-        .comparison-view.active {
-            display: block;
-        }
-
-        .comparison-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-            padding-bottom: 1rem;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .comparison-selects {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
-
-        .comparison-selects select {
-            padding: 0.625rem 2rem 0.625rem 0.75rem;
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 0.875rem;
-            cursor: pointer;
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 0.625rem center;
-            min-width: 200px;
-        }
-
-        .comparison-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-
-        .comparison-team {
-            background: var(--bg-primary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1.25rem;
-        }
-
-        .comparison-stat {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .comparison-stat:last-child {
-            border-bottom: none;
-        }
-
-        .comparison-stat-label {
-            font-size: 0.875rem;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .comparison-stat-value {
-            font-weight: 700;
-            color: var(--text-primary);
-        }
-
-        .projected-cap-indicator {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.25rem;
-            margin-top: 0.5rem;
-            padding: 0.25rem 0.75rem;
-            background: rgba(37, 99, 235, 0.1);
-            border: 1px solid rgba(37, 99, 235, 0.2);
-            border-radius: 6px;
-            font-size: 0.8125rem;
-            color: var(--accent-primary);
-            font-weight: 600;
-        }
-
-        .highlight-match {
-            background: rgba(37, 99, 235, 0.1) !important;
-            border-color: var(--accent-primary) !important;
-        }
-
-        .no-results {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text-secondary);
-            font-size: 0.9375rem;
         }
 
         .stats-grid {
@@ -415,55 +236,6 @@
             padding: 1.5rem;
             box-shadow: var(--shadow);
             transition: all 0.2s ease;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .team-card-background {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-size: cover;
-            background-position: center;
-            opacity: 0.15;
-            z-index: 0;
-        }
-
-        .team-card-content {
-            position: relative;
-            z-index: 1;
-        }
-
-        .team-background-control {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            z-index: 2;
-            opacity: 0;
-            transition: opacity 0.2s ease;
-        }
-
-        .team-card:hover .team-background-control {
-            opacity: 1;
-        }
-
-        .background-btn {
-            background: rgba(255, 255, 255, 0.9);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-            padding: 0.375rem 0.75rem;
-            border-radius: 6px;
-            font-size: 0.75rem;
-            cursor: pointer;
-            font-weight: 500;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .background-btn:hover {
-            background: white;
-            box-shadow: var(--shadow);
         }
 
         .team-card:hover {
@@ -473,7 +245,7 @@
         .team-header {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--border);
@@ -805,6 +577,202 @@
             outline: none;
         }
 
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .transaction-timestamp {
+            font-size: 0.8125rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        /* New Feature Styles */
+        .controls-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .sort-controls label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .sort-controls select {
+            padding: 0.625rem 2rem 0.625rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.625rem center;
+        }
+
+        .comparison-view {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .comparison-view.active {
+            display: block;
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-selects {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .comparison-selects select {
+            padding: 0.625rem 2rem 0.625rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.625rem center;
+            min-width: 200px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .comparison-team {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .comparison-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-stat:last-child {
+            border-bottom: none;
+        }
+
+        .comparison-stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .comparison-stat-value {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .projected-cap-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-left: 0.75rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .highlight-match {
+            background: rgba(37, 99, 235, 0.1) !important;
+            border-color: var(--accent-primary) !important;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
+        }
+
+        .feature-badge {
+            display: inline-block;
+            background: var(--accent-success);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.6875rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            text-transform: uppercase;
+        }
+
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             .container {
@@ -841,48 +809,6 @@
 
             .action-buttons button {
                 width: 100%;
-            }
-
-            .controls-panel {
-                padding: 1rem;
-            }
-
-            .controls-row {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-box {
-                min-width: 100%;
-            }
-
-            .sort-controls {
-                width: 100%;
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .sort-controls select {
-                width: 100%;
-            }
-
-            .comparison-view {
-                padding: 1rem;
-            }
-
-            .comparison-grid {
-                grid-template-columns: 1fr;
-                gap: 1rem;
-            }
-
-            .comparison-selects {
-                flex-direction: column;
-                width: 100%;
-            }
-
-            .comparison-selects select {
-                width: 100%;
-                min-width: 100%;
             }
 
             .stats-grid {
@@ -935,6 +861,13 @@
 
             .player-item {
                 padding: 0.625rem;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .player-info {
+                flex: 1;
+                min-width: 0;
             }
 
             .player-name {
@@ -1014,6 +947,48 @@
                 padding: 0.125rem 0.375rem;
             }
 
+            .controls-panel {
+                padding: 1rem;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
+            .sort-controls {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .sort-controls select {
+                width: 100%;
+            }
+
+            .comparison-view {
+                padding: 1rem;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .comparison-selects {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .comparison-selects select {
+                width: 100%;
+                min-width: 100%;
+            }
+
             .projected-cap-indicator {
                 font-size: 0.75rem;
                 padding: 0.25rem 0.5rem;
@@ -1031,6 +1006,10 @@
 
             .stat-value {
                 font-size: 1.75rem;
+            }
+
+            .player-salary-info {
+                align-items: flex-start;
             }
         }
     </style>
@@ -1185,8 +1164,8 @@
         let commissionerMode = false;
         let autoRefreshInterval = null;
         let editingPlayer = null;
-        let allTeamsData = [];
-        let currentDashboardData = null;
+        let allTeamsData = []; // Store all teams data for filtering/sorting
+        let currentDashboardData = null; // Store current dashboard data
 
         function getKeeperEscalation(salary) {
             if (salary >= 1 && salary <= 5) return 2;
@@ -1327,6 +1306,7 @@
         }
 
         function toggleCommissionerMode() {
+            // If turning ON, require password
             if (!commissionerMode) {
                 const password = prompt('Enter commissioner password:');
                 if (password !== 'gopackgo') {
@@ -1338,8 +1318,8 @@
             commissionerMode = !commissionerMode;
             const btn = document.getElementById('commissionerModeBtn');
             btn.textContent = commissionerMode ? '✏️ Edit Mode: ON' : '✏️ Edit Mode: OFF';
-            btn.style.background = commissionerMode ? 'var(--accent-primary)' : '';
-            btn.style.color = commissionerMode ? 'white' : '';
+            btn.style.background = commissionerMode ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' : '';
+            btn.style.color = commissionerMode ? 'var(--bg-primary)' : '';
             
             loadPublicData(true);
         }
@@ -1459,6 +1439,7 @@
                     }
                 });
                 
+                // Show/hide team card based on matches
                 if (searchTerm !== '' && !hasMatch) {
                     card.style.display = 'none';
                 } else {
@@ -1471,6 +1452,7 @@
             const sortBy = document.getElementById('teamSort').value;
             const teamsGrid = document.getElementById('teamsGrid');
             
+            // Sort the teams array
             let sortedTeams = [...allTeamsData];
             
             switch(sortBy) {
@@ -1494,6 +1476,7 @@
                     break;
             }
             
+            // Re-render teams
             teamsGrid.innerHTML = '';
             sortedTeams.forEach((team, idx) => {
                 const teamCard = createTeamCard(team, idx);
@@ -1515,6 +1498,7 @@
                 });
             });
             
+            // Download CSV
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
@@ -1539,6 +1523,7 @@
             const select1 = document.getElementById('compareTeam1');
             const select2 = document.getElementById('compareTeam2');
             
+            // Clear existing options except first
             select1.innerHTML = '<option value="">Select Team 1...</option>';
             select2.innerHTML = '<option value="">Select Team 2...</option>';
             
@@ -1561,6 +1546,7 @@
             const team1 = allTeamsData[team1Idx];
             const team2 = allTeamsData[team2Idx];
             
+            // Calculate projected cap space (if all keepers kept)
             const team1Projected = SALARY_CAP - team1.players.reduce((sum, p) => sum + p.keeperCost, 0);
             const team2Projected = SALARY_CAP - team2.players.reduce((sum, p) => sum + p.keeperCost, 0);
             
@@ -1633,81 +1619,11 @@
         }
 
         function createTeamCard(team, idx) {
-            const capPercentage = (team.totalSalary / SALARY_CAP) * 100;
-            let barClass = '';
-            if (capPercentage > 95) barClass = 'danger';
-            else if (capPercentage > 85) barClass = 'warning';
-
-            const projectedSpent = team.players.reduce((sum, p) => sum + p.keeperCost, 0);
-            const projectedCapSpace = SALARY_CAP - projectedSpent;
-
-            const teamCard = document.createElement('div');
-            teamCard.className = 'team-card';
-            teamCard.setAttribute('data-team-id', team.rosterId);
-
-            const backgroundStyle = team.backgroundImage ? `background-image: url(${team.backgroundImage})` : '';
-
-            teamCard.innerHTML = `
-                ${team.backgroundImage ? `<div class="team-card-background" style="${backgroundStyle}"></div>` : ''}
-                ${commissionerMode ? `
-                    <div class="team-background-control">
-                        <button class="background-btn" onclick="uploadTeamBackground('${team.rosterId}', '${team.name.replace(/'/g, "\\'")}')">
-                            🖼️ Background
-                        </button>
-                    </div>
-                ` : ''}
-                <div class="team-card-content">
-                    <div class="team-header">
-                        <div>
-                            <div class="team-name">${team.name}</div>
-                            <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
-                        </div>
-                        <div>
-                            <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
-                                $${team.capSpace}
-                            </div>
-                            <div class="projected-cap-indicator" title="Cap space if all current players kept as keepers">
-                                Projected: $${projectedCapSpace}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="cap-bar">
-                        <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
-                    </div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                        Total Salary: $${team.totalSalary} / $${SALARY_CAP}
-                    </div>
-                    <div class="player-list">
-                        ${team.players.map(player => `
-                            <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
-                                 style="${commissionerMode ? 'cursor: pointer;' : ''}">
-                                <div class="player-info">
-                                    <div class="player-name">
-                                        ${player.name}
-                                        ${player.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
-                                    </div>
-                                    <div class="player-position">${player.position} • ${player.team}</div>
-                                </div>
-                                <div class="player-salary-info">
-                                    <div class="player-salary">$${player.salary}</div>
-                                    <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-
-            return teamCard;
-        }
-
-        function displayDashboard(data) {
             const dashboard = document.getElementById('dashboard');
             dashboard.classList.add('active');
 
             SALARY_CAP = data.config.salaryCap;
             leagueId = data.league.league_id;
-            currentDashboardData = data;
 
             document.getElementById('commissionerModeBtn').style.display = 'block';
 
@@ -1742,28 +1658,21 @@
                         isNew: isNew
                     };
                 }).filter(p => p !== null)
-                  .sort((a, b) => b.salary - a.salary);
+                  .sort((a, b) => b.salary - a.salary); // Sort by salary: highest to lowest
 
                 const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
                 const capSpace = SALARY_CAP - totalSalary;
 
-                // Get background image from data if exists
-                const backgroundImage = data.teamBackgrounds?.[roster.roster_id] || null;
-
                 return {
-                    rosterId: roster.roster_id,
                     name: teamName,
                     owner: ownerName,
                     players: players,
                     totalSalary: totalSalary,
                     capSpace: capSpace,
                     wins: roster.settings?.wins || 0,
-                    losses: roster.settings?.losses || 0,
-                    backgroundImage: backgroundImage
+                    losses: roster.settings?.losses || 0
                 };
             });
-
-            allTeamsData = teams;
 
             document.getElementById('totalTeams').textContent = teams.length;
             const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
@@ -1777,7 +1686,51 @@
             teamsGrid.innerHTML = '';
 
             teams.forEach((team, idx) => {
-                const teamCard = createTeamCard(team, idx);
+                const capPercentage = (team.totalSalary / SALARY_CAP) * 100;
+                let barClass = '';
+                if (capPercentage > 95) barClass = 'danger';
+                else if (capPercentage > 85) barClass = 'warning';
+
+                const teamCard = document.createElement('div');
+                teamCard.className = 'team-card';
+                teamCard.style.animationDelay = `${idx * 0.1}s`;
+
+                teamCard.innerHTML = `
+                    <div class="team-header">
+                        <div>
+                            <div class="team-name">${team.name}</div>
+                            <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
+                        </div>
+                        <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
+                            $${team.capSpace}
+                        </div>
+                    </div>
+                    <div class="cap-bar">
+                        <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Total Salary: $${team.totalSalary} / $${SALARY_CAP}
+                    </div>
+                    <div class="player-list">
+                        ${team.players.map(player => `
+                            <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
+                                 style="${commissionerMode ? 'cursor: pointer;' : ''}">
+                                <div class="player-info">
+                                    <div class="player-name">
+                                        ${player.name}
+                                        ${player.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
+                                    </div>
+                                    <div class="player-position">${player.position} • ${player.team}</div>
+                                </div>
+                                <div class="player-salary-info">
+                                    <div class="player-salary">$${player.salary}</div>
+                                    <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+
                 teamsGrid.appendChild(teamCard);
             });
         }
@@ -1859,59 +1812,6 @@
             const successDiv = document.getElementById('adminSuccess');
             successDiv.textContent = message;
             successDiv.style.display = 'block';
-        }
-
-        async function uploadTeamBackground(rosterId, teamName) {
-            if (!commissionerMode) return;
-
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = 'image/*';
-            
-            input.onchange = async (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                // Check file size (max 2MB)
-                if (file.size > 2 * 1024 * 1024) {
-                    alert('Image must be smaller than 2MB');
-                    return;
-                }
-
-                try {
-                    // Convert to base64
-                    const reader = new FileReader();
-                    reader.onload = async (event) => {
-                        const base64Image = event.target.result;
-
-                        // Save to backend
-                        const response = await fetch('/api/update-team-background', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                leagueId: leagueId,
-                                rosterId: rosterId,
-                                backgroundImage: base64Image
-                            })
-                        });
-
-                        const result = await response.json();
-
-                        if (!response.ok) {
-                            throw new Error(result.error || 'Failed to update background');
-                        }
-
-                        // Refresh to show new background
-                        loadPublicData(true);
-                    };
-                    reader.readAsDataURL(file);
-
-                } catch (error) {
-                    alert('Error uploading background: ' + error.message);
-                }
-            };
-
-            input.click();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
