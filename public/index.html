@@ -415,6 +415,55 @@
             padding: 1.5rem;
             box-shadow: var(--shadow);
             transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team-card-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.15;
+            z-index: 0;
+        }
+
+        .team-card-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .team-background-control {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 2;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .team-card:hover .team-background-control {
+            opacity: 1;
+        }
+
+        .background-btn {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+            padding: 0.375rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .background-btn:hover {
+            background: white;
+            box-shadow: var(--shadow);
         }
 
         .team-card:hover {
@@ -1594,45 +1643,58 @@
 
             const teamCard = document.createElement('div');
             teamCard.className = 'team-card';
+            teamCard.setAttribute('data-team-id', team.rosterId);
+
+            const backgroundStyle = team.backgroundImage ? `background-image: url(${team.backgroundImage})` : '';
 
             teamCard.innerHTML = `
-                <div class="team-header">
-                    <div>
-                        <div class="team-name">${team.name}</div>
-                        <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
+                ${team.backgroundImage ? `<div class="team-card-background" style="${backgroundStyle}"></div>` : ''}
+                ${commissionerMode ? `
+                    <div class="team-background-control">
+                        <button class="background-btn" onclick="uploadTeamBackground('${team.rosterId}', '${team.name.replace(/'/g, "\\'")}')">
+                            🖼️ Background
+                        </button>
                     </div>
-                    <div>
-                        <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
-                            $${team.capSpace}
+                ` : ''}
+                <div class="team-card-content">
+                    <div class="team-header">
+                        <div>
+                            <div class="team-name">${team.name}</div>
+                            <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
                         </div>
-                        <div class="projected-cap-indicator" title="Cap space if all current players kept as keepers">
-                            Projected: $${projectedCapSpace}
+                        <div>
+                            <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
+                                $${team.capSpace}
+                            </div>
+                            <div class="projected-cap-indicator" title="Cap space if all current players kept as keepers">
+                                Projected: $${projectedCapSpace}
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div class="cap-bar">
-                    <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
-                </div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                    Total Salary: $${team.totalSalary} / $${SALARY_CAP}
-                </div>
-                <div class="player-list">
-                    ${team.players.map(player => `
-                        <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
-                             style="${commissionerMode ? 'cursor: pointer;' : ''}">
-                            <div class="player-info">
-                                <div class="player-name">
-                                    ${player.name}
-                                    ${player.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
+                    <div class="cap-bar">
+                        <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Total Salary: $${team.totalSalary} / $${SALARY_CAP}
+                    </div>
+                    <div class="player-list">
+                        ${team.players.map(player => `
+                            <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
+                                 style="${commissionerMode ? 'cursor: pointer;' : ''}">
+                                <div class="player-info">
+                                    <div class="player-name">
+                                        ${player.name}
+                                        ${player.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
+                                    </div>
+                                    <div class="player-position">${player.position} • ${player.team}</div>
                                 </div>
-                                <div class="player-position">${player.position} • ${player.team}</div>
+                                <div class="player-salary-info">
+                                    <div class="player-salary">$${player.salary}</div>
+                                    <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
+                                </div>
                             </div>
-                            <div class="player-salary-info">
-                                <div class="player-salary">$${player.salary}</div>
-                                <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
-                            </div>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
                 </div>
             `;
 
@@ -1685,14 +1747,19 @@
                 const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
                 const capSpace = SALARY_CAP - totalSalary;
 
+                // Get background image from data if exists
+                const backgroundImage = data.teamBackgrounds?.[roster.roster_id] || null;
+
                 return {
+                    rosterId: roster.roster_id,
                     name: teamName,
                     owner: ownerName,
                     players: players,
                     totalSalary: totalSalary,
                     capSpace: capSpace,
                     wins: roster.settings?.wins || 0,
-                    losses: roster.settings?.losses || 0
+                    losses: roster.settings?.losses || 0,
+                    backgroundImage: backgroundImage
                 };
             });
 
@@ -1792,6 +1859,59 @@
             const successDiv = document.getElementById('adminSuccess');
             successDiv.textContent = message;
             successDiv.style.display = 'block';
+        }
+
+        async function uploadTeamBackground(rosterId, teamName) {
+            if (!commissionerMode) return;
+
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            
+            input.onchange = async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                // Check file size (max 2MB)
+                if (file.size > 2 * 1024 * 1024) {
+                    alert('Image must be smaller than 2MB');
+                    return;
+                }
+
+                try {
+                    // Convert to base64
+                    const reader = new FileReader();
+                    reader.onload = async (event) => {
+                        const base64Image = event.target.result;
+
+                        // Save to backend
+                        const response = await fetch('/api/update-team-background', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                leagueId: leagueId,
+                                rosterId: rosterId,
+                                backgroundImage: base64Image
+                            })
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(result.error || 'Failed to update background');
+                        }
+
+                        // Refresh to show new background
+                        loadPublicData(true);
+                    };
+                    reader.readAsDataURL(file);
+
+                } catch (error) {
+                    alert('Error uploading background: ' + error.message);
+                }
+            };
+
+            input.click();
         }
 
         window.addEventListener('DOMContentLoaded', () => {
