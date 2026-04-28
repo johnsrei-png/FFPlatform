@@ -31,7 +31,6 @@
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
-            overflow-x: hidden;
         }
 
         .bg-grain {
@@ -40,9 +39,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
-                radial-gradient(circle at 80% 80%, rgba(0, 136, 255, 0%, transparent 50%);
+            background: radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(0, 136, 255, 0.05) 0%, transparent 50%);
             pointer-events: none;
             z-index: 0;
         }
@@ -55,142 +53,23 @@
             z-index: 1;
         }
 
-        header {
-            margin-bottom: 3rem;
-            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
         h1 {
             font-size: 3rem;
             font-weight: 800;
             background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
             margin-bottom: 0.5rem;
-            letter-spacing: -0.02em;
         }
 
         .subtitle {
             color: var(--text-secondary);
             font-size: 1.1rem;
-            font-weight: 300;
-        }
-
-        .setup-section {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2rem;
             margin-bottom: 2rem;
-            box-shadow: var(--shadow);
-            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
         }
 
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .input-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--accent-primary);
-        }
-
-        .help-text {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            margin-top: 0.25rem;
-        }
-
-        input[type="text"], input[type="number"], input[type="file"] {
-            width: 100%;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border: 2px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: var(--accent-primary);
-            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
-        }
-
-        button {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: var(--bg-primary);
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 8px;
-            font-weight: 700;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
-        }
-
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-secondary {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-            border: 1px solid var(--border);
-        }
-
-        .btn-secondary:hover {
-            background: var(--border);
-            box-shadow: none;
-        }
-
-        .dashboard {
-            display: none;
-        }
-
-        .dashboard.active {
-            display: block;
-            animation: fadeIn 0.6s ease;
-        }
+        .dashboard { display: none; }
+        .dashboard.active { display: block; }
 
         .league-info {
             background: var(--bg-card);
@@ -198,27 +77,22 @@
             border-radius: 12px;
             padding: 1.5rem;
             margin-bottom: 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 1rem;
         }
 
         .league-info h2 {
             font-size: 1.5rem;
-            margin-bottom: 0.25rem;
+            margin-bottom: 0.5rem;
         }
 
-        .league-meta {
-            font-size: 0.9rem;
-            color: var(--text-secondary);
-        }
-
-        .action-buttons {
-            display: flex;
-            gap: 0.5rem;
-            flex-wrap: wrap;
+        button {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 1rem;
         }
 
         .stats-grid {
@@ -233,31 +107,12 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s ease;
-        }
-
-        .stat-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-        }
-
-        .stat-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow);
         }
 
         .stat-label {
             font-size: 0.85rem;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
 
@@ -268,11 +123,18 @@
             color: var(--accent-primary);
         }
 
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 2rem 0 1rem;
+            padding-left: 1rem;
+            border-left: 4px solid var(--accent-primary);
+        }
+
         .teams-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
             gap: 1.5rem;
-            margin-bottom: 2rem;
         }
 
         .team-card {
@@ -280,14 +142,11 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
-            animation: fadeIn 0.6s ease;
-            animation-fill-mode: both;
         }
 
         .team-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--border);
@@ -301,7 +160,6 @@
         .team-owner {
             font-size: 0.85rem;
             color: var(--text-secondary);
-            margin-top: 0.25rem;
         }
 
         .cap-space {
@@ -310,13 +168,8 @@
             font-size: 1.1rem;
         }
 
-        .cap-space.positive {
-            color: var(--accent-primary);
-        }
-
-        .cap-space.negative {
-            color: var(--accent-danger);
-        }
+        .cap-space.positive { color: var(--accent-primary); }
+        .cap-space.negative { color: var(--accent-danger); }
 
         .cap-bar {
             height: 8px;
@@ -329,50 +182,24 @@
         .cap-bar-fill {
             height: 100%;
             background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
-            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-            border-radius: 4px;
+            transition: width 0.3s ease;
         }
 
-        .cap-bar-fill.warning {
-            background: linear-gradient(90deg, #ffaa00, #ff6600);
-        }
-
-        .cap-bar-fill.danger {
-            background: linear-gradient(90deg, #ff3366, #ff0044);
-        }
+        .cap-bar-fill.warning { background: linear-gradient(90deg, #ffaa00, #ff6600); }
+        .cap-bar-fill.danger { background: linear-gradient(90deg, #ff3366, #ff0044); }
 
         .player-list {
             max-height: 400px;
             overflow-y: auto;
-            margin-top: 1rem;
         }
 
         .player-item {
             display: flex;
             justify-content: space-between;
-            align-items: center;
             padding: 0.75rem;
             margin-bottom: 0.5rem;
             background: var(--bg-secondary);
             border-radius: 6px;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-
-        .player-item:hover {
-            background: var(--border);
-            transform: translateX(4px);
-        }
-
-        .player-item.editing {
-            background: rgba(0, 255, 136, 0.1);
-            border: 2px solid var(--accent-primary);
-        }
-
-        .player-info {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
         }
 
         .player-name {
@@ -383,14 +210,6 @@
         .player-position {
             font-size: 0.8rem;
             color: var(--text-secondary);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .player-salary-info {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 0.25rem;
         }
 
         .player-salary {
@@ -402,24 +221,6 @@
         .keeper-cost {
             font-size: 0.75rem;
             color: var(--accent-warning);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-        }
-
-        .section-title::before {
-            content: '';
-            width: 4px;
-            height: 24px;
-            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
-            margin-right: 1rem;
-            border-radius: 2px;
         }
 
         .loading {
@@ -442,194 +243,6 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        .error {
-            background: rgba(255, 51, 102, 0.1);
-            border: 1px solid var(--accent-danger);
-            color: var(--accent-danger);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-        }
-
-        .success {
-            background: rgba(0, 255, 136, 0.1);
-            border: 1px solid var(--accent-primary);
-            color: var(--accent-primary);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-top: 1rem;
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: var(--bg-secondary);
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: var(--border);
-            border-radius: 4px;
-        }
-
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--accent-primary);
-        }
-
-        .file-upload {
-            border: 2px dashed var(--border);
-            padding: 2rem;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        .file-upload:hover {
-            border-color: var(--accent-primary);
-            background: rgba(0, 255, 136, 0.05);
-        }
-
-        .admin-toggle {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-        .admin-toggle:hover {
-            background: var(--border);
-        }
-
-        .edit-modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0, 0, 0, 0.8);
-            z-index: 2000;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .edit-modal.active {
-            display: flex;
-        }
-
-        .edit-modal-content {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 2rem;
-            max-width: 500px;
-            width: 90%;
-            box-shadow: var(--shadow);
-        }
-
-        .edit-modal h3 {
-            margin-bottom: 1.5rem;
-            color: var(--accent-primary);
-        }
-
-        .auto-refresh-indicator {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-family: 'JetBrains Mono', monospace;
-        }
-
-        .new-player-badge {
-            display: inline-block;
-            background: var(--accent-warning);
-            color: var(--bg-primary);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-left: 0.5rem;
-            text-transform: uppercase;
-        }
-
-        .transactions-panel {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 2rem;
-        }
-
-        .transaction-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            background: var(--bg-secondary);
-            border-radius: 8px;
-            border-left: 4px solid var(--accent-warning);
-        }
-
-        .transaction-info {
-            flex: 1;
-        }
-
-        .transaction-player {
-            font-weight: 600;
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .transaction-details {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-        }
-
-        .transaction-actions {
-            display: flex;
-            gap: 0.5rem;
-            align-items: center;
-        }
-
-        .quick-salary-input {
-            width: 80px;
-            padding: 0.5rem;
-            background: var(--bg-primary);
-            border: 2px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.9rem;
-            text-align: center;
-        }
-
-        .quick-salary-input:focus {
-            border-color: var(--accent-primary);
-            outline: none;
-        }
-
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.85rem;
-        }
-
-        .transaction-timestamp {
-            font-size: 0.75rem;
-            color: var(--text-secondary);
-            font-family: 'JetBrains Mono', monospace;
-            margin-top: 0.25rem;
-        }
     </style>
 </head>
 <body>
@@ -641,49 +254,16 @@
             <p class="subtitle">Boom Boom Room • $200 Salary Cap • Keeper Dynasty League</p>
         </header>
 
-        <div id="adminSetup" class="setup-section" style="display: none;">
-            <h2 class="section-title">⚙️ Initial Setup (Commissioner Only)</h2>
-            <p class="help-text" style="margin-bottom: 1.5rem;">Set up your league once. After this, anyone can view the salary dashboard without logging in!</p>
-
-            <div class="input-group">
-                <label>Sleeper League ID</label>
-                <input type="text" id="adminLeagueId" placeholder="e.g., your league ID">
-                <p class="help-text">Find your League ID in your Sleeper league URL</p>
-            </div>
-
-            <div class="input-group">
-                <label>Import Keeper Salaries (CSV)</label>
-                <div class="file-upload" onclick="document.getElementById('adminCsvFile').click()">
-                    <p>Click to upload CSV</p>
-                </div>
-                <input type="file" id="adminCsvFile" accept=".csv" style="display: none;" onchange="handleAdminFileUpload(event)">
-                <p class="help-text" id="adminFileName" style="margin-top: 0.5rem;"></p>
-            </div>
-
-            <button onclick="setupLeague()">Setup League</button>
-            <div id="adminError" style="display: none;" class="error"></div>
-            <div id="adminSuccess" style="display: none;" class="success"></div>
-        </div>
-
-        <div id="loading" class="loading" style="display: none;">
+        <div id="loading" class="loading">
             <div class="spinner"></div>
-            <p id="loadingText">Loading league data...</p>
+            <p>Loading league data...</p>
         </div>
 
         <div id="dashboard" class="dashboard">
             <div class="league-info">
-                <div>
-                    <h2 id="leagueName">League Name</h2>
-                    <div class="league-meta">
-                        <span id="leagueSeason">2024</span> • 
-                        <span id="leagueSize">Teams</span>
-                    </div>
-                    <div class="auto-refresh-indicator" id="autoRefreshStatus">Auto-refresh: ON (every 5 min)</div>
-                </div>
-                <div class="action-buttons">
-                    <button class="btn-secondary" onclick="loadPublicData()">🔄 Refresh Now</button>
-                    <button class="btn-secondary" id="commissionerModeBtn" onclick="toggleCommissionerMode()" style="display: none;">✏️ Edit Mode: OFF</button>
-                </div>
+                <h2 id="leagueName">League Name</h2>
+                <div><span id="leagueSeason">2024</span> • <span id="leagueSize">Teams</span></div>
+                <button onclick="loadPublicData()">🔄 Refresh</button>
             </div>
 
             <div class="stats-grid">
@@ -701,14 +281,8 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-label">League Cap</div>
-                    <div class="stat-value" id="salaryCap">$200</div>
+                    <div class="stat-value">$200</div>
                 </div>
-            </div>
-
-            <h2 class="section-title">Recent Transactions</h2>
-            <div id="transactionsPanel" class="transactions-panel" style="display: none;">
-                <p class="help-text" style="margin-bottom: 1rem;">Recent adds that need salary assignment</p>
-                <div id="transactionsList"></div>
             </div>
 
             <h2 class="section-title">Team Salary Caps</h2>
@@ -716,36 +290,8 @@
         </div>
     </div>
 
-    <div class="admin-toggle" onclick="toggleAdmin()" id="adminToggle" style="display: none;">
-        🔧 Admin
-    </div>
-
-    <div class="edit-modal" id="editModal">
-        <div class="edit-modal-content">
-            <h3>Edit Player Salary</h3>
-            <div class="input-group">
-                <label>Player Name</label>
-                <input type="text" id="editPlayerName" readonly style="opacity: 0.6;">
-            </div>
-            <div class="input-group">
-                <label>Current Salary</label>
-                <input type="number" id="editPlayerSalary" min="1" max="200">
-            </div>
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                <button onclick="savePlayerSalary()">Save</button>
-                <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
-            </div>
-            <div id="editError" style="display: none;" class="error"></div>
-        </div>
-    </div>
-
     <script>
-        let csvData = null;
-        let SALARY_CAP = 200;
-        let leagueId = null;
-        let commissionerMode = false;
-        let autoRefreshInterval = null;
-        let editingPlayer = null;
+        const SALARY_CAP = 200;
 
         function getKeeperEscalation(salary) {
             if (salary >= 1 && salary <= 5) return 2;
@@ -759,249 +305,33 @@
             return 0;
         }
 
-        function handleAdminFileUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            document.getElementById('adminFileName').textContent = `Selected: ${file.name}`;
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                parseCSV(text);
-            };
-            reader.readAsText(file);
-        }
-
-        function parseCSV(text) {
-            const lines = text.split('\n');
-            csvData = {};
-            
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                
-                const values = lines[i].split(',').map(v => v.trim());
-                const player = values[1];
-                const salary = parseInt(values[3]);
-                
-                if (player && !isNaN(salary)) {
-                    csvData[player.toLowerCase()] = salary;
-                }
-            }
-            
-            showAdminSuccess(`Loaded ${Object.keys(csvData).length} player salaries from CSV`);
-        }
-
-        async function setupLeague() {
-            const leagueIdInput = document.getElementById('adminLeagueId').value.trim();
-
-            if (!leagueIdInput) {
-                showAdminError('Please enter a League ID');
-                return;
-            }
-
-            if (!csvData) {
-                showAdminError('Please upload a CSV file with player salaries');
-                return;
-            }
-
-            document.getElementById('adminError').style.display = 'none';
-            document.getElementById('adminSuccess').style.display = 'none';
-
-            try {
-                showAdminSuccess('Setting up league... This may take a minute.');
-
-                const response = await fetch('/api/sync-league', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ leagueId: leagueIdInput, csvData })
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.error || 'Failed to setup league');
-                }
-
-                showAdminSuccess(`✅ Success! Imported ${result.playersImported} players. Reloading...`);
-                
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-
-            } catch (error) {
-                showAdminError(`Error: ${error.message}`);
-            }
-        }
-
-        function startAutoRefresh() {
-            // Auto-refresh every 5 minutes
-            autoRefreshInterval = setInterval(() => {
-                loadPublicData(true); // Silent refresh
-            }, 5 * 60 * 1000);
-        }
-
-        function stopAutoRefresh() {
-            if (autoRefreshInterval) {
-                clearInterval(autoRefreshInterval);
-                autoRefreshInterval = null;
-            }
-        }
-
-        async function loadPublicData(silent = false) {
-            if (!silent) {
-                document.getElementById('loading').style.display = 'block';
-                document.getElementById('dashboard').classList.remove('active');
-            }
+        async function loadPublicData() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('dashboard').classList.remove('active');
 
             try {
                 const response = await fetch('/api/get-public-data');
                 const data = await response.json();
 
                 if (!response.ok) {
-                    if (data.needsSetup) {
-                        document.getElementById('loading').style.display = 'none';
-                        document.getElementById('adminSetup').style.display = 'block';
-                        document.getElementById('adminToggle').style.display = 'block';
-                        return;
-                    }
                     throw new Error(data.error || 'Failed to load data');
                 }
 
-                if (!silent) {
-                    document.getElementById('loading').style.display = 'none';
-                }
-                
+                document.getElementById('loading').style.display = 'none';
                 displayDashboard(data);
-                
-                // Start auto-refresh on first successful load
-                if (!autoRefreshInterval) {
-                    startAutoRefresh();
-                }
 
             } catch (error) {
-                if (!silent) {
-                    document.getElementById('loading').style.display = 'none';
-                    alert('Error loading league data: ' + error.message);
-                }
-            }
-        }
-
-        function toggleCommissionerMode() {
-            commissionerMode = !commissionerMode;
-            const btn = document.getElementById('commissionerModeBtn');
-            btn.textContent = commissionerMode ? '✏️ Edit Mode: ON' : '✏️ Edit Mode: OFF';
-            btn.style.background = commissionerMode ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' : '';
-            btn.style.color = commissionerMode ? 'var(--bg-primary)' : '';
-            
-            // Reload to show/hide edit buttons
-            loadPublicData(true);
-        }
-
-        function editPlayerSalary(playerId, playerName, currentSalary) {
-            if (!commissionerMode) return;
-            
-            editingPlayer = { playerId, leagueId };
-            document.getElementById('editPlayerName').value = playerName;
-            document.getElementById('editPlayerSalary').value = currentSalary;
-            document.getElementById('editModal').classList.add('active');
-        }
-
-        function closeEditModal() {
-            document.getElementById('editModal').classList.remove('active');
-            editingPlayer = null;
-        }
-
-        async function savePlayerSalary() {
-            const newSalary = parseInt(document.getElementById('editPlayerSalary').value);
-            
-            if (!newSalary || newSalary < 1 || newSalary > 200) {
-                document.getElementById('editError').textContent = 'Salary must be between $1 and $200';
-                document.getElementById('editError').style.display = 'block';
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/update-salary', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        playerId: editingPlayer.playerId,
-                        newSalary: newSalary,
-                        leagueId: editingPlayer.leagueId
-                    })
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.error || 'Failed to update salary');
-                }
-
-                closeEditModal();
-                loadPublicData(true); // Refresh data
-
-            } catch (error) {
-                document.getElementById('editError').textContent = error.message;
-                document.getElementById('editError').style.display = 'block';
-            }
-        }
-
-        async function quickSetSalary(playerId, playerName, teamName) {
-            const inputId = `salary-input-${playerId}`;
-            const salary = parseInt(document.getElementById(inputId).value);
-            
-            if (!salary || salary < 1 || salary > 200) {
-                alert('Salary must be between $1 and $200');
-                return;
-            }
-
-            try {
-                const response = await fetch('/api/update-salary', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        playerId: playerId,
-                        newSalary: salary,
-                        leagueId: leagueId
-                    })
-                });
-
-                const result = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(result.error || 'Failed to update salary');
-                }
-
-                // Remove the transaction from the list
-                const item = document.getElementById(`transaction-${playerId}`);
-                if (item) {
-                    item.style.opacity = '0';
-                    setTimeout(() => item.remove(), 300);
-                }
-
-                // Refresh dashboard silently
-                loadPublicData(true);
-
-            } catch (error) {
-                alert('Error updating salary: ' + error.message);
+                document.getElementById('loading').style.display = 'none';
+                alert('Error loading league data: ' + error.message);
             }
         }
 
         function displayDashboard(data) {
-            const dashboard = document.getElementById('dashboard');
-            dashboard.classList.add('active');
-
-            SALARY_CAP = data.config.salaryCap;
-            leagueId = data.league.league_id;
-
-            // Show commissioner button
-            document.getElementById('commissionerModeBtn').style.display = 'block';
+            document.getElementById('dashboard').classList.add('active');
 
             document.getElementById('leagueName').textContent = data.league.name;
             document.getElementById('leagueSeason').textContent = `Season ${data.league.season}`;
             document.getElementById('leagueSize').textContent = `${data.league.total_rosters} Teams`;
-            document.getElementById('salaryCap').textContent = `$${SALARY_CAP}`;
 
             const teams = data.rosters.map(roster => {
                 const user = data.users.find(u => u.user_id === roster.owner_id);
@@ -1013,22 +343,19 @@
                     if (!player) return null;
 
                     const salaryData = data.salaries[playerId];
-                    const salary = salaryData ? salaryData.salary : 1;
-                    const isNew = !salaryData || salary === 1; // New player if not in DB or default $1
+                    const salary = salaryData ? salaryData.salary : 10;
                     const escalation = getKeeperEscalation(salary);
                     const keeperCost = salary + escalation;
 
                     return {
-                        id: playerId,
                         name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Unknown',
                         position: player.position || 'N/A',
                         team: player.team || 'FA',
                         salary: salary,
                         keeperCost: keeperCost,
-                        escalation: escalation,
-                        isNew: isNew
+                        escalation: escalation
                     };
-                }).filter(p => p !== null);
+                }).filter(p => p !== null).sort((a, b) => b.salary - a.salary);
 
                 const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
                 const capSpace = SALARY_CAP - totalSalary;
@@ -1050,13 +377,10 @@
             const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
             document.getElementById('totalPlayers').textContent = totalPlayers;
 
-            // Display recent transactions with new players
-            displayRecentTransactions(data, teams);
-
             const teamsGrid = document.getElementById('teamsGrid');
             teamsGrid.innerHTML = '';
 
-            teams.forEach((team, idx) => {
+            teams.forEach(team => {
                 const capPercentage = (team.totalSalary / SALARY_CAP) * 100;
                 let barClass = '';
                 if (capPercentage > 95) barClass = 'danger';
@@ -1064,8 +388,6 @@
 
                 const teamCard = document.createElement('div');
                 teamCard.className = 'team-card';
-                teamCard.style.animationDelay = `${idx * 0.1}s`;
-
                 teamCard.innerHTML = `
                     <div class="team-header">
                         <div>
@@ -1080,114 +402,29 @@
                         <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
                     </div>
                     <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                        Total Salary: $${team.totalSalary} / $${SALARY_CAP}
+                        Total: $${team.totalSalary} / $${SALARY_CAP}
                     </div>
                     <div class="player-list">
-                        ${team.players.slice(0, 12).map(player => `
-                            <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
-                                 style="${commissionerMode ? 'cursor: pointer;' : ''}">
-                                <div class="player-info">
-                                    <div class="player-name">
-                                        ${player.name}
-                                        ${player.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
-                                    </div>
-                                    <div class="player-position">${player.position} • ${player.team}</div>
+                        ${team.players.map(p => `
+                            <div class="player-item">
+                                <div>
+                                    <div class="player-name">${p.name}</div>
+                                    <div class="player-position">${p.position} • ${p.team}</div>
                                 </div>
-                                <div class="player-salary-info">
-                                    <div class="player-salary">$${player.salary}</div>
-                                    <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
+                                <div style="text-align: right;">
+                                    <div class="player-salary">$${p.salary}</div>
+                                    <div class="keeper-cost">Next: $${p.keeperCost}</div>
                                 </div>
                             </div>
                         `).join('')}
-                        ${team.players.length > 12 ? `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">+${team.players.length - 12} more players</div>` : ''}
                     </div>
                 `;
-
                 teamsGrid.appendChild(teamCard);
             });
         }
 
-        function displayRecentTransactions(data, teams) {
-            // Find all players with $1 salary (new pickups)
-            const newPlayers = [];
-            
-            teams.forEach(team => {
-                team.players.forEach(player => {
-                    if (player.salary === 1 && player.isNew) {
-                        newPlayers.push({
-                            ...player,
-                            teamName: team.name
-                        });
-                    }
-                });
-            });
-
-            const transactionsPanel = document.getElementById('transactionsPanel');
-            const transactionsList = document.getElementById('transactionsList');
-
-            if (newPlayers.length === 0) {
-                transactionsPanel.style.display = 'none';
-                return;
-            }
-
-            transactionsPanel.style.display = 'block';
-            
-            transactionsList.innerHTML = newPlayers.map(player => `
-                <div class="transaction-item" id="transaction-${player.id}" style="transition: opacity 0.3s;">
-                    <div class="transaction-info">
-                        <div class="transaction-player">
-                            ${player.name} <span class="new-player-badge">NEW PICKUP</span>
-                        </div>
-                        <div class="transaction-details">
-                            ${player.position} • ${player.team} → Added to ${player.teamName}
-                        </div>
-                    </div>
-                    <div class="transaction-actions">
-                        <span style="font-size: 0.9rem; color: var(--text-secondary); margin-right: 0.5rem;">$</span>
-                        <input 
-                            type="number" 
-                            id="salary-input-${player.id}" 
-                            class="quick-salary-input" 
-                            placeholder="0" 
-                            min="1" 
-                            max="200"
-                        >
-                        <button class="btn-small" onclick="quickSetSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', '${player.teamName.replace(/'/g, "\\'")}')">
-                            Set Salary
-                        </button>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function toggleAdmin() {
-            const adminSetup = document.getElementById('adminSetup');
-            if (adminSetup.style.display === 'none') {
-                adminSetup.style.display = 'block';
-            } else {
-                adminSetup.style.display = 'none';
-            }
-        }
-
-        function showAdminError(message) {
-            const errorDiv = document.getElementById('adminError');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-        }
-
-        function showAdminSuccess(message) {
-            const successDiv = document.getElementById('adminSuccess');
-            successDiv.textContent = message;
-            successDiv.style.display = 'block';
-        }
-
         window.addEventListener('DOMContentLoaded', () => {
             loadPublicData();
-        });
-
-        // Cleanup on page unload
-        window.addEventListener('beforeunload', () => {
-            stopAutoRefresh();
         });
     </script>
 </body>
