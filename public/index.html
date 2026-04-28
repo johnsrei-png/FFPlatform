@@ -490,6 +490,52 @@
             font-size: 0.9375rem;
         }
 
+        .player-item {
+            cursor: pointer;
+        }
+
+        .player-item.selected {
+            background: rgba(220, 38, 38, 0.1);
+            border: 2px solid var(--accent-danger);
+        }
+
+        .cap-preview {
+            display: none;
+            background: rgba(37, 99, 235, 0.95);
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-top: 0.5rem;
+            font-size: 0.875rem;
+            animation: slideIn 0.3s ease;
+        }
+
+        .cap-preview.active {
+            display: block;
+        }
+
+        .cap-preview-label {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .cap-preview-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             .container {
@@ -880,6 +926,7 @@
 
                 const teamCard = document.createElement('div');
                 teamCard.className = 'team-card';
+                teamCard.setAttribute('data-roster-id', team.rosterId);
                 teamCard.innerHTML = `
                     <div class="team-header">
                         <div>
@@ -896,10 +943,16 @@
                     <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
                         Total: $${team.totalSalary} / $${SALARY_CAP}
                     </div>
+                    <div class="cap-preview" id="cap-preview-${team.rosterId}">
+                        <div class="cap-preview-label">If you drop this player:</div>
+                        <div class="cap-preview-value" id="preview-value-${team.rosterId}"></div>
+                    </div>
                     <div class="player-list">
                         ${team.players.map(p => `
-                            <div class="player-item ${commissionerMode ? 'clickable' : ''}" 
-                                 ${commissionerMode ? `onclick="editPlayerSalary('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.salary})"` : ''}>
+                            <div class="player-item" 
+                                 data-player-id="${p.id}"
+                                 data-salary="${p.salary}"
+                                 onclick="${commissionerMode ? `editPlayerSalary('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.salary})` : `simulatePlayerDrop(${team.rosterId}, '${p.id}', ${p.salary}, '${p.name.replace(/'/g, "\\'")}')`}">
                                 <div>
                                     <div class="player-name">
                                         ${p.name}
@@ -985,6 +1038,42 @@
                 document.getElementById('editError').textContent = error.message;
                 document.getElementById('editError').style.display = 'block';
             }
+        }
+
+        let selectedPlayer = null;
+
+        function simulatePlayerDrop(rosterId, playerId, salary, playerName) {
+            if (commissionerMode) return; // In commissioner mode, use edit instead
+
+            const teamCard = document.querySelector(`[data-roster-id="${rosterId}"]`);
+            const playerItem = teamCard.querySelector(`[data-player-id="${playerId}"]`);
+            const capPreview = document.getElementById(`cap-preview-${rosterId}`);
+            const previewValue = document.getElementById(`preview-value-${rosterId}`);
+            const currentCapSpace = parseFloat(teamCard.querySelector('.cap-space').textContent.replace('$', ''));
+
+            // If clicking the same player again, deselect
+            if (selectedPlayer && selectedPlayer.playerId === playerId) {
+                playerItem.classList.remove('selected');
+                capPreview.classList.remove('active');
+                selectedPlayer = null;
+                return;
+            }
+
+            // Clear previous selection
+            if (selectedPlayer) {
+                const prevItem = document.querySelector(`[data-player-id="${selectedPlayer.playerId}"]`);
+                if (prevItem) prevItem.classList.remove('selected');
+                const prevPreview = document.getElementById(`cap-preview-${selectedPlayer.rosterId}`);
+                if (prevPreview) prevPreview.classList.remove('active');
+            }
+
+            // Select new player
+            selectedPlayer = { rosterId, playerId, salary };
+            playerItem.classList.add('selected');
+            
+            const newCapSpace = currentCapSpace + salary;
+            previewValue.textContent = `Cap Space: $${newCapSpace} (+$${salary})`;
+            capPreview.classList.add('active');
         }
 
         function filterPlayers() {
