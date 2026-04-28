@@ -361,6 +361,83 @@
             background: rgba(0, 255, 136, 0.1);
         }
 
+        .transactions-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .transaction-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            margin-bottom: 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            border-left: 4px solid var(--accent-warning);
+            transition: opacity 0.3s;
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-player {
+            font-weight: 600;
+            font-size: 0.9375rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .transaction-details {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .transaction-actions {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .quick-salary-input {
+            width: 80px;
+            padding: 0.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            text-align: center;
+        }
+
+        .quick-salary-input:focus {
+            border-color: var(--accent-primary);
+            outline: none;
+        }
+
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
+        .new-player-badge {
+            display: inline-block;
+            background: var(--accent-warning);
+            color: white;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            text-transform: uppercase;
+        }
+
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             .container {
@@ -521,6 +598,32 @@
             .section-title {
                 font-size: 1rem;
             }
+
+            .transactions-panel {
+                padding: 1rem;
+            }
+
+            .transaction-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+                padding: 0.875rem;
+            }
+
+            .transaction-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .quick-salary-input {
+                flex: 1;
+                max-width: 100px;
+            }
+
+            .new-player-badge {
+                font-size: 0.6875rem;
+                padding: 0.125rem 0.375rem;
+            }
         }
     </style>
 </head>
@@ -567,6 +670,12 @@
                     <div class="stat-label">League Cap</div>
                     <div class="stat-value">$200</div>
                 </div>
+            </div>
+
+            <h2 class="section-title">Recent Transactions</h2>
+            <div id="transactionsPanel" class="transactions-panel" style="display: none;">
+                <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1rem;">Recent adds that need salary assignment</p>
+                <div id="transactionsList"></div>
             </div>
 
             <h2 class="section-title">Team Salary Caps</h2>
@@ -651,17 +760,21 @@
                     if (!player) return null;
 
                     const salaryData = data.salaries[playerId];
-                    const salary = salaryData ? salaryData.salary : 10;
+                    const salary = salaryData ? salaryData.salary : 1;
+                    const isNew = !salaryData || salary === 1;
                     const escalation = getKeeperEscalation(salary);
                     const keeperCost = salary + escalation;
 
                     return {
+                        id: playerId,
                         name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Unknown',
                         position: player.position || 'N/A',
                         team: player.team || 'FA',
                         salary: salary,
                         keeperCost: keeperCost,
-                        escalation: escalation
+                        escalation: escalation,
+                        isNew: isNew,
+                        teamName: teamName
                     };
                 }).filter(p => p !== null).sort((a, b) => b.salary - a.salary);
 
@@ -669,6 +782,7 @@
                 const capSpace = SALARY_CAP - totalSalary;
 
                 return {
+                    rosterId: roster.roster_id,
                     name: teamName,
                     owner: ownerName,
                     players: players,
@@ -684,6 +798,9 @@
             document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
             const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
             document.getElementById('totalPlayers').textContent = totalPlayers;
+
+            // Display recent transactions
+            displayRecentTransactions(teams);
 
             const teamsGrid = document.getElementById('teamsGrid');
             teamsGrid.innerHTML = '';
@@ -714,9 +831,13 @@
                     </div>
                     <div class="player-list">
                         ${team.players.map(p => `
-                            <div class="player-item">
+                            <div class="player-item ${commissionerMode ? 'clickable' : ''}" 
+                                 ${commissionerMode ? `onclick="editPlayerSalary('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.salary})"` : ''}>
                                 <div>
-                                    <div class="player-name">${p.name}</div>
+                                    <div class="player-name">
+                                        ${p.name}
+                                        ${p.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
+                                    </div>
                                     <div class="player-position">${p.position} • ${p.team}</div>
                                 </div>
                                 <div style="text-align: right;">
@@ -796,6 +917,100 @@
             } catch (error) {
                 document.getElementById('editError').textContent = error.message;
                 document.getElementById('editError').style.display = 'block';
+            }
+        }
+
+        function displayRecentTransactions(teams) {
+            const newPlayers = [];
+            
+            teams.forEach(team => {
+                team.players.forEach(player => {
+                    if (player.salary === 1 && player.isNew) {
+                        newPlayers.push(player);
+                    }
+                });
+            });
+
+            const transactionsPanel = document.getElementById('transactionsPanel');
+            const transactionsList = document.getElementById('transactionsList');
+
+            if (newPlayers.length === 0) {
+                transactionsPanel.style.display = 'none';
+                return;
+            }
+
+            transactionsPanel.style.display = 'block';
+            
+            transactionsList.innerHTML = newPlayers.map(player => `
+                <div class="transaction-item" id="transaction-${player.id}">
+                    <div class="transaction-info">
+                        <div class="transaction-player">
+                            ${player.name} <span class="new-player-badge">NEW PICKUP</span>
+                        </div>
+                        <div class="transaction-details">
+                            ${player.position} • ${player.team} → Added to ${player.teamName}
+                        </div>
+                    </div>
+                    ${commissionerMode ? `
+                        <div class="transaction-actions">
+                            <span style="font-size: 0.9rem; color: var(--text-secondary); margin-right: 0.5rem;">$</span>
+                            <input 
+                                type="number" 
+                                id="salary-input-${player.id}" 
+                                class="quick-salary-input" 
+                                placeholder="0" 
+                                min="1" 
+                                max="200"
+                            >
+                            <button class="btn-small" onclick="quickSetSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', '${player.teamName.replace(/'/g, "\\'")}')">
+                                Set Salary
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="transaction-actions">
+                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic;">Pending salary assignment</span>
+                        </div>
+                    `}
+                </div>
+            `).join('');
+        }
+
+        async function quickSetSalary(playerId, playerName, teamName) {
+            const inputId = `salary-input-${playerId}`;
+            const salary = parseInt(document.getElementById(inputId).value);
+            
+            if (!salary || salary < 1 || salary > 200) {
+                alert('Salary must be between $1 and $200');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/update-salary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        playerId: playerId,
+                        newSalary: salary,
+                        leagueId: leagueId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to update salary');
+                }
+
+                const item = document.getElementById(`transaction-${playerId}`);
+                if (item) {
+                    item.style.opacity = '0';
+                    setTimeout(() => item.remove(), 300);
+                }
+
+                loadPublicData();
+
+            } catch (error) {
+                alert('Error updating salary: ' + error.message);
             }
         }
 
