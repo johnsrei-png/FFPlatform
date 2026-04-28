@@ -175,9 +175,8 @@ exports.handler = async function(event, context) {
         league,
         rosters,
         users,
-        players: rosterPlayers, // ONLY roster players, not all 8000+ NFL players
-        salaries: salaryMap,
-        teamBackgrounds: backgroundsMap
+        players: rosterPlayers,
+        salaries: salaryMap
       })
     };
 
