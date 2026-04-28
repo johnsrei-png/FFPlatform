@@ -1,7 +1,5 @@
 const fetch = require('node-fetch');
 
-const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
-
 function getSupabaseClient(useServiceKey = false) {
   const supabaseUrl = process.env.SUPABASE_URL;
   const supabaseKey = useServiceKey ? process.env.SUPABASE_SERVICE_KEY : process.env.SUPABASE_ANON_KEY;
@@ -40,77 +38,56 @@ function getSupabaseClient(useServiceKey = false) {
   };
 }
 
-exports.handler = async (event, context) => {
-  const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET, OPTIONS',
-    'Content-Type': 'application/json'
-  };
-
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
+exports.handler = async function(event, context) {
+  // Only allow GET requests
+  if (event.httpMethod !== 'GET') {
+    return {
+      statusCode: 405,
+      body: JSON.stringify({ error: 'Method not allowed' })
+    };
   }
 
   try {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseClient(); // Read with anon key
 
     // Get league config
     const leagueConfigs = await supabase.query('league_config', 'GET', null, '?select=*&limit=1');
-    
+
     if (!leagueConfigs || leagueConfigs.length === 0) {
       return {
-        statusCode: 404,
-        headers,
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          error: 'No league configured yet',
-          needsSetup: true 
+          needsSetup: true,
+          error: 'No league configured yet'
         })
       };
     }
 
-    const leagueConfig = leagueConfigs[0];
-    const leagueId = leagueConfig.league_id;
+    const config = leagueConfigs[0];
+    const leagueId = config.league_id;
 
-    // Get fresh data from Sleeper
-    const [leagueResponse, rostersResponse, usersResponse] = await Promise.all([
-      fetch(`${SLEEPER_API_BASE}/league/${leagueId}`),
-      fetch(`${SLEEPER_API_BASE}/league/${leagueId}/rosters`),
-      fetch(`${SLEEPER_API_BASE}/league/${leagueId}/users`)
+    // Fetch from Sleeper API
+    const [leagueResponse, rostersResponse, usersResponse, playersResponse] = await Promise.all([
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}`),
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
+      fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
+      fetch('https://api.sleeper.app/v1/players/nfl')
     ]);
 
-    const [league, rosters, users] = await Promise.all([
-      leagueResponse.json(),
-      rostersResponse.json(),
-      usersResponse.json()
-    ]);
+    const league = await leagueResponse.json();
+    const rosters = await rostersResponse.json();
+    const users = await usersResponse.json();
+    const allPlayers = await playersResponse.json();
 
-    // Get unique player IDs from rosters FIRST
-    const playerIds = new Set();
+    // Get all player IDs currently on rosters
+    const activePlayerIds = new Set();
     rosters.forEach(roster => {
-      if (roster.players) {
-        roster.players.forEach(pid => playerIds.add(pid));
-      }
+      (roster.players || []).forEach(pid => activePlayerIds.add(pid));
     });
 
-    // Fetch players
-    const allPlayersResponse = await fetch(`${SLEEPER_API_BASE}/players/nfl`);
-    const allPlayers = await allPlayersResponse.json();
-    
-    const leaguePlayers = {};
-    playerIds.forEach(pid => {
-      if (allPlayers[pid]) {
-        leaguePlayers[pid] = allPlayers[pid];
-      }
-    });
-
-    // Get player salaries from database
-    const playerSalaries = await supabase.query(
-      'player_salaries',
-      'GET',
-      null,
-      '?league_id=eq.' + leagueId + '&select=*'
-    );
+    // Get existing player salaries from database
+    const playerSalaries = await supabase.query('player_salaries', 'GET', null, `?league_id=eq.${leagueId}&select=*`);
 
     // Create salary lookup
     const salaryMap = {};
@@ -122,9 +99,9 @@ exports.handler = async (event, context) => {
       };
     });
 
-    // Check for new players and auto-assign default salary
+    // Find players to ADD (on roster but not in DB)
     const newPlayers = [];
-    playerIds.forEach(pid => {
+    activePlayerIds.forEach(pid => {
       if (!salaryMap[pid]) {
         newPlayers.push({
           league_id: leagueId,
@@ -132,7 +109,7 @@ exports.handler = async (event, context) => {
           player_name: allPlayers[pid] ? `${allPlayers[pid].first_name || ''} ${allPlayers[pid].last_name || ''}`.trim() : 'Unknown',
           position: allPlayers[pid]?.position || 'N/A',
           team: allPlayers[pid]?.team || 'FA',
-          current_salary: 1,
+          current_salary: 1, // Default $1 for new pickups
           is_keeper: false,
           years_kept: 0
         });
@@ -144,52 +121,65 @@ exports.handler = async (event, context) => {
       }
     });
 
-    // Insert new players into database
+    // Find players to REMOVE (in DB but not on any roster)
+    const droppedPlayerIds = [];
+    playerSalaries.forEach(ps => {
+      if (!activePlayerIds.has(ps.player_id)) {
+        droppedPlayerIds.push(ps.player_id);
+      }
+    });
+
+    // Use service key client for write operations
+    const writeClient = getSupabaseClient(true);
+
+    // Insert new players
     if (newPlayers.length > 0) {
-      const writeClient = getSupabaseClient(true);
       await writeClient.query('player_salaries', 'POST', newPlayers);
+      console.log(`Added ${newPlayers.length} new players`);
     }
 
-    // Fetch transactions
-    const currentWeek = Math.min(league.settings.playoff_week_start - 1, 18);
-    const transactionsPromises = [];
-    
-    for (let week = Math.max(1, currentWeek - 2); week <= currentWeek; week++) {
-      transactionsPromises.push(
-        fetch(`${SLEEPER_API_BASE}/league/${leagueId}/transactions/${week}`)
-          .then(r => r.ok ? r.json() : [])
-          .catch(() => [])
-      );
+    // Delete dropped players
+    if (droppedPlayerIds.length > 0) {
+      // Supabase doesn't support IN queries easily, so delete one at a time
+      for (const playerId of droppedPlayerIds) {
+        await writeClient.query(
+          'player_salaries',
+          'DELETE',
+          null,
+          `?league_id=eq.${leagueId}&player_id=eq.${playerId}`
+        );
+      }
+      console.log(`Removed ${droppedPlayerIds.length} dropped players`);
     }
 
-    const transactionsArrays = await Promise.all(transactionsPromises);
-    const transactions = transactionsArrays.flat().slice(0, 20);
-
+    // Return combined data
     return {
       statusCode: 200,
-      headers,
+      headers: { 
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache'
+      },
       body: JSON.stringify({
+        config: {
+          salaryCap: config.salary_cap,
+          lastSync: config.last_sync
+        },
         league,
         rosters,
         users,
-        players: leaguePlayers,
-        transactions,
-        salaries: salaryMap,
-        config: {
-          salaryCap: leagueConfig.salary_cap,
-          lastSync: leagueConfig.last_sync
-        }
+        players: allPlayers,
+        salaries: salaryMap
       })
     };
 
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error in get-public-data:', error);
     return {
       statusCode: 500,
-      headers,
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ 
-        error: 'Failed to fetch league data',
-        message: error.message 
+        error: 'Failed to load league data',
+        details: error.message 
       })
     };
   }
