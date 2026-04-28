@@ -152,6 +152,14 @@ exports.handler = async function(event, context) {
       console.log(`Removed ${droppedPlayerIds.length} dropped players`);
     }
 
+    // CRITICAL FIX: Only return players that are on rosters (not entire NFL database)
+    const rosterPlayers = {};
+    activePlayerIds.forEach(pid => {
+      if (allPlayers[pid]) {
+        rosterPlayers[pid] = allPlayers[pid];
+      }
+    });
+
     // Return combined data
     return {
       statusCode: 200,
@@ -167,7 +175,7 @@ exports.handler = async function(event, context) {
         league,
         rosters,
         users,
-        players: allPlayers,
+        players: rosterPlayers, // ONLY roster players, not all 8000+ NFL players
         salaries: salaryMap
       })
     };
