@@ -17,4 +17,823 @@
             --bg-secondary: #141925;
             --bg-card: #1a2030;
             --accent-primary: #00ff88;
-            --
+            --accent-secondary: #0088ff;
+            --accent-danger: #ff3366;
+            --accent-warning: #ffaa00;
+            --text-primary: #ffffff;
+            --text-secondary: #8b96a8;
+            --border: #2a3444;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .bg-grain {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 136, 255, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            animation: slideDown 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        .setup-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--accent-primary);
+        }
+
+        .help-text {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        input[type="text"], input[type="number"], input[type="file"] {
+            width: 100%;
+            padding: 1rem;
+            background: var(--bg-secondary);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+            box-shadow: 0 0 0 3px rgba(0, 255, 136, 0.1);
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+            color: var(--bg-primary);
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 255, 136, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            box-shadow: none;
+        }
+
+        .dashboard {
+            display: none;
+        }
+
+        .dashboard.active {
+            display: block;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .league-info {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .league-info h2 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .league-meta {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent-primary);
+        }
+
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .team-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            animation: fadeIn 0.6s ease;
+            animation-fill-mode: both;
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .team-name {
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .team-owner {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin-top: 0.25rem;
+        }
+
+        .cap-space {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .cap-space.positive {
+            color: var(--accent-primary);
+        }
+
+        .cap-space.negative {
+            color: var(--accent-danger);
+        }
+
+        .cap-bar {
+            height: 8px;
+            background: var(--bg-secondary);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .cap-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: 4px;
+        }
+
+        .cap-bar-fill.warning {
+            background: linear-gradient(90deg, #ffaa00, #ff6600);
+        }
+
+        .cap-bar-fill.danger {
+            background: linear-gradient(90deg, #ff3366, #ff0044);
+        }
+
+        .player-list {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 1rem;
+        }
+
+        .player-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .player-item:hover {
+            background: var(--border);
+            transform: translateX(4px);
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .player-position {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .player-salary-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 0.25rem;
+        }
+
+        .player-salary {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .keeper-cost {
+            font-size: 0.75rem;
+            color: var(--accent-warning);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .section-title::before {
+            content: '';
+            width: 4px;
+            height: 24px;
+            background: linear-gradient(180deg, var(--accent-primary), var(--accent-secondary));
+            margin-right: 1rem;
+            border-radius: 2px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--accent-primary);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: rgba(255, 51, 102, 0.1);
+            border: 1px solid var(--accent-danger);
+            color: var(--accent-danger);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .success {
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid var(--accent-primary);
+            color: var(--accent-primary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-primary);
+        }
+
+        .file-upload {
+            border: 2px dashed var(--border);
+            padding: 2rem;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: var(--accent-primary);
+            background: rgba(0, 255, 136, 0.05);
+        }
+
+        .admin-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .admin-toggle:hover {
+            background: var(--border);
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grain"></div>
+    
+    <div class="container">
+        <header>
+            <h1>BBR Fantasy Salary Manager</h1>
+            <p class="subtitle">Boom Boom Room • $200 Salary Cap • Keeper Dynasty League</p>
+        </header>
+
+        <div id="adminSetup" class="setup-section" style="display: none;">
+            <h2 class="section-title">⚙️ Initial Setup (Commissioner Only)</h2>
+            <p class="help-text" style="margin-bottom: 1.5rem;">Set up your league once. After this, anyone can view the salary dashboard without logging in!</p>
+
+            <div class="input-group">
+                <label>Sleeper League ID</label>
+                <input type="text" id="adminLeagueId" placeholder="e.g., your league ID">
+                <p class="help-text">Find your League ID in your Sleeper league URL</p>
+            </div>
+
+            <div class="input-group">
+                <label>Import Keeper Salaries (CSV)</label>
+                <div class="file-upload" onclick="document.getElementById('adminCsvFile').click()">
+                    <p>Click to upload CSV</p>
+                </div>
+                <input type="file" id="adminCsvFile" accept=".csv" style="display: none;" onchange="handleAdminFileUpload(event)">
+                <p class="help-text" id="adminFileName" style="margin-top: 0.5rem;"></p>
+            </div>
+
+            <button onclick="setupLeague()">Setup League</button>
+            <div id="adminError" style="display: none;" class="error"></div>
+            <div id="adminSuccess" style="display: none;" class="success"></div>
+        </div>
+
+        <div id="loading" class="loading" style="display: none;">
+            <div class="spinner"></div>
+            <p id="loadingText">Loading league data...</p>
+        </div>
+
+        <div id="dashboard" class="dashboard">
+            <div class="league-info">
+                <div>
+                    <h2 id="leagueName">League Name</h2>
+                    <div class="league-meta">
+                        <span id="leagueSeason">2024</span> • 
+                        <span id="leagueSize">Teams</span>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-secondary" onclick="loadPublicData()">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Total Teams</div>
+                    <div class="stat-value" id="totalTeams">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg Cap Space</div>
+                    <div class="stat-value" id="avgCapSpace">$0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total Players</div>
+                    <div class="stat-value" id="totalPlayers">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">League Cap</div>
+                    <div class="stat-value" id="salaryCap">$200</div>
+                </div>
+            </div>
+
+            <h2 class="section-title">Team Salary Caps</h2>
+            <div id="teamsGrid" class="teams-grid"></div>
+        </div>
+    </div>
+
+    <div class="admin-toggle" onclick="toggleAdmin()" id="adminToggle" style="display: none;">
+        🔧 Admin
+    </div>
+
+    <script>
+        let csvData = null;
+        let SALARY_CAP = 200;
+
+        function getKeeperEscalation(salary) {
+            if (salary >= 1 && salary <= 5) return 2;
+            if (salary >= 6 && salary <= 10) return 4;
+            if (salary >= 11 && salary <= 20) return 6;
+            if (salary >= 21 && salary <= 30) return 7;
+            if (salary >= 31 && salary <= 40) return 8;
+            if (salary >= 41 && salary <= 50) return 9;
+            if (salary >= 51 && salary <= 60) return 10;
+            if (salary >= 61 && salary <= 70) return 11;
+            return 0;
+        }
+
+        function handleAdminFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('adminFileName').textContent = `Selected: ${file.name}`;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                parseCSV(text);
+            };
+            reader.readAsText(file);
+        }
+
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            csvData = {};
+            
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',').map(v => v.trim());
+                const player = values[1];
+                const salary = parseInt(values[3]);
+                
+                if (player && !isNaN(salary)) {
+                    csvData[player.toLowerCase()] = salary;
+                }
+            }
+            
+            showAdminSuccess(`Loaded ${Object.keys(csvData).length} player salaries from CSV`);
+        }
+
+        async function setupLeague() {
+            const leagueId = document.getElementById('adminLeagueId').value.trim();
+
+            if (!leagueId) {
+                showAdminError('Please enter a League ID');
+                return;
+            }
+
+            if (!csvData) {
+                showAdminError('Please upload a CSV file with player salaries');
+                return;
+            }
+
+            document.getElementById('adminError').style.display = 'none';
+            document.getElementById('adminSuccess').style.display = 'none';
+
+            try {
+                showAdminSuccess('Setting up league... This may take a minute.');
+
+                const response = await fetch('/api/sync-league', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ leagueId, csvData })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to setup league');
+                }
+
+                showAdminSuccess(`✅ Success! Imported ${result.playersImported} players. Reloading...`);
+                
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+
+            } catch (error) {
+                showAdminError(`Error: ${error.message}`);
+            }
+        }
+
+        async function loadPublicData() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('dashboard').classList.remove('active');
+
+            try {
+                const response = await fetch('/api/get-public-data');
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (data.needsSetup) {
+                        document.getElementById('loading').style.display = 'none';
+                        document.getElementById('adminSetup').style.display = 'block';
+                        document.getElementById('adminToggle').style.display = 'block';
+                        return;
+                    }
+                    throw new Error(data.error || 'Failed to load data');
+                }
+
+                document.getElementById('loading').style.display = 'none';
+                displayDashboard(data);
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert('Error loading league data: ' + error.message);
+            }
+        }
+
+        function displayDashboard(data) {
+            const dashboard = document.getElementById('dashboard');
+            dashboard.classList.add('active');
+
+            SALARY_CAP = data.config.salaryCap;
+
+            document.getElementById('leagueName').textContent = data.league.name;
+            document.getElementById('leagueSeason').textContent = `Season ${data.league.season}`;
+            document.getElementById('leagueSize').textContent = `${data.league.total_rosters} Teams`;
+            document.getElementById('salaryCap').textContent = `$${SALARY_CAP}`;
+
+            const teams = data.rosters.map(roster => {
+                const user = data.users.find(u => u.user_id === roster.owner_id);
+                const teamName = user?.metadata?.team_name || user?.display_name || 'Unknown Team';
+                const ownerName = user?.display_name || 'Unknown Owner';
+
+                const players = (roster.players || []).map(playerId => {
+                    const player = data.players[playerId];
+                    if (!player) return null;
+
+                    const salaryData = data.salaries[playerId];
+                    const salary = salaryData ? salaryData.salary : 10;
+                    const escalation = getKeeperEscalation(salary);
+                    const keeperCost = salary + escalation;
+
+                    return {
+                        name: `${player.first_name || ''} ${player.last_name || ''}`.trim() || 'Unknown',
+                        position: player.position || 'N/A',
+                        team: player.team || 'FA',
+                        salary: salary,
+                        keeperCost: keeperCost,
+                        escalation: escalation
+                    };
+                }).filter(p => p !== null);
+
+                const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
+                const capSpace = SALARY_CAP - totalSalary;
+
+                return {
+                    name: teamName,
+                    owner: ownerName,
+                    players: players,
+                    totalSalary: totalSalary,
+                    capSpace: capSpace,
+                    wins: roster.settings?.wins || 0,
+                    losses: roster.settings?.losses || 0
+                };
+            });
+
+            document.getElementById('totalTeams').textContent = teams.length;
+            const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
+            document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
+            const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
+            document.getElementById('totalPlayers').textContent = totalPlayers;
+
+            const teamsGrid = document.getElementById('teamsGrid');
+            teamsGrid.innerHTML = '';
+
+            teams.forEach((team, idx) => {
+                const capPercentage = (team.totalSalary / SALARY_CAP) * 100;
+                let barClass = '';
+                if (capPercentage > 95) barClass = 'danger';
+                else if (capPercentage > 85) barClass = 'warning';
+
+                const teamCard = document.createElement('div');
+                teamCard.className = 'team-card';
+                teamCard.style.animationDelay = `${idx * 0.1}s`;
+
+                teamCard.innerHTML = `
+                    <div class="team-header">
+                        <div>
+                            <div class="team-name">${team.name}</div>
+                            <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
+                        </div>
+                        <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
+                            $${team.capSpace}
+                        </div>
+                    </div>
+                    <div class="cap-bar">
+                        <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                        Total Salary: $${team.totalSalary} / $${SALARY_CAP}
+                    </div>
+                    <div class="player-list">
+                        ${team.players.slice(0, 12).map(player => `
+                            <div class="player-item">
+                                <div class="player-info">
+                                    <div class="player-name">${player.name}</div>
+                                    <div class="player-position">${player.position} • ${player.team}</div>
+                                </div>
+                                <div class="player-salary-info">
+                                    <div class="player-salary">$${player.salary}</div>
+                                    <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                        ${team.players.length > 12 ? `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">+${team.players.length - 12} more players</div>` : ''}
+                    </div>
+                `;
+
+                teamsGrid.appendChild(teamCard);
+            });
+        }
+
+        function toggleAdmin() {
+            const adminSetup = document.getElementById('adminSetup');
+            if (adminSetup.style.display === 'none') {
+                adminSetup.style.display = 'block';
+            } else {
+                adminSetup.style.display = 'none';
+            }
+        }
+
+        function showAdminError(message) {
+            const errorDiv = document.getElementById('adminError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function showAdminSuccess(message) {
+            const successDiv = document.getElementById('adminSuccess');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadPublicData();
+        });
+    </script>
+</body>
+</html>
