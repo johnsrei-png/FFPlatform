@@ -342,7 +342,7 @@
         }
 
         .player-list {
-            max-height: 400px;
+            max-height: 600px;
             overflow-y: auto;
             margin-top: 1rem;
         }
@@ -1085,7 +1085,7 @@
                         Total Salary: $${team.totalSalary} / $${SALARY_CAP}
                     </div>
                     <div class="player-list">
-                        ${team.players.slice(0, 12).map(player => `
+                        ${team.players.map(player => `
                             <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
                                  style="${commissionerMode ? 'cursor: pointer;' : ''}">
                                 <div class="player-info">
@@ -1101,7 +1101,6 @@
                                 </div>
                             </div>
                         `).join('')}
-                        ${team.players.length > 12 ? `<div style="text-align: center; color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">+${team.players.length - 12} more players</div>` : ''}
                     </div>
                 `;
 
