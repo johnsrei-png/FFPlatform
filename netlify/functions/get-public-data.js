@@ -2,9 +2,9 @@ const fetch = require('node-fetch');
 
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
-function getSupabaseClient() {
+function getSupabaseClient(useServiceKey = false) {
   const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+  const supabaseKey = useServiceKey ? process.env.SUPABASE_SERVICE_KEY : process.env.SUPABASE_ANON_KEY;
   
   if (!supabaseUrl || !supabaseKey) {
     throw new Error('Supabase credentials not configured');
@@ -13,16 +13,21 @@ function getSupabaseClient() {
   return {
     url: supabaseUrl,
     key: supabaseKey,
-    async query(table, queryParams = '') {
+    async query(table, method = 'GET', body = null, queryParams = '') {
       const url = `${supabaseUrl}/rest/v1/${table}${queryParams}`;
       const options = {
-        method: 'GET',
+        method,
         headers: {
           'apikey': supabaseKey,
           'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
         }
       };
+      
+      if (body) {
+        options.body = JSON.stringify(body);
+      }
       
       const response = await fetch(url, options);
       if (!response.ok) {
@@ -80,23 +85,7 @@ exports.handler = async (event, context) => {
       usersResponse.json()
     ]);
 
-    // Get player salaries from database
-    const playerSalaries = await supabase.query(
-      'player_salaries',
-      `?league_id=eq.${leagueId}&select=*`
-    );
-
-    // Create salary lookup
-    const salaryMap = {};
-    playerSalaries.forEach(ps => {
-      salaryMap[ps.player_id] = {
-        salary: ps.current_salary,
-        isKeeper: ps.is_keeper,
-        yearsKept: ps.years_kept
-      };
-    });
-
-    // Get unique player IDs from rosters
+    // Get unique player IDs from rosters FIRST
     const playerIds = new Set();
     rosters.forEach(roster => {
       if (roster.players) {
@@ -114,6 +103,50 @@ exports.handler = async (event, context) => {
         leaguePlayers[pid] = allPlayers[pid];
       }
     });
+
+    // Get player salaries from database
+    const playerSalaries = await supabase.query(
+      'player_salaries',
+      '?league_id=eq.' + leagueId + '&select=*'
+    );
+
+    // Create salary lookup
+    const salaryMap = {};
+    playerSalaries.forEach(ps => {
+      salaryMap[ps.player_id] = {
+        salary: ps.current_salary,
+        isKeeper: ps.is_keeper,
+        yearsKept: ps.years_kept
+      };
+    });
+
+    // Check for new players and auto-assign default salary
+    const newPlayers = [];
+    playerIds.forEach(pid => {
+      if (!salaryMap[pid]) {
+        newPlayers.push({
+          league_id: leagueId,
+          player_id: pid,
+          player_name: allPlayers[pid] ? `${allPlayers[pid].first_name || ''} ${allPlayers[pid].last_name || ''}`.trim() : 'Unknown',
+          position: allPlayers[pid]?.position || 'N/A',
+          team: allPlayers[pid]?.team || 'FA',
+          current_salary: 1,
+          is_keeper: false,
+          years_kept: 0
+        });
+        salaryMap[pid] = {
+          salary: 1,
+          isKeeper: false,
+          yearsKept: 0
+        };
+      }
+    });
+
+    // Insert new players into database
+    if (newPlayers.length > 0) {
+      const writeClient = getSupabaseClient(true);
+      await writeClient.query('player_salaries', 'POST', newPlayers);
+    }
 
     // Fetch transactions
     const currentWeek = Math.min(league.settings.playoff_week_start - 1, 18);
