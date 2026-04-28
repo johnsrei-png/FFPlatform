@@ -56,7 +56,7 @@ exports.handler = async (event, context) => {
     const supabase = getSupabaseClient();
 
     // Get league config
-    const leagueConfigs = await supabase.query('league_config', '?select=*&limit=1');
+    const leagueConfigs = await supabase.query('league_config', 'GET', null, '?select=*&limit=1');
     
     if (!leagueConfigs || leagueConfigs.length === 0) {
       return {
@@ -107,6 +107,8 @@ exports.handler = async (event, context) => {
     // Get player salaries from database
     const playerSalaries = await supabase.query(
       'player_salaries',
+      'GET',
+      null,
       '?league_id=eq.' + leagueId + '&select=*'
     );
 
