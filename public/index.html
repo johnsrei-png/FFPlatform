@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBR Fantasy Salary Manager</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -13,36 +12,33 @@
         }
 
         :root {
-            --bg-primary: #0a0e16;
-            --bg-secondary: #141925;
-            --bg-card: #1a2030;
-            --accent-primary: #00ff88;
-            --accent-secondary: #0088ff;
-            --accent-danger: #ff3366;
-            --accent-warning: #ffaa00;
-            --text-primary: #ffffff;
-            --text-secondary: #8b96a8;
-            --border: #2a3444;
-            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+            --bg-primary: #f8f9fa;
+            --bg-secondary: #ffffff;
+            --bg-card: #ffffff;
+            --accent-primary: #2563eb;
+            --accent-secondary: #1e40af;
+            --accent-success: #059669;
+            --accent-danger: #dc2626;
+            --accent-warning: #f59e0b;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --text-muted: #9ca3af;
+            --border: #e5e7eb;
+            --border-strong: #d1d5db;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
         }
 
         body {
-            font-family: 'Outfit', sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
             line-height: 1.6;
         }
 
         .bg-grain {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: radial-gradient(circle at 20% 50%, rgba(0, 255, 136, 0.05) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 80%, rgba(0, 136, 255, 0.05) 0%, transparent 50%);
-            pointer-events: none;
-            z-index: 0;
+            display: none;
         }
 
         .container {
@@ -54,17 +50,17 @@
         }
 
         h1 {
-            font-size: 3rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
         }
 
         .subtitle {
             color: var(--text-secondary);
-            font-size: 1.1rem;
+            font-size: 1rem;
+            font-weight: 400;
             margin-bottom: 2rem;
         }
 
@@ -85,14 +81,25 @@
         }
 
         button {
-            background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
-            color: var(--bg-primary);
+            background: var(--accent-primary);
+            color: white;
             border: none;
             padding: 0.75rem 1.5rem;
             border-radius: 8px;
-            font-weight: 700;
+            font-weight: 600;
+            font-size: 0.9375rem;
             cursor: pointer;
-            margin-top: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        button:hover {
+            background: var(--accent-secondary);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        button:active {
+            transform: translateY(0);
         }
 
         .stats-grid {
@@ -107,6 +114,13 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+
+        .stat-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
         }
 
         .stat-label {
@@ -124,11 +138,12 @@
         }
 
         .section-title {
-            font-size: 1.5rem;
+            font-size: 1.25rem;
             font-weight: 700;
-            margin: 2rem 0 1rem;
-            padding-left: 1rem;
+            margin: 2rem 0 1.25rem;
+            padding-left: 0.75rem;
             border-left: 4px solid var(--accent-primary);
+            color: var(--text-primary);
         }
 
         .teams-grid {
@@ -142,6 +157,12 @@
             border: 1px solid var(--border);
             border-radius: 12px;
             padding: 1.5rem;
+            box-shadow: var(--shadow);
+            transition: all 0.2s ease;
+        }
+
+        .team-card:hover {
+            box-shadow: var(--shadow-md);
         }
 
         .team-header {
@@ -181,12 +202,18 @@
 
         .cap-bar-fill {
             height: 100%;
-            background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary));
+            background: var(--accent-primary);
             transition: width 0.3s ease;
+            border-radius: 4px;
         }
 
-        .cap-bar-fill.warning { background: linear-gradient(90deg, #ffaa00, #ff6600); }
-        .cap-bar-fill.danger { background: linear-gradient(90deg, #ff3366, #ff0044); }
+        .cap-bar-fill.warning { 
+            background: var(--accent-warning);
+        }
+        
+        .cap-bar-fill.danger { 
+            background: var(--accent-danger);
+        }
 
         .player-list {
             max-height: 400px;
