@@ -587,6 +587,199 @@
             color: var(--text-muted);
             margin-top: 0.25rem;
         }
+
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            header {
+                margin-bottom: 1.5rem;
+                padding-bottom: 1rem;
+            }
+
+            h1 {
+                font-size: 1.75rem;
+            }
+
+            .subtitle {
+                font-size: 0.875rem;
+            }
+
+            .league-info {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 1rem;
+            }
+
+            .league-info h2 {
+                font-size: 1.25rem;
+            }
+
+            .action-buttons {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .action-buttons button {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .stat-card {
+                padding: 1rem;
+            }
+
+            .stat-value {
+                font-size: 1.5rem;
+            }
+
+            .stat-label {
+                font-size: 0.8125rem;
+            }
+
+            .teams-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .team-card {
+                padding: 1rem;
+            }
+
+            .team-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .cap-space {
+                font-size: 1.125rem;
+            }
+
+            .team-name {
+                font-size: 1rem;
+            }
+
+            .team-owner {
+                font-size: 0.8125rem;
+            }
+
+            .player-list {
+                max-height: 500px;
+            }
+
+            .player-item {
+                padding: 0.625rem;
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            .player-info {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .player-name {
+                font-size: 0.875rem;
+            }
+
+            .player-position {
+                font-size: 0.75rem;
+            }
+
+            .player-salary {
+                font-size: 0.9375rem;
+            }
+
+            .keeper-cost {
+                font-size: 0.75rem;
+            }
+
+            .section-title {
+                font-size: 1.125rem;
+                margin-bottom: 1rem;
+                padding-left: 0.5rem;
+            }
+
+            .transactions-panel {
+                padding: 1rem;
+            }
+
+            .transaction-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+                padding: 0.875rem;
+            }
+
+            .transaction-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .quick-salary-input {
+                flex: 1;
+                max-width: 100px;
+            }
+
+            .edit-modal-content {
+                padding: 1.5rem;
+                width: 95%;
+            }
+
+            .edit-modal h3 {
+                font-size: 1.125rem;
+            }
+
+            .admin-toggle {
+                bottom: 1rem;
+                right: 1rem;
+                padding: 0.625rem 1.25rem;
+                font-size: 0.8125rem;
+            }
+
+            .setup-section {
+                padding: 1.5rem;
+            }
+
+            button {
+                width: 100%;
+            }
+
+            .btn-small {
+                width: auto;
+                padding: 0.5rem 0.875rem;
+            }
+
+            .new-player-badge {
+                font-size: 0.6875rem;
+                padding: 0.125rem 0.375rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-value {
+                font-size: 1.75rem;
+            }
+
+            .player-salary-info {
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
