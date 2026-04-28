@@ -89,15 +89,6 @@ exports.handler = async function(event, context) {
     // Get existing player salaries from database
     const playerSalaries = await supabase.query('player_salaries', 'GET', null, `?league_id=eq.${leagueId}&select=*`);
 
-    // Get team backgrounds
-    const teamBackgrounds = await supabase.query('team_backgrounds', 'GET', null, `?league_id=eq.${leagueId}&select=*`);
-    
-    // Create backgrounds lookup
-    const backgroundsMap = {};
-    teamBackgrounds.forEach(bg => {
-      backgroundsMap[bg.roster_id] = bg.background_image;
-    });
-
     // Create salary lookup
     const salaryMap = {};
     playerSalaries.forEach(ps => {
