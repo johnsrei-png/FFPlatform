@@ -984,8 +984,8 @@
             commissionerMode = !commissionerMode;
             const btn = document.getElementById('commissionerModeBtn');
             btn.textContent = commissionerMode ? '✏️ Edit Mode: ON' : '✏️ Edit Mode: OFF';
-            btn.style.background = commissionerMode ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' : '';
-            btn.style.color = commissionerMode ? 'var(--bg-primary)' : '';
+            btn.style.background = commissionerMode ? 'var(--accent-primary)' : '';
+            btn.style.color = commissionerMode ? 'white' : '';
             
             // Reload to show/hide edit functionality
             loadPublicData();
