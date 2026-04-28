@@ -886,6 +886,15 @@
         }
 
         function toggleCommissionerMode() {
+            // If turning ON, require password
+            if (!commissionerMode) {
+                const password = prompt('Enter commissioner password:');
+                if (password !== 'gopackgo') {
+                    alert('Incorrect password');
+                    return;
+                }
+            }
+            
             commissionerMode = !commissionerMode;
             const btn = document.getElementById('commissionerModeBtn');
             btn.textContent = commissionerMode ? '✏️ Edit Mode: ON' : '✏️ Edit Mode: OFF';
@@ -922,6 +931,7 @@
                 const response = await fetch('/api/update-salary', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
+                    body
                     body: JSON.stringify({
                         playerId: editingPlayer.playerId,
                         newSalary: newSalary,
