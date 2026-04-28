@@ -1134,20 +1134,26 @@
                             ${player.position} • ${player.team} → Added to ${player.teamName}
                         </div>
                     </div>
-                    <div class="transaction-actions">
-                        <span style="font-size: 0.9rem; color: var(--text-secondary); margin-right: 0.5rem;">$</span>
-                        <input 
-                            type="number" 
-                            id="salary-input-${player.id}" 
-                            class="quick-salary-input" 
-                            placeholder="0" 
-                            min="1" 
-                            max="200"
-                        >
-                        <button class="btn-small" onclick="quickSetSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', '${player.teamName.replace(/'/g, "\\'")}')">
-                            Set Salary
-                        </button>
-                    </div>
+                    ${commissionerMode ? `
+                        <div class="transaction-actions">
+                            <span style="font-size: 0.9rem; color: var(--text-secondary); margin-right: 0.5rem;">$</span>
+                            <input 
+                                type="number" 
+                                id="salary-input-${player.id}" 
+                                class="quick-salary-input" 
+                                placeholder="0" 
+                                min="1" 
+                                max="200"
+                            >
+                            <button class="btn-small" onclick="quickSetSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', '${player.teamName.replace(/'/g, "\\'")}')">
+                                Set Salary
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="transaction-actions">
+                            <span style="font-size: 0.85rem; color: var(--text-secondary); font-style: italic;">Pending salary assignment</span>
+                        </div>
+                    `}
                 </div>
             `).join('');
         }
