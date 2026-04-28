@@ -148,6 +148,11 @@
             box-shadow: var(--shadow);
         }
 
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+        }
+
         .dashboard {
             display: none;
         }
@@ -186,6 +191,180 @@
             display: flex;
             gap: 0.5rem;
             flex-wrap: wrap;
+        }
+
+        /* NEW FEATURES STYLES */
+        .controls-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        .search-box::before {
+            content: "🔍";
+            position: absolute;
+            left: 0.875rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1rem;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .sort-controls label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin: 0;
+            font-weight: 500;
+        }
+
+        .sort-controls select {
+            padding: 0.625rem 2rem 0.625rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.625rem center;
+        }
+
+        .comparison-view {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            display: none;
+        }
+
+        .comparison-view.active {
+            display: block;
+        }
+
+        .comparison-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-selects {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .comparison-selects select {
+            padding: 0.625rem 2rem 0.625rem 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.625rem center;
+            min-width: 200px;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .comparison-team {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.25rem;
+        }
+
+        .comparison-stat {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .comparison-stat:last-child {
+            border-bottom: none;
+        }
+
+        .comparison-stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .comparison-stat-value {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .projected-cap-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            background: rgba(37, 99, 235, 0.1);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            border-radius: 6px;
+            font-size: 0.8125rem;
+            color: var(--accent-primary);
+            font-weight: 600;
+        }
+
+        .highlight-match {
+            background: rgba(37, 99, 235, 0.1) !important;
+            border-color: var(--accent-primary) !important;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.9375rem;
         }
 
         .stats-grid {
@@ -245,7 +424,7 @@
         .team-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
             margin-bottom: 1rem;
             padding-bottom: 1rem;
             border-bottom: 1px solid var(--border);
@@ -577,17 +756,6 @@
             outline: none;
         }
 
-        .btn-small {
-            padding: 0.5rem 1rem;
-            font-size: 0.875rem;
-        }
-
-        .transaction-timestamp {
-            font-size: 0.8125rem;
-            color: var(--text-muted);
-            margin-top: 0.25rem;
-        }
-
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             .container {
@@ -624,6 +792,48 @@
 
             .action-buttons button {
                 width: 100%;
+            }
+
+            .controls-panel {
+                padding: 1rem;
+            }
+
+            .controls-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .search-box {
+                min-width: 100%;
+            }
+
+            .sort-controls {
+                width: 100%;
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .sort-controls select {
+                width: 100%;
+            }
+
+            .comparison-view {
+                padding: 1rem;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .comparison-selects {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .comparison-selects select {
+                width: 100%;
+                min-width: 100%;
             }
 
             .stats-grid {
@@ -676,13 +886,6 @@
 
             .player-item {
                 padding: 0.625rem;
-                flex-wrap: wrap;
-                gap: 0.5rem;
-            }
-
-            .player-info {
-                flex: 1;
-                min-width: 0;
             }
 
             .player-name {
@@ -761,6 +964,11 @@
                 font-size: 0.6875rem;
                 padding: 0.125rem 0.375rem;
             }
+
+            .projected-cap-indicator {
+                font-size: 0.75rem;
+                padding: 0.25rem 0.5rem;
+            }
         }
 
         @media (max-width: 480px) {
@@ -774,10 +982,6 @@
 
             .stat-value {
                 font-size: 1.75rem;
-            }
-
-            .player-salary-info {
-                align-items: flex-start;
             }
         }
     </style>
@@ -833,6 +1037,43 @@
                     <button class="btn-secondary" onclick="loadPublicData()">🔄 Refresh Now</button>
                     <button class="btn-secondary" id="commissionerModeBtn" onclick="toggleCommissionerMode()" style="display: none;">✏️ Edit Mode: OFF</button>
                 </div>
+            </div>
+
+            <div class="controls-panel">
+                <div class="controls-row">
+                    <div class="search-box">
+                        <input type="text" id="playerSearch" placeholder="Search players..." oninput="filterPlayers()">
+                    </div>
+                    <div class="sort-controls">
+                        <label>Sort teams by:</label>
+                        <select id="teamSort" onchange="sortTeams()">
+                            <option value="name">Team Name</option>
+                            <option value="capSpace">Cap Space (High to Low)</option>
+                            <option value="capSpaceAsc">Cap Space (Low to High)</option>
+                            <option value="totalSalary">Total Salary (High to Low)</option>
+                            <option value="wins">Wins</option>
+                            <option value="owner">Owner Name</option>
+                        </select>
+                    </div>
+                    <button class="btn-secondary" onclick="exportToCSV()">📥 Export CSV</button>
+                    <button class="btn-secondary" onclick="toggleComparison()">⚖️ Compare Teams</button>
+                </div>
+            </div>
+
+            <div class="comparison-view" id="comparisonView">
+                <div class="comparison-header">
+                    <h3 class="section-title" style="margin: 0;">Team Comparison</h3>
+                    <button class="btn-secondary btn-small" onclick="toggleComparison()">Close</button>
+                </div>
+                <div class="comparison-selects">
+                    <select id="compareTeam1" onchange="updateComparison()">
+                        <option value="">Select Team 1...</option>
+                    </select>
+                    <select id="compareTeam2" onchange="updateComparison()">
+                        <option value="">Select Team 2...</option>
+                    </select>
+                </div>
+                <div id="comparisonContent"></div>
             </div>
 
             <div class="stats-grid">
@@ -895,6 +1136,8 @@
         let commissionerMode = false;
         let autoRefreshInterval = null;
         let editingPlayer = null;
+        let allTeamsData = [];
+        let currentDashboardData = null;
 
         function getKeeperEscalation(salary) {
             if (salary >= 1 && salary <= 5) return 2;
@@ -1035,7 +1278,6 @@
         }
 
         function toggleCommissionerMode() {
-            // If turning ON, require password
             if (!commissionerMode) {
                 const password = prompt('Enter commissioner password:');
                 if (password !== 'gopackgo') {
@@ -1047,8 +1289,8 @@
             commissionerMode = !commissionerMode;
             const btn = document.getElementById('commissionerModeBtn');
             btn.textContent = commissionerMode ? '✏️ Edit Mode: ON' : '✏️ Edit Mode: OFF';
-            btn.style.background = commissionerMode ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))' : '';
-            btn.style.color = commissionerMode ? 'var(--bg-primary)' : '';
+            btn.style.background = commissionerMode ? 'var(--accent-primary)' : '';
+            btn.style.color = commissionerMode ? 'white' : '';
             
             loadPublicData(true);
         }
@@ -1141,12 +1383,269 @@
             }
         }
 
+        // NEW FEATURE FUNCTIONS
+
+        function filterPlayers() {
+            const searchTerm = document.getElementById('playerSearch').value.toLowerCase();
+            const teamCards = document.querySelectorAll('.team-card');
+            
+            teamCards.forEach(card => {
+                const playerItems = card.querySelectorAll('.player-item');
+                let hasMatch = false;
+                
+                playerItems.forEach(item => {
+                    const playerName = item.querySelector('.player-name').textContent.toLowerCase();
+                    const isMatch = playerName.includes(searchTerm);
+                    
+                    if (searchTerm === '') {
+                        item.style.display = 'flex';
+                        item.classList.remove('highlight-match');
+                    } else if (isMatch) {
+                        item.style.display = 'flex';
+                        item.classList.add('highlight-match');
+                        hasMatch = true;
+                    } else {
+                        item.style.display = 'none';
+                        item.classList.remove('highlight-match');
+                    }
+                });
+                
+                if (searchTerm !== '' && !hasMatch) {
+                    card.style.display = 'none';
+                } else {
+                    card.style.display = 'block';
+                }
+            });
+        }
+
+        function sortTeams() {
+            const sortBy = document.getElementById('teamSort').value;
+            const teamsGrid = document.getElementById('teamsGrid');
+            
+            let sortedTeams = [...allTeamsData];
+            
+            switch(sortBy) {
+                case 'name':
+                    sortedTeams.sort((a, b) => a.name.localeCompare(b.name));
+                    break;
+                case 'capSpace':
+                    sortedTeams.sort((a, b) => b.capSpace - a.capSpace);
+                    break;
+                case 'capSpaceAsc':
+                    sortedTeams.sort((a, b) => a.capSpace - b.capSpace);
+                    break;
+                case 'totalSalary':
+                    sortedTeams.sort((a, b) => b.totalSalary - a.totalSalary);
+                    break;
+                case 'wins':
+                    sortedTeams.sort((a, b) => b.wins - a.wins);
+                    break;
+                case 'owner':
+                    sortedTeams.sort((a, b) => a.owner.localeCompare(b.owner));
+                    break;
+            }
+            
+            teamsGrid.innerHTML = '';
+            sortedTeams.forEach((team, idx) => {
+                const teamCard = createTeamCard(team, idx);
+                teamsGrid.appendChild(teamCard);
+            });
+        }
+
+        function exportToCSV() {
+            if (!allTeamsData || allTeamsData.length === 0) {
+                alert('No data to export');
+                return;
+            }
+            
+            let csv = 'Team,Owner,Player,Position,NFL Team,Salary,Keeper Cost,Escalation\n';
+            
+            allTeamsData.forEach(team => {
+                team.players.forEach(player => {
+                    csv += `"${team.name}","${team.owner}","${player.name}","${player.position}","${player.team}",${player.salary},${player.keeperCost},${player.escalation}\n`;
+                });
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bbr-salaries-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }
+
+        function toggleComparison() {
+            const view = document.getElementById('comparisonView');
+            view.classList.toggle('active');
+            
+            if (view.classList.contains('active')) {
+                populateComparisonSelects();
+            }
+        }
+
+        function populateComparisonSelects() {
+            const select1 = document.getElementById('compareTeam1');
+            const select2 = document.getElementById('compareTeam2');
+            
+            select1.innerHTML = '<option value="">Select Team 1...</option>';
+            select2.innerHTML = '<option value="">Select Team 2...</option>';
+            
+            allTeamsData.forEach((team, idx) => {
+                select1.innerHTML += `<option value="${idx}">${team.name} (${team.owner})</option>`;
+                select2.innerHTML += `<option value="${idx}">${team.name} (${team.owner})</option>`;
+            });
+        }
+
+        function updateComparison() {
+            const team1Idx = document.getElementById('compareTeam1').value;
+            const team2Idx = document.getElementById('compareTeam2').value;
+            const content = document.getElementById('comparisonContent');
+            
+            if (team1Idx === '' || team2Idx === '') {
+                content.innerHTML = '<p class="no-results">Select two teams to compare</p>';
+                return;
+            }
+            
+            const team1 = allTeamsData[team1Idx];
+            const team2 = allTeamsData[team2Idx];
+            
+            const team1Projected = SALARY_CAP - team1.players.reduce((sum, p) => sum + p.keeperCost, 0);
+            const team2Projected = SALARY_CAP - team2.players.reduce((sum, p) => sum + p.keeperCost, 0);
+            
+            content.innerHTML = `
+                <div class="comparison-grid" style="margin-top: 1.5rem;">
+                    <div class="comparison-team">
+                        <h4 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 1.125rem;">${team1.name}</h4>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Owner</span>
+                            <span class="comparison-stat-value">${team1.owner}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Record</span>
+                            <span class="comparison-stat-value">${team1.wins}-${team1.losses}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Total Salary</span>
+                            <span class="comparison-stat-value">$${team1.totalSalary}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Current Cap Space</span>
+                            <span class="comparison-stat-value" style="color: ${team1.capSpace >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">$${team1.capSpace}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Projected Cap (All Keepers)</span>
+                            <span class="comparison-stat-value" style="color: ${team1Projected >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">$${team1Projected}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Total Players</span>
+                            <span class="comparison-stat-value">${team1.players.length}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Avg Player Salary</span>
+                            <span class="comparison-stat-value">$${Math.round(team1.totalSalary / team1.players.length)}</span>
+                        </div>
+                    </div>
+                    <div class="comparison-team">
+                        <h4 style="margin-bottom: 1rem; color: var(--text-primary); font-size: 1.125rem;">${team2.name}</h4>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Owner</span>
+                            <span class="comparison-stat-value">${team2.owner}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Record</span>
+                            <span class="comparison-stat-value">${team2.wins}-${team2.losses}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Total Salary</span>
+                            <span class="comparison-stat-value">$${team2.totalSalary}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Current Cap Space</span>
+                            <span class="comparison-stat-value" style="color: ${team2.capSpace >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">$${team2.capSpace}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Projected Cap (All Keepers)</span>
+                            <span class="comparison-stat-value" style="color: ${team2Projected >= 0 ? 'var(--accent-success)' : 'var(--accent-danger)'}">$${team2Projected}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Total Players</span>
+                            <span class="comparison-stat-value">${team2.players.length}</span>
+                        </div>
+                        <div class="comparison-stat">
+                            <span class="comparison-stat-label">Avg Player Salary</span>
+                            <span class="comparison-stat-value">$${Math.round(team2.totalSalary / team2.players.length)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function createTeamCard(team, idx) {
+            const capPercentage = (team.totalSalary / SALARY_CAP) * 100;
+            let barClass = '';
+            if (capPercentage > 95) barClass = 'danger';
+            else if (capPercentage > 85) barClass = 'warning';
+
+            const projectedSpent = team.players.reduce((sum, p) => sum + p.keeperCost, 0);
+            const projectedCapSpace = SALARY_CAP - projectedSpent;
+
+            const teamCard = document.createElement('div');
+            teamCard.className = 'team-card';
+
+            teamCard.innerHTML = `
+                <div class="team-header">
+                    <div>
+                        <div class="team-name">${team.name}</div>
+                        <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
+                    </div>
+                    <div>
+                        <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
+                            $${team.capSpace}
+                        </div>
+                        <div class="projected-cap-indicator" title="Cap space if all current players kept as keepers">
+                            Projected: $${projectedCapSpace}
+                        </div>
+                    </div>
+                </div>
+                <div class="cap-bar">
+                    <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
+                </div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
+                    Total Salary: $${team.totalSalary} / $${SALARY_CAP}
+                </div>
+                <div class="player-list">
+                    ${team.players.map(player => `
+                        <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
+                             style="${commissionerMode ? 'cursor: pointer;' : ''}">
+                            <div class="player-info">
+                                <div class="player-name">
+                                    ${player.name}
+                                    ${player.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
+                                </div>
+                                <div class="player-position">${player.position} • ${player.team}</div>
+                            </div>
+                            <div class="player-salary-info">
+                                <div class="player-salary">$${player.salary}</div>
+                                <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+
+            return teamCard;
+        }
+
         function displayDashboard(data) {
             const dashboard = document.getElementById('dashboard');
             dashboard.classList.add('active');
 
             SALARY_CAP = data.config.salaryCap;
             leagueId = data.league.league_id;
+            currentDashboardData = data;
 
             document.getElementById('commissionerModeBtn').style.display = 'block';
 
@@ -1181,7 +1680,7 @@
                         isNew: isNew
                     };
                 }).filter(p => p !== null)
-                  .sort((a, b) => b.salary - a.salary); // Sort by salary: highest to lowest
+                  .sort((a, b) => b.salary - a.salary);
 
                 const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
                 const capSpace = SALARY_CAP - totalSalary;
@@ -1197,6 +1696,8 @@
                 };
             });
 
+            allTeamsData = teams;
+
             document.getElementById('totalTeams').textContent = teams.length;
             const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
             document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
@@ -1209,51 +1710,7 @@
             teamsGrid.innerHTML = '';
 
             teams.forEach((team, idx) => {
-                const capPercentage = (team.totalSalary / SALARY_CAP) * 100;
-                let barClass = '';
-                if (capPercentage > 95) barClass = 'danger';
-                else if (capPercentage > 85) barClass = 'warning';
-
-                const teamCard = document.createElement('div');
-                teamCard.className = 'team-card';
-                teamCard.style.animationDelay = `${idx * 0.1}s`;
-
-                teamCard.innerHTML = `
-                    <div class="team-header">
-                        <div>
-                            <div class="team-name">${team.name}</div>
-                            <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
-                        </div>
-                        <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
-                            $${team.capSpace}
-                        </div>
-                    </div>
-                    <div class="cap-bar">
-                        <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
-                    </div>
-                    <div style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.5rem;">
-                        Total Salary: $${team.totalSalary} / $${SALARY_CAP}
-                    </div>
-                    <div class="player-list">
-                        ${team.players.map(player => `
-                            <div class="player-item" ${commissionerMode ? `onclick="editPlayerSalary('${player.id}', '${player.name.replace(/'/g, "\\'")}', ${player.salary})"` : ''} 
-                                 style="${commissionerMode ? 'cursor: pointer;' : ''}">
-                                <div class="player-info">
-                                    <div class="player-name">
-                                        ${player.name}
-                                        ${player.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
-                                    </div>
-                                    <div class="player-position">${player.position} • ${player.team}</div>
-                                </div>
-                                <div class="player-salary-info">
-                                    <div class="player-salary">$${player.salary}</div>
-                                    <div class="keeper-cost">Next: $${player.keeperCost} (+$${player.escalation})</div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                `;
-
+                const teamCard = createTeamCard(team, idx);
                 teamsGrid.appendChild(teamCard);
             });
         }
