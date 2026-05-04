@@ -48,7 +48,7 @@ exports.handler = async function(event, context) {
   }
 
   try {
-    const supabase = getSupabaseClient(); // Read with anon key
+    const supabase = getSupabaseClient(true); // Read with anon key
 
     // Get league config
     const leagueConfigs = await supabase.query('league_config', 'GET', null, '?select=*&limit=1');
