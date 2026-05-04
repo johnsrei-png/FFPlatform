@@ -620,6 +620,89 @@
             background: var(--accent-secondary);
         }
 
+        .advance-season-btn {
+            background: var(--accent-success);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+
+        .advance-season-btn:hover {
+            background: #047857;
+            transform: translateY(-1px);
+        }
+
+        .season-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .season-modal.active {
+            display: flex;
+        }
+
+        .season-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .season-modal h3 {
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .warning-box {
+            background: rgba(245, 158, 11, 0.1);
+            border: 1px solid var(--accent-warning);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            color: var(--text-primary);
+        }
+
+        .warning-box strong {
+            color: var(--accent-warning);
+        }
+
+        .preview-list {
+            max-height: 300px;
+            overflow-y: auto;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.875rem;
+        }
+
+        .preview-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .preview-item:last-child {
+            border-bottom: none;
+        }
+
         .pick-modal {
             display: none;
             position: fixed;
@@ -887,6 +970,7 @@
                 <div style="display: flex; gap: 0.5rem;">
                     <button onclick="loadPublicData()">🔄 Refresh</button>
                     <button id="commissionerModeBtn" onclick="toggleCommissionerMode()">✏️ Edit Mode: OFF</button>
+                    <button id="advanceSeasonBtn" class="advance-season-btn" style="display: none;" onclick="openAdvanceSeasonModal()">📅 Advance Season</button>
                 </div>
             </div>
 
@@ -965,6 +1049,25 @@
             <div class="button-group">
                 <button onclick="saveAddedPick()">Add Pick</button>
                 <button class="btn-secondary" onclick="closePickModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="season-modal" id="seasonModal">
+        <div class="season-modal-content">
+            <h3>Advance to Next Season</h3>
+            <div class="warning-box">
+                <strong>⚠️ Warning:</strong> This will update ALL player salaries based on keeper escalation rules. This action cannot be undone!
+            </div>
+            <div>
+                <p style="margin-bottom: 1rem;">Preview of salary changes:</p>
+                <div class="preview-list" id="salaryPreview">
+                    Loading preview...
+                </div>
+            </div>
+            <div class="button-group">
+                <button onclick="confirmAdvanceSeason()">✓ Confirm Advance Season</button>
+                <button class="btn-secondary" onclick="closeSeasonModal()">Cancel</button>
             </div>
         </div>
     </div>
@@ -1082,6 +1185,9 @@
                 });
 
                 data.tradedPicks = tradedPicks;
+
+                // Cache data for season advance preview
+                currentDataCache = data;
 
                 document.getElementById('loading').style.display = 'none';
                 displayDashboard(data);
@@ -1252,9 +1358,11 @@
             
             commissionerMode = !commissionerMode;
             const btn = document.getElementById('commissionerModeBtn');
+            const advanceBtn = document.getElementById('advanceSeasonBtn');
             btn.textContent = commissionerMode ? '✏️ Edit Mode: ON' : '✏️ Edit Mode: OFF';
             btn.style.background = commissionerMode ? 'var(--accent-primary)' : '';
             btn.style.color = commissionerMode ? 'white' : '';
+            advanceBtn.style.display = commissionerMode ? 'block' : 'none';
             
             // Reload to show/hide edit functionality
             loadPublicData();
@@ -1563,6 +1671,73 @@
                 alert('Error removing pick: ' + error.message);
             }
         }
+
+        let currentSalariesForPreview = [];
+
+        function openAdvanceSeasonModal() {
+            if (!commissionerMode) return;
+            
+            // Generate preview of all salary changes
+            const previewHtml = [];
+            const salaries = Object.values(currentDataCache.salaries || {});
+            
+            currentSalariesForPreview = salaries.map(s => ({
+                playerId: s.player_id,
+                currentSalary: s.salary,
+                newSalary: s.salary + getKeeperEscalation(s.salary)
+            }));
+            
+            currentSalariesForPreview.forEach(item => {
+                const player = currentDataCache.players[item.playerId];
+                if (player) {
+                    const name = `${player.first_name || ''} ${player.last_name || ''}`.trim();
+                    previewHtml.push(`
+                        <div class="preview-item">
+                            <span>${name}</span>
+                            <span>$${item.currentSalary} → $${item.newSalary}</span>
+                        </div>
+                    `);
+                }
+            });
+            
+            document.getElementById('salaryPreview').innerHTML = previewHtml.join('');
+            document.getElementById('seasonModal').classList.add('active');
+        }
+
+        function closeSeasonModal() {
+            document.getElementById('seasonModal').classList.remove('active');
+        }
+
+        async function confirmAdvanceSeason() {
+            if (!confirm('Are you absolutely sure? This will update all salaries and cannot be undone!')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/advance-season', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        leagueId: leagueId
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to advance season');
+                }
+
+                alert(`Success! Advanced season. ${result.updated} salaries updated.`);
+                closeSeasonModal();
+                loadPublicData();
+
+            } catch (error) {
+                alert('Error advancing season: ' + error.message);
+            }
+        }
+
+        let currentDataCache = {};
 
         window.addEventListener('DOMContentLoaded', () => {
             loadPublicData();
