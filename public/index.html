@@ -1056,7 +1056,9 @@
                 try {
                     const picksResponse = await fetch(`https://api.sleeper.app/v1/league/${data.league.league_id}/traded_picks`);
                     if (picksResponse.ok) {
-                        tradedPicks = await picksResponse.json();
+                        const allPicks = await picksResponse.json();
+                        // Filter to only include picks from 2027 onwards
+                        tradedPicks = allPicks.filter(pick => pick.season >= 2027);
                     }
                 } catch (error) {
                     console.log('Could not fetch traded picks:', error);
@@ -1066,14 +1068,17 @@
                 // Custom picks override Sleeper data
                 const customPicks = data.customPicks || [];
                 customPicks.forEach(customPick => {
-                    // Convert custom pick format to match Sleeper format
-                    tradedPicks.push({
-                        season: customPick.year,
-                        round: customPick.round,
-                        roster_id: customPick.original_owner,
-                        owner_id: customPick.current_owner,
-                        previous_owner_id: null
-                    });
+                    // Only add if year is 2027 or later
+                    if (customPick.year >= 2027) {
+                        // Convert custom pick format to match Sleeper format
+                        tradedPicks.push({
+                            season: customPick.year,
+                            round: customPick.round,
+                            roster_id: customPick.original_owner,
+                            owner_id: customPick.current_owner,
+                            previous_owner_id: null
+                        });
+                    }
                 });
 
                 data.tradedPicks = tradedPicks;
