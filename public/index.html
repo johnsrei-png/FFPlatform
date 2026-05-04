@@ -1112,7 +1112,7 @@
 
                     const salaryData = data.salaries[playerId];
                     const salary = salaryData ? salaryData.salary : 1;
-                    const isNew = !salaryData || salary === 1;
+                    const isNew = !salaryData; // New if not in database at all
                     const escalation = getKeeperEscalation(salary);
                     const keeperCost = salary + escalation;
 
@@ -1380,7 +1380,7 @@
             
             teams.forEach(team => {
                 team.players.forEach(player => {
-                    if (player.salary === 1 && player.isNew) {
+                    if (player.isNew) { // isNew = not in database at all
                         newPlayers.push(player);
                     }
                 });
