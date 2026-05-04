@@ -1111,8 +1111,12 @@
                     if (!player) return null;
 
                     const salaryData = data.salaries[playerId];
+                    
+                    // If no salary data exists, it's a new pickup
+                    // Default to $1 until commissioner sets it
                     const salary = salaryData ? salaryData.salary : 1;
-                    const isNew = !salaryData; // New if not in database at all
+                    const isNew = !salaryData;
+                    
                     const escalation = getKeeperEscalation(salary);
                     const keeperCost = salary + escalation;
 
