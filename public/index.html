@@ -536,6 +536,43 @@
             }
         }
 
+        .draft-picks-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .draft-picks-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .draft-pick-item {
+            display: inline-block;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.375rem 0.75rem;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.8125rem;
+            color: var(--text-primary);
+        }
+
+        .draft-pick-item.own {
+            border-color: var(--accent-primary);
+            background: rgba(37, 99, 235, 0.05);
+        }
+
+        .draft-pick-item.traded {
+            border-color: var(--accent-warning);
+            background: rgba(245, 158, 11, 0.05);
+        }
+
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             .container {
@@ -833,6 +870,66 @@
             return 0;
         }
 
+        function calculateDraftPicks(rosterId, totalRosters, tradedPicks) {
+            const currentYear = new Date().getFullYear();
+            const picks = [];
+            
+            // Show picks for next 3 years
+            for (let year = currentYear; year < currentYear + 3; year++) {
+                // Start with own picks
+                for (let round = 1; round <= 3; round++) {
+                    picks.push({
+                        year: year,
+                        round: round,
+                        originalOwner: rosterId,
+                        currentOwner: rosterId,
+                        label: `${year} Rd ${round}`,
+                        isOwn: true
+                    });
+                }
+            }
+            
+            // Apply trades
+            tradedPicks.forEach(trade => {
+                // Remove pick from original owner
+                const pickIndex = picks.findIndex(p => 
+                    p.year === trade.season && 
+                    p.round === trade.round && 
+                    p.originalOwner === trade.roster_id
+                );
+                
+                if (pickIndex !== -1) {
+                    picks[pickIndex].currentOwner = trade.owner_id;
+                    picks[pickIndex].isOwn = false;
+                }
+                
+                // Add traded pick to new owner if it's this roster
+                if (trade.owner_id === rosterId && trade.roster_id !== rosterId) {
+                    const existingPick = picks.find(p => 
+                        p.year === trade.season && 
+                        p.round === trade.round && 
+                        p.originalOwner === trade.roster_id
+                    );
+                    
+                    if (!existingPick) {
+                        picks.push({
+                            year: trade.season,
+                            round: trade.round,
+                            originalOwner: trade.roster_id,
+                            currentOwner: trade.owner_id,
+                            label: `${trade.season} Rd ${trade.round}`,
+                            isOwn: false
+                        });
+                    }
+                }
+            });
+            
+            // Filter to only picks this roster owns, sort by year then round
+            return picks
+                .filter(p => p.currentOwner === rosterId)
+                .sort((a, b) => a.year === b.year ? a.round - b.round : a.year - b.year);
+        }
+
         async function loadPublicData() {
             document.getElementById('loading').style.display = 'block';
             document.getElementById('dashboard').classList.remove('active');
@@ -844,6 +941,19 @@
                 if (!response.ok) {
                     throw new Error(data.error || 'Failed to load data');
                 }
+
+                // Fetch traded picks from Sleeper
+                let tradedPicks = [];
+                try {
+                    const picksResponse = await fetch(`https://api.sleeper.app/v1/league/${data.league.league_id}/traded_picks`);
+                    if (picksResponse.ok) {
+                        tradedPicks = await picksResponse.json();
+                    }
+                } catch (error) {
+                    console.log('Could not fetch traded picks:', error);
+                }
+
+                data.tradedPicks = tradedPicks;
 
                 document.getElementById('loading').style.display = 'none';
                 displayDashboard(data);
@@ -894,6 +1004,9 @@
                 const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
                 const capSpace = SALARY_CAP - totalSalary;
 
+                // Calculate draft picks for this team
+                const draftPicks = calculateDraftPicks(roster.roster_id, data.league.total_rosters, data.tradedPicks || []);
+
                 return {
                     rosterId: roster.roster_id,
                     name: teamName,
@@ -902,7 +1015,8 @@
                     totalSalary: totalSalary,
                     capSpace: capSpace,
                     wins: roster.settings?.wins || 0,
-                    losses: roster.settings?.losses || 0
+                    losses: roster.settings?.losses || 0,
+                    draftPicks: draftPicks
                 };
             });
 
@@ -967,6 +1081,14 @@
                             </div>
                         `).join('')}
                     </div>
+                    ${team.draftPicks && team.draftPicks.length > 0 ? `
+                        <div class="draft-picks-section">
+                            <div class="draft-picks-title">Draft Picks</div>
+                            ${team.draftPicks.map(pick => `
+                                <span class="draft-pick-item ${pick.isOwn ? 'own' : 'traded'}">${pick.label}</span>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 `;
                 teamsGrid.appendChild(teamCard);
             });
