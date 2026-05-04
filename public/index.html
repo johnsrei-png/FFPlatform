@@ -872,47 +872,24 @@
 
         function calculateDraftPicks(rosterId, totalRosters, tradedPicks, allTeams) {
             const picks = [];
+            const picksToRemove = new Set();
+            const picksToAdd = [];
             
-            // Show picks for 2027-2029 (next 3 years), 1 round only
-            for (let year = 2027; year < 2030; year++) {
-                // Each team gets 1 pick per year by default
-                picks.push({
-                    year: year,
-                    round: 1,
-                    originalOwner: rosterId,
-                    currentOwner: rosterId,
-                    label: `${year} Pick`,
-                    isOwn: true
-                });
-            }
-            
-            // Apply trades
+            // First, check which picks this team has traded away
             tradedPicks.forEach(trade => {
-                // Only process round 1 picks for years 2027-2029
-                if (trade.round !== 1 || trade.season < 2027 || trade.season >= 2030) {
-                    return;
-                }
+                if (trade.round !== 1) return; // Only round 1
                 
-                // Remove pick from original owner if they traded it away
                 if (trade.roster_id === rosterId) {
-                    const pickIndex = picks.findIndex(p => 
-                        p.year === trade.season && 
-                        p.round === 1 && 
-                        p.originalOwner === rosterId
-                    );
-                    
-                    if (pickIndex !== -1) {
-                        picks.splice(pickIndex, 1);
-                    }
+                    // This team traded away this pick
+                    picksToRemove.add(`${trade.season}`);
                 }
                 
-                // Add traded pick to new owner if it's this roster
                 if (trade.owner_id === rosterId && trade.roster_id !== rosterId) {
-                    // Find the original team name
+                    // This team acquired this pick
                     const originalTeam = allTeams.find(t => t.rosterId === trade.roster_id);
                     const teamLabel = originalTeam ? originalTeam.name : `Team ${trade.roster_id}`;
                     
-                    picks.push({
+                    picksToAdd.push({
                         year: trade.season,
                         round: 1,
                         originalOwner: trade.roster_id,
@@ -922,6 +899,23 @@
                     });
                 }
             });
+            
+            // Add own picks for 2027-2029 (only if not traded away)
+            for (let year = 2027; year < 2030; year++) {
+                if (!picksToRemove.has(`${year}`)) {
+                    picks.push({
+                        year: year,
+                        round: 1,
+                        originalOwner: rosterId,
+                        currentOwner: rosterId,
+                        label: `${year} Pick`,
+                        isOwn: true
+                    });
+                }
+            }
+            
+            // Add acquired picks
+            picks.push(...picksToAdd);
             
             // Sort by year
             return picks.sort((a, b) => a.year - b.year);
