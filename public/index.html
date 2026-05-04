@@ -870,7 +870,7 @@
             return 0;
         }
 
-        function calculateDraftPicks(rosterId, totalRosters, tradedPicks) {
+        function calculateDraftPicks(rosterId, totalRosters, tradedPicks, allTeams) {
             const picks = [];
             
             // Show picks for 2027-2029 (next 3 years), 1 round only
@@ -908,12 +908,16 @@
                 
                 // Add traded pick to new owner if it's this roster
                 if (trade.owner_id === rosterId && trade.roster_id !== rosterId) {
+                    // Find the original team name
+                    const originalTeam = allTeams.find(t => t.rosterId === trade.roster_id);
+                    const teamLabel = originalTeam ? originalTeam.name : `Team ${trade.roster_id}`;
+                    
                     picks.push({
                         year: trade.season,
                         round: 1,
                         originalOwner: trade.roster_id,
                         currentOwner: trade.owner_id,
-                        label: `${trade.season} Pick`,
+                        label: `${trade.season} Pick (${teamLabel})`,
                         isOwn: false
                     });
                 }
@@ -997,9 +1001,6 @@
                 const totalSalary = players.reduce((sum, p) => sum + p.salary, 0);
                 const capSpace = SALARY_CAP - totalSalary;
 
-                // Calculate draft picks for this team
-                const draftPicks = calculateDraftPicks(roster.roster_id, data.league.total_rosters, data.tradedPicks || []);
-
                 return {
                     rosterId: roster.roster_id,
                     name: teamName,
@@ -1008,9 +1009,13 @@
                     totalSalary: totalSalary,
                     capSpace: capSpace,
                     wins: roster.settings?.wins || 0,
-                    losses: roster.settings?.losses || 0,
-                    draftPicks: draftPicks
+                    losses: roster.settings?.losses || 0
                 };
+            });
+
+            // Now add draft picks to each team (requires teams array to be built first)
+            teams.forEach(team => {
+                team.draftPicks = calculateDraftPicks(team.rosterId, data.league.total_rosters, data.tradedPicks || [], teams);
             });
 
             document.getElementById('totalTeams').textContent = teams.length;
