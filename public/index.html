@@ -1273,7 +1273,7 @@
         async function savePlayerSalary() {
             const newSalary = parseInt(document.getElementById('editPlayerSalary').value);
             
-            if (!newSalary || newSalary < 1 || newSalary > 200) {
+            if (isNaN(newSalary) || newSalary < 1 || newSalary > 200) {
                 document.getElementById('editError').textContent = 'Salary must be between $1 and $200';
                 document.getElementById('editError').style.display = 'block';
                 return;
