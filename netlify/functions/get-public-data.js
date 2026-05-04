@@ -89,6 +89,14 @@ exports.handler = async function(event, context) {
     // Get existing player salaries from database
     const playerSalaries = await supabase.query('player_salaries', 'GET', null, `?league_id=eq.${leagueId}&select=*`);
 
+    // Get custom draft picks
+    let customPicks = [];
+    try {
+      customPicks = await supabase.query('draft_picks', 'GET', null, `?league_id=eq.${leagueId}&select=*`);
+    } catch (error) {
+      console.log('No custom draft picks table or no picks:', error);
+    }
+
     // Create salary lookup
     const salaryMap = {};
     playerSalaries.forEach(ps => {
@@ -176,7 +184,8 @@ exports.handler = async function(event, context) {
         rosters,
         users,
         players: rosterPlayers,
-        salaries: salaryMap
+        salaries: salaryMap,
+        customPicks: customPicks || []
       })
     };
 
