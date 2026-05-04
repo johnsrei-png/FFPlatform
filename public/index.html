@@ -871,63 +871,56 @@
         }
 
         function calculateDraftPicks(rosterId, totalRosters, tradedPicks) {
-            const currentYear = new Date().getFullYear();
             const picks = [];
             
-            // Show picks for next 3 years
-            for (let year = currentYear; year < currentYear + 3; year++) {
-                // Start with own picks
-                for (let round = 1; round <= 3; round++) {
-                    picks.push({
-                        year: year,
-                        round: round,
-                        originalOwner: rosterId,
-                        currentOwner: rosterId,
-                        label: `${year} Rd ${round}`,
-                        isOwn: true
-                    });
-                }
+            // Show picks for 2027-2029 (next 3 years), 1 round only
+            for (let year = 2027; year < 2030; year++) {
+                // Each team gets 1 pick per year by default
+                picks.push({
+                    year: year,
+                    round: 1,
+                    originalOwner: rosterId,
+                    currentOwner: rosterId,
+                    label: `${year} Pick`,
+                    isOwn: true
+                });
             }
             
             // Apply trades
             tradedPicks.forEach(trade => {
-                // Remove pick from original owner
-                const pickIndex = picks.findIndex(p => 
-                    p.year === trade.season && 
-                    p.round === trade.round && 
-                    p.originalOwner === trade.roster_id
-                );
+                // Only process round 1 picks for years 2027-2029
+                if (trade.round !== 1 || trade.season < 2027 || trade.season >= 2030) {
+                    return;
+                }
                 
-                if (pickIndex !== -1) {
-                    picks[pickIndex].currentOwner = trade.owner_id;
-                    picks[pickIndex].isOwn = false;
+                // Remove pick from original owner if they traded it away
+                if (trade.roster_id === rosterId) {
+                    const pickIndex = picks.findIndex(p => 
+                        p.year === trade.season && 
+                        p.round === 1 && 
+                        p.originalOwner === rosterId
+                    );
+                    
+                    if (pickIndex !== -1) {
+                        picks.splice(pickIndex, 1);
+                    }
                 }
                 
                 // Add traded pick to new owner if it's this roster
                 if (trade.owner_id === rosterId && trade.roster_id !== rosterId) {
-                    const existingPick = picks.find(p => 
-                        p.year === trade.season && 
-                        p.round === trade.round && 
-                        p.originalOwner === trade.roster_id
-                    );
-                    
-                    if (!existingPick) {
-                        picks.push({
-                            year: trade.season,
-                            round: trade.round,
-                            originalOwner: trade.roster_id,
-                            currentOwner: trade.owner_id,
-                            label: `${trade.season} Rd ${trade.round}`,
-                            isOwn: false
-                        });
-                    }
+                    picks.push({
+                        year: trade.season,
+                        round: 1,
+                        originalOwner: trade.roster_id,
+                        currentOwner: trade.owner_id,
+                        label: `${trade.season} Pick`,
+                        isOwn: false
+                    });
                 }
             });
             
-            // Filter to only picks this roster owns, sort by year then round
-            return picks
-                .filter(p => p.currentOwner === rosterId)
-                .sort((a, b) => a.year === b.year ? a.round - b.round : a.year - b.year);
+            // Sort by year
+            return picks.sort((a, b) => a.year - b.year);
         }
 
         async function loadPublicData() {
