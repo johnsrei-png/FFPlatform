@@ -573,6 +573,99 @@
             background: rgba(245, 158, 11, 0.05);
         }
 
+        .draft-pick-item.editable {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .draft-pick-item.editable:hover {
+            border-color: var(--accent-danger);
+            background: rgba(220, 38, 38, 0.1);
+        }
+
+        .draft-pick-item .remove-pick {
+            display: none;
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            background: var(--accent-danger);
+            color: white;
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            font-size: 12px;
+            line-height: 18px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .draft-pick-item.editable:hover .remove-pick {
+            display: block;
+        }
+
+        .add-pick-btn {
+            display: inline-block;
+            background: var(--accent-primary);
+            color: white;
+            border: 1px solid var(--accent-primary);
+            border-radius: 6px;
+            padding: 0.375rem 0.75rem;
+            font-size: 0.8125rem;
+            cursor: pointer;
+            margin-top: 0.5rem;
+        }
+
+        .add-pick-btn:hover {
+            background: var(--accent-secondary);
+        }
+
+        .pick-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pick-modal.active {
+            display: flex;
+        }
+
+        .pick-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .pick-modal h3 {
+            margin-bottom: 1.5rem;
+            color: var(--text-primary);
+        }
+
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.9375rem;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
             .container {
@@ -852,11 +945,36 @@
         </div>
     </div>
 
+    <div class="pick-modal" id="pickModal">
+        <div class="pick-modal-content">
+            <h3>Add Draft Pick</h3>
+            <div class="input-group">
+                <label>Year</label>
+                <select id="pickYear">
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Original Team (who this pick belongs to)</label>
+                <select id="pickOriginalTeam">
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+            <div class="button-group">
+                <button onclick="saveAddedPick()">Add Pick</button>
+                <button class="btn-secondary" onclick="closePickModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SALARY_CAP = 200;
         let commissionerMode = false;
         let editingPlayer = null;
         let leagueId = null;
+        let allTeamsData = [];
 
         function getKeeperEscalation(salary) {
             if (salary >= 1 && salary <= 5) return 2;
@@ -944,6 +1062,20 @@
                     console.log('Could not fetch traded picks:', error);
                 }
 
+                // Merge custom picks with Sleeper picks
+                // Custom picks override Sleeper data
+                const customPicks = data.customPicks || [];
+                customPicks.forEach(customPick => {
+                    // Convert custom pick format to match Sleeper format
+                    tradedPicks.push({
+                        season: customPick.year,
+                        round: customPick.round,
+                        roster_id: customPick.original_owner,
+                        owner_id: customPick.current_owner,
+                        previous_owner_id: null
+                    });
+                });
+
                 data.tradedPicks = tradedPicks;
 
                 document.getElementById('loading').style.display = 'none';
@@ -1012,6 +1144,9 @@
                 team.draftPicks = calculateDraftPicks(team.rosterId, data.league.total_rosters, data.tradedPicks || [], teams);
             });
 
+            // Store teams globally for pick management
+            allTeamsData = teams;
+
             document.getElementById('totalTeams').textContent = teams.length;
             const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
             document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
@@ -1077,8 +1212,19 @@
                         <div class="draft-picks-section">
                             <div class="draft-picks-title">Draft Picks</div>
                             ${team.draftPicks.map(pick => `
-                                <span class="draft-pick-item ${pick.isOwn ? 'own' : 'traded'}">${pick.label}</span>
+                                <span class="draft-pick-item ${pick.isOwn ? 'own' : 'traded'} ${commissionerMode ? 'editable' : ''}" 
+                                      data-pick-year="${pick.year}"
+                                      data-pick-original="${pick.originalOwner}">
+                                    ${pick.label}
+                                    ${commissionerMode ? `<span class="remove-pick" onclick="removePick(${team.rosterId}, ${pick.year}, ${pick.originalOwner})">×</span>` : ''}
+                                </span>
                             `).join('')}
+                            ${commissionerMode ? `<button class="add-pick-btn" onclick="openAddPickModal(${team.rosterId})">+ Add Pick</button>` : ''}
+                        </div>
+                    ` : commissionerMode ? `
+                        <div class="draft-picks-section">
+                            <div class="draft-picks-title">Draft Picks</div>
+                            <button class="add-pick-btn" onclick="openAddPickModal(${team.rosterId})">+ Add Pick</button>
                         </div>
                     ` : ''}
                 `;
@@ -1315,6 +1461,97 @@
 
             } catch (error) {
                 alert('Error updating salary: ' + error.message);
+            }
+        }
+
+        let currentTeamForPick = null;
+        let customPicks = {}; // Store custom pick assignments
+
+        function openAddPickModal(rosterId) {
+            if (!commissionerMode) return;
+            
+            currentTeamForPick = rosterId;
+            
+            // Populate team dropdown
+            const select = document.getElementById('pickOriginalTeam');
+            select.innerHTML = '';
+            
+            allTeamsData.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.rosterId;
+                option.textContent = team.name;
+                select.appendChild(option);
+            });
+            
+            document.getElementById('pickModal').classList.add('active');
+        }
+
+        function closePickModal() {
+            document.getElementById('pickModal').classList.remove('active');
+            currentTeamForPick = null;
+        }
+
+        async function saveAddedPick() {
+            const year = parseInt(document.getElementById('pickYear').value);
+            const originalTeam = parseInt(document.getElementById('pickOriginalTeam').value);
+            
+            if (!currentTeamForPick) return;
+            
+            try {
+                const response = await fetch('/api/update-draft-pick', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        leagueId: leagueId,
+                        currentOwner: currentTeamForPick,
+                        originalOwner: originalTeam,
+                        year: year,
+                        action: 'add'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to add pick');
+                }
+
+                closePickModal();
+                loadPublicData();
+
+            } catch (error) {
+                alert('Error adding pick: ' + error.message);
+            }
+        }
+
+        async function removePick(currentOwner, year, originalOwner) {
+            if (!commissionerMode) return;
+            
+            if (!confirm(`Remove ${year} pick?`)) return;
+            
+            try {
+                const response = await fetch('/api/update-draft-pick', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        leagueId: leagueId,
+                        currentOwner: currentOwner,
+                        originalOwner: originalOwner,
+                        year: year,
+                        action: 'remove'
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || 'Failed to remove pick');
+                }
+
+                loadPublicData();
+
+            } catch (error) {
+                alert('Error removing pick: ' + error.message);
             }
         }
 
