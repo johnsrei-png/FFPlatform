@@ -67,7 +67,23 @@ exports.handler = async (event) => {
     const users = await fetchWithRetry(`${SLEEPER_API_BASE}/league/${leagueId}/users`);
     
     // Fetch all players
-    const players = await fetchWithRetry(`${SLEEPER_API_BASE}/players/nfl`);
+    const allPlayers = await fetchWithRetry(`${SLEEPER_API_BASE}/players/nfl`);
+    
+    // Get all player IDs from rosters
+    const rosterPlayerIds = new Set();
+    rosters.forEach(roster => {
+      if (roster.players) {
+        roster.players.forEach(playerId => rosterPlayerIds.add(playerId));
+      }
+    });
+    
+    // Filter to only include players on rosters to reduce payload size
+    const players = {};
+    rosterPlayerIds.forEach(playerId => {
+      if (allPlayers[playerId]) {
+        players[playerId] = allPlayers[playerId];
+      }
+    });
 
     // Fetch traded picks
     const tradedPicks = await fetchWithRetry(`${SLEEPER_API_BASE}/league/${leagueId}/traded_picks`);
