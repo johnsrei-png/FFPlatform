@@ -624,8 +624,15 @@
         }
 
         .player-item.selected {
-            background: rgba(220, 38, 38, 0.1);
+            background: rgba(220, 38, 38, 0.15);
             border: 2px solid var(--accent-danger);
+            box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1);
+            transform: translateX(4px);
+        }
+
+        .player-item.selected .player-salary {
+            color: var(--accent-danger);
+            font-weight: 800;
         }
 
         .cap-preview {
@@ -1580,7 +1587,7 @@
                         Total: $${team.totalSalary} / $${SALARY_CAP}
                     </div>
                     <div class="cap-preview" id="cap-preview-${team.rosterId}">
-                        <div class="cap-preview-label">If you drop this player:</div>
+                        <div class="cap-preview-label">💡 Click players to see cap impact</div>
                         <div class="cap-preview-value" id="preview-value-${team.rosterId}"></div>
                     </div>
                     <div class="player-list">
@@ -1765,7 +1772,7 @@
             }
         }
 
-        let selectedPlayer = null;
+        let selectedPlayers = []; // Array to track multiple selected players
 
         function simulatePlayerDrop(rosterId, playerId, salary, playerName) {
             if (commissionerMode) return; // In commissioner mode, use edit instead
@@ -1776,29 +1783,53 @@
             const previewValue = document.getElementById(`preview-value-${rosterId}`);
             const currentCapSpace = parseFloat(teamCard.querySelector('.cap-space').textContent.replace('$', ''));
 
-            // If clicking the same player again, deselect
-            if (selectedPlayer && selectedPlayer.playerId === playerId) {
-                playerItem.classList.remove('selected');
-                capPreview.classList.remove('active');
-                selectedPlayer = null;
-                return;
-            }
-
-            // Clear previous selection
-            if (selectedPlayer) {
-                const prevItem = document.querySelector(`[data-player-id="${selectedPlayer.playerId}"]`);
-                if (prevItem) prevItem.classList.remove('selected');
-                const prevPreview = document.getElementById(`cap-preview-${selectedPlayer.rosterId}`);
-                if (prevPreview) prevPreview.classList.remove('active');
-            }
-
-            // Select new player
-            selectedPlayer = { rosterId, playerId, salary };
-            playerItem.classList.add('selected');
+            // Check if this player is already selected
+            const existingIndex = selectedPlayers.findIndex(p => p.playerId === playerId && p.rosterId === rosterId);
             
-            const newCapSpace = currentCapSpace + salary;
-            previewValue.textContent = `Cap Space: $${newCapSpace} (+$${salary})`;
-            capPreview.classList.add('active');
+            if (existingIndex !== -1) {
+                // Deselect this player
+                selectedPlayers.splice(existingIndex, 1);
+                playerItem.classList.remove('selected');
+            } else {
+                // Add this player to selection (only from same team)
+                const teamPlayers = selectedPlayers.filter(p => p.rosterId === rosterId);
+                if (teamPlayers.length === 0 || selectedPlayers[0].rosterId === rosterId) {
+                    selectedPlayers.push({ rosterId, playerId, salary });
+                    playerItem.classList.add('selected');
+                }
+            }
+
+            // Update preview for this team
+            const teamSelected = selectedPlayers.filter(p => p.rosterId === rosterId);
+            
+            if (teamSelected.length === 0) {
+                // No players selected, hide preview
+                capPreview.classList.remove('active');
+            } else {
+                // Calculate total of selected players
+                const totalSalary = teamSelected.reduce((sum, p) => sum + p.salary, 0);
+                const newCapSpace = currentCapSpace + totalSalary;
+                const playerCount = teamSelected.length;
+                
+                previewValue.innerHTML = `
+                    <div style="font-size: 0.875rem; margin-bottom: 0.25rem;">
+                        Dropping ${playerCount} player${playerCount > 1 ? 's' : ''}
+                    </div>
+                    <div style="font-size: 1.125rem; font-weight: 700;">
+                        Cap Space: $${newCapSpace} <span style="color: var(--accent-success);">(+$${totalSalary})</span>
+                    </div>
+                `;
+                capPreview.classList.add('active');
+            }
+
+            // Clear selections from other teams
+            selectedPlayers.filter(p => p.rosterId !== rosterId).forEach(player => {
+                const otherPlayerItem = document.querySelector(`[data-player-id="${player.playerId}"]`);
+                if (otherPlayerItem) otherPlayerItem.classList.remove('selected');
+                const otherPreview = document.getElementById(`cap-preview-${player.rosterId}`);
+                if (otherPreview) otherPreview.classList.remove('active');
+            });
+            selectedPlayers = selectedPlayers.filter(p => p.rosterId === rosterId);
         }
 
         function filterPlayers() {
