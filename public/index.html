@@ -197,8 +197,8 @@
 
         .teams-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 1.5rem;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 1.25rem;
         }
 
         .team-card {
@@ -946,6 +946,20 @@
         select:focus {
             outline: none;
             border-color: var(--accent-primary);
+        }
+
+        /* Tablet/Laptop: 3 columns */
+        @media (max-width: 1400px) {
+            .teams-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Smaller screens: 2 columns */
+        @media (max-width: 1024px) {
+            .teams-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
 
         /* Mobile Responsive Styles */
