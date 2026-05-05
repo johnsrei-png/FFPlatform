@@ -1093,6 +1093,13 @@
                 <label>Current Salary</label>
                 <input type="number" id="editPlayerSalary" min="1" max="200">
             </div>
+            <div class="input-group">
+                <label>Custom Escalation (leave blank for default)</label>
+                <input type="number" id="customEscalation" min="0" max="200" placeholder="Default based on salary range">
+                <small style="color: var(--text-secondary); font-size: 0.8125rem; display: block; margin-top: 0.25rem;">
+                    If set, next year's salary will be current + this amount (instead of the default escalation)
+                </small>
+            </div>
             <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                 <button onclick="savePlayerSalary()">Save</button>
                 <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
@@ -1175,7 +1182,13 @@
         let leagueId = null;
         let allTeamsData = [];
 
-        function getKeeperEscalation(salary) {
+        function getKeeperEscalation(salary, customEscalation) {
+            // If custom escalation is set, use it
+            if (customEscalation !== null && customEscalation !== undefined && customEscalation !== '') {
+                return parseInt(customEscalation);
+            }
+            
+            // Otherwise use default escalation tiers
             const settings = getEscalationSettings();
             for (const tier of settings) {
                 if (salary >= tier.min && salary <= tier.max) {
@@ -1500,6 +1513,7 @@
 
         async function savePlayerSalary() {
             const newSalary = parseInt(document.getElementById('editPlayerSalary').value);
+            const customEscalation = document.getElementById('customEscalation').value;
             
             if (isNaN(newSalary) || newSalary < 1 || newSalary > 200) {
                 document.getElementById('editError').textContent = 'Salary must be between $1 and $200';
@@ -1514,7 +1528,8 @@
                     body: JSON.stringify({
                         playerId: editingPlayer.playerId,
                         newSalary: newSalary,
-                        leagueId: editingPlayer.leagueId
+                        leagueId: editingPlayer.leagueId,
+                        customEscalation: customEscalation
                     })
                 });
 
