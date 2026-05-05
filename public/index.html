@@ -87,6 +87,21 @@
             align-items: center;
         }
 
+        .header-divider {
+            width: 1px;
+            height: 32px;
+            background: var(--border);
+            margin: 0 0.25rem;
+        }
+
+        .header-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
         .container {
             max-width: 1600px;
             margin: 0 auto;
@@ -976,6 +991,35 @@
 
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .header-right {
+                flex-wrap: wrap;
+                width: 100%;
+            }
+
+            .header-right button {
+                flex: 1;
+                min-width: 140px;
+                font-size: 0.8125rem;
+                padding: 0.625rem 1rem;
+            }
+
+            .header-divider {
+                display: none;
+            }
+
+            .header-label {
+                width: 100%;
+                margin-top: 0.5rem;
+                padding-bottom: 0.25rem;
+                border-bottom: 1px solid var(--border);
+            }
+
             .container {
                 padding: 1rem;
             }
@@ -1183,7 +1227,10 @@
             </div>
             <div class="header-right">
                 <button onclick="loadPublicData()">🔄 Refresh</button>
-                <button id="commissionerModeBtn" onclick="toggleCommissionerMode()">✏️ Edit Mode</button>
+                <button onclick="alert('League History feature coming soon!')">📊 League History</button>
+                <div class="header-divider"></div>
+                <span class="header-label">Commissioner</span>
+                <button id="commissionerModeBtn" onclick="toggleCommissionerMode()">🔒 Commissioner Mode</button>
                 <button id="advanceSeasonBtn" class="advance-season-btn" style="display: none;" onclick="openAdvanceSeasonModal()">📅 Advance Season</button>
                 <button id="escalationBtn" class="escalation-btn" style="display: none;" onclick="openEscalationModal()">⚙️ Settings</button>
             </div>
@@ -1655,7 +1702,7 @@
             const btn = document.getElementById('commissionerModeBtn');
             const advanceBtn = document.getElementById('advanceSeasonBtn');
             const escalationBtn = document.getElementById('escalationBtn');
-            btn.textContent = commissionerMode ? '✏️ Edit Mode' : '✏️ Edit Mode';
+            btn.textContent = commissionerMode ? '🔓 Commissioner Mode' : '🔒 Commissioner Mode';
             btn.style.background = commissionerMode ? '#059669' : '';
             btn.style.color = 'white';
             advanceBtn.style.display = commissionerMode ? 'block' : 'none';
