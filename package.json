@@ -1,10 +1,15 @@
-FFPlatform/                    ← Your repo root
-├── package.json              ← PUT IT HERE (same level as netlify folder)
-├── netlify/
-│   └── functions/
-│       ├── get-public-data.js
-│       ├── update-salary.js
-│       ├── supabase-client.js
-│       └── (other functions...)
-└── public/
-    └── index.html
+{
+  "name": "bbr-fantasy-platform",
+  "version": "1.0.0",
+  "description": "Fantasy Football Salary Cap Manager",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {},
+  "author": "",
+  "license": "ISC"
+}
