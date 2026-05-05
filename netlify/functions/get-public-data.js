@@ -1,204 +1,138 @@
-const fetch = require('node-fetch');
+const { getSupabaseClient } = require('./supabase-client');
 
-function getSupabaseClient(useServiceKey = false) {
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseKey = useServiceKey ? process.env.SUPABASE_SERVICE_KEY : process.env.SUPABASE_ANON_KEY;
-  
-  if (!supabaseUrl || !supabaseKey) {
-    throw new Error('Supabase credentials not configured');
-  }
+const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
-  return {
-    url: supabaseUrl,
-    key: supabaseKey,
-    async query(table, method = 'GET', body = null, queryParams = '') {
-      const url = `${supabaseUrl}/rest/v1/${table}${queryParams}`;
-      const options = {
-        method,
-        headers: {
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-          'Prefer': 'return=representation'
-        }
-      };
-      
-      if (body) {
-        options.body = JSON.stringify(body);
-      }
-      
-      const response = await fetch(url, options);
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Supabase error: ${error}`);
-      }
-      
-      return response.json();
+async function fetchWithRetry(url, retries = 3) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      return await response.json();
+    } catch (error) {
+      if (i === retries - 1) throw error;
+      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
     }
-  };
+  }
 }
 
-exports.handler = async function(event, context) {
-  // Only allow GET requests
+exports.handler = async (event) => {
   if (event.httpMethod !== 'GET') {
-    return {
-      statusCode: 405,
-      body: JSON.stringify({ error: 'Method not allowed' })
-    };
+    return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
   try {
-    const supabase = getSupabaseClient(true); // Read with anon key
-
-    // Get league config
-    const leagueConfigs = await supabase.query('league_config', 'GET', null, '?select=*&limit=1');
-
-    if (!leagueConfigs || leagueConfigs.length === 0) {
+    const leagueId = event.queryStringParameters?.leagueId;
+    
+    if (!leagueId) {
       return {
-        statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          needsSetup: true,
-          error: 'No league configured yet'
-        })
+        statusCode: 400,
+        body: JSON.stringify({ error: 'Missing leagueId parameter' })
       };
     }
 
-    const config = leagueConfigs[0];
-    const leagueId = config.league_id;
+    // Fetch league data
+    const league = await fetchWithRetry(`${SLEEPER_API_BASE}/league/${leagueId}`);
+    
+    // Fetch rosters
+    const rosters = await fetchWithRetry(`${SLEEPER_API_BASE}/league/${leagueId}/rosters`);
+    
+    // Fetch users
+    const users = await fetchWithRetry(`${SLEEPER_API_BASE}/league/${leagueId}/users`);
+    
+    // Fetch all players
+    const players = await fetchWithRetry(`${SLEEPER_API_BASE}/players/nfl`);
 
-    // Fetch from Sleeper API
-    const [leagueResponse, rostersResponse, usersResponse, playersResponse] = await Promise.all([
-      fetch(`https://api.sleeper.app/v1/league/${leagueId}`),
-      fetch(`https://api.sleeper.app/v1/league/${leagueId}/rosters`),
-      fetch(`https://api.sleeper.app/v1/league/${leagueId}/users`),
-      fetch('https://api.sleeper.app/v1/players/nfl')
-    ]);
+    // Fetch traded picks
+    const tradedPicks = await fetchWithRetry(`${SLEEPER_API_BASE}/league/${leagueId}/traded_picks`);
 
-    const league = await leagueResponse.json();
-    const rosters = await rostersResponse.json();
-    const users = await usersResponse.json();
-    const allPlayers = await playersResponse.json();
+    // Get user map for owner names
+    const userMap = {};
+    users.forEach(user => {
+      userMap[user.user_id] = user.display_name || user.username;
+    });
 
-    // Get all player IDs currently on rosters
-    const activePlayerIds = new Set();
+    // Get roster owner map
+    const rosterOwnerMap = {};
     rosters.forEach(roster => {
-      (roster.players || []).forEach(pid => activePlayerIds.add(pid));
+      rosterOwnerMap[roster.roster_id] = userMap[roster.owner_id] || 'Unknown';
     });
 
-    // Get existing player salaries from database
-    const playerSalaries = await supabase.query('player_salaries', 'GET', null, `?league_id=eq.${leagueId}&select=*`);
+    // Fetch salaries from Supabase
+    const supabase = getSupabaseClient(true); // Use service key to read all data
+    
+    const playerSalaries = await supabase.query(
+      'player_salaries',
+      'GET',
+      null,
+      `?league_id=eq.${leagueId}&select=*`
+    );
 
-    // Get custom draft picks
-    let customPicks = [];
-    try {
-      customPicks = await supabase.query('draft_picks', 'GET', null, `?league_id=eq.${leagueId}&select=*`);
-    } catch (error) {
-      console.log('No custom draft picks table or no picks:', error);
-    }
+    // Fetch custom draft picks from Supabase
+    const customPicks = await supabase.query(
+      'draft_picks',
+      'GET',
+      null,
+      `?league_id=eq.${leagueId}`
+    );
 
-    // Create salary lookup
-    const salaryMap = {};
-    playerSalaries.forEach(ps => {
-     salaryMap[ps.player_id] = {
-  salary: ps.current_salary,
-  isKeeper: ps.is_keeper,
-  yearsKept: ps.years_kept,
-  customEscalation: ps.custom_escalation
-};
-    });
-
-    // Find players to ADD (on roster but not in DB)
-    const newPlayers = [];
-    activePlayerIds.forEach(pid => {
-      if (!salaryMap[pid]) {
-        newPlayers.push({
-          league_id: leagueId,
-          player_id: pid,
-          player_name: allPlayers[pid] ? `${allPlayers[pid].first_name || ''} ${allPlayers[pid].last_name || ''}`.trim() : 'Unknown',
-          position: allPlayers[pid]?.position || 'N/A',
-          team: allPlayers[pid]?.team || 'FA',
-          current_salary: 1, // Default $1 for new pickups
-          is_keeper: false,
-          years_kept: 0
-        });
-        salaryMap[pid] = {
-          salary: 1,
-          isKeeper: false,
-          yearsKept: 0
-        };
+    // Auto-cleanup: Remove salary records for players no longer on any roster
+    const allPlayerIds = new Set();
+    rosters.forEach(roster => {
+      if (roster.players) {
+        roster.players.forEach(playerId => allPlayerIds.add(playerId));
       }
     });
 
-    // Find players to REMOVE (in DB but not on any roster)
-    const droppedPlayerIds = [];
-    playerSalaries.forEach(ps => {
-      if (!activePlayerIds.has(ps.player_id)) {
-        droppedPlayerIds.push(ps.player_id);
-      }
-    });
-
-    // Use service key client for write operations
-    const writeClient = getSupabaseClient(true);
-
-    // Insert new players
-    if (newPlayers.length > 0) {
-      await writeClient.query('player_salaries', 'POST', newPlayers);
-      console.log(`Added ${newPlayers.length} new players`);
-    }
-
-    // Delete dropped players
-    if (droppedPlayerIds.length > 0) {
-      // Supabase doesn't support IN queries easily, so delete one at a time
-      for (const playerId of droppedPlayerIds) {
-        await writeClient.query(
+    if (playerSalaries && playerSalaries.length > 0) {
+      const playersToRemove = playerSalaries.filter(ps => !allPlayerIds.has(ps.player_id));
+      
+      for (const playerSalary of playersToRemove) {
+        await supabase.query(
           'player_salaries',
           'DELETE',
           null,
-          `?league_id=eq.${leagueId}&player_id=eq.${playerId}`
+          `?player_id=eq.${playerSalary.player_id}&league_id=eq.${leagueId}`
         );
       }
-      console.log(`Removed ${droppedPlayerIds.length} dropped players`);
     }
 
-    // CRITICAL FIX: Only return players that are on rosters (not entire NFL database)
-    const rosterPlayers = {};
-    activePlayerIds.forEach(pid => {
-      if (allPlayers[pid]) {
-        rosterPlayers[pid] = allPlayers[pid];
-      }
-    });
+    // Build salary map
+    const salaryMap = {};
+    if (playerSalaries) {
+      playerSalaries.forEach(ps => {
+        salaryMap[ps.player_id] = {
+          salary: ps.current_salary,
+          isKeeper: ps.is_keeper,
+          yearsKept: ps.years_kept,
+          customEscalation: ps.custom_escalation,
+          acquisitionType: ps.acquisition_type
+        };
+      });
+    }
 
-    // Return combined data
     return {
       statusCode: 200,
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache'
       },
       body: JSON.stringify({
-        config: {
-          salaryCap: config.salary_cap,
-          lastSync: config.last_sync
-        },
         league,
         rosters,
         users,
-        players: rosterPlayers,
+        players,
         salaries: salaryMap,
+        rosterOwnerMap,
+        tradedPicks,
         customPicks: customPicks || []
       })
     };
 
   } catch (error) {
-    console.error('Error in get-public-data:', error);
+    console.error('Error fetching public data:', error);
     return {
       statusCode: 500,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        error: 'Failed to load league data',
-        details: error.message 
-      })
+      body: JSON.stringify({ error: error.message })
     };
   }
 };
