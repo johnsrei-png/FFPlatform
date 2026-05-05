@@ -1,19 +1,45 @@
 const { getSupabaseClient } = require('./supabase-client');
-const fetch = require('node-fetch');
+const https = require('https');
 
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
-async function fetchWithRetry(url, retries = 3) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
-    } catch (error) {
-      if (i === retries - 1) throw error;
-      await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
-    }
-  }
+function fetchWithRetry(url, retries = 3) {
+  return new Promise((resolve, reject) => {
+    let attempts = 0;
+    
+    const tryFetch = () => {
+      attempts++;
+      https.get(url, (res) => {
+        let data = '';
+        
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+        
+        res.on('end', () => {
+          if (res.statusCode === 200) {
+            try {
+              resolve(JSON.parse(data));
+            } catch (e) {
+              reject(new Error('Invalid JSON response'));
+            }
+          } else if (attempts < retries) {
+            setTimeout(tryFetch, 1000 * attempts);
+          } else {
+            reject(new Error(`HTTP ${res.statusCode}`));
+          }
+        });
+      }).on('error', (err) => {
+        if (attempts < retries) {
+          setTimeout(tryFetch, 1000 * attempts);
+        } else {
+          reject(err);
+        }
+      });
+    };
+    
+    tryFetch();
+  });
 }
 
 exports.handler = async (event) => {
@@ -59,7 +85,7 @@ exports.handler = async (event) => {
     });
 
     // Fetch salaries from Supabase
-    const supabase = getSupabaseClient(true); // Use service key to read all data
+    const supabase = getSupabaseClient(true);
     
     const playerSalaries = await supabase.query(
       'player_salaries',
