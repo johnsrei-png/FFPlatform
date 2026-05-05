@@ -54,7 +54,7 @@ exports.handler = async (event, context) => {
     const supabase = getSupabaseClient();
     
     if (event.httpMethod === 'POST') {
-      const { playerId, newSalary, leagueId } = JSON.parse(event.body);
+      const { playerId, newSalary, leagueId, customEscalation } = JSON.parse(event.body);
 
       if (!playerId || !newSalary || !leagueId) {
         return {
@@ -66,11 +66,14 @@ exports.handler = async (event, context) => {
 
       // Update the player salary
       const result = await supabase.query(
-        'player_salaries',
-        'PATCH',
-        { current_salary: parseInt(newSalary), updated_at: new Date().toISOString() },
-        `?league_id=eq.${leagueId}&player_id=eq.${playerId}`
-      );
+  'player_salaries',
+  'PATCH',
+  {
+    current_salary: newSalary,
+    custom_escalation: customEscalation !== '' && customEscalation !== null ? parseInt(customEscalation) : null
+  },
+  `?player_id=eq.${playerId}&league_id=eq.${leagueId}`
+);
 
       return {
         statusCode: 200,
