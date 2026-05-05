@@ -1,14 +1,10 @@
-{
-  "name": "fantasy-salary-manager",
-  "version": "1.0.0",
-  "description": "Fantasy Football Salary Cap Manager with Sleeper Integration",
-  "scripts": {
-    "dev": "netlify dev"
-  },
-  "dependencies": {
-    "node-fetch": "^2.6.7"
-  },
-  "devDependencies": {
-    "netlify-cli": "^17.0.0"
-  }
-}
+FFPlatform/                    ← Your repo root
+├── package.json              ← PUT IT HERE (same level as netlify folder)
+├── netlify/
+│   └── functions/
+│       ├── get-public-data.js
+│       ├── update-salary.js
+│       ├── supabase-client.js
+│       └── (other functions...)
+└── public/
+    └── index.html
