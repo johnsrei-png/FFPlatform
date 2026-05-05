@@ -1464,9 +1464,10 @@
 
             leagueId = data.league.league_id;
 
-            document.getElementById('leagueName').textContent = data.league.name;
-            document.getElementById('leagueSeason').textContent = `Season ${data.league.season}`;
-            document.getElementById('leagueSize').textContent = `${data.league.total_rosters} Teams`;
+            // League info now in header, these elements removed
+            // document.getElementById('leagueName').textContent = data.league.name;
+            // document.getElementById('leagueSeason').textContent = `Season ${data.league.season}`;
+            // document.getElementById('leagueSize').textContent = `${data.league.total_rosters} Teams`;
 
             const teams = data.rosters.map(roster => {
                 const user = data.users.find(u => u.user_id === roster.owner_id);
