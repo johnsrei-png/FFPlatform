@@ -1349,8 +1349,9 @@
                     // Default to $1 until commissioner sets it
                     const salary = salaryData ? salaryData.salary : 1;
                     const isNew = !salaryData;
+                    const customEscalation = salaryData ? salaryData.customEscalation : null;
                     
-                    const escalation = getKeeperEscalation(salary);
+                    const escalation = getKeeperEscalation(salary, customEscalation);
                     const keeperCost = salary + escalation;
 
                     return {
