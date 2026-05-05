@@ -1214,6 +1214,7 @@
     </div>
 
     <script>
+        const LEAGUE_ID = '1127097393'; // Your Sleeper league ID
         const SALARY_CAP = 200;
         let commissionerMode = false;
         let editingPlayer = null;
@@ -1312,7 +1313,7 @@
             document.getElementById('dashboard').classList.remove('active');
 
             try {
-                const response = await fetch('/api/get-public-data');
+                const response = await fetch(`/api/get-public-data?leagueId=${LEAGUE_ID}`);
                 const data = await response.json();
 
                 if (!response.ok) {
