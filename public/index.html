@@ -638,6 +638,76 @@
             transform: translateY(-1px);
         }
 
+        .escalation-btn {
+            background: var(--text-secondary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9375rem;
+            cursor: pointer;
+            margin-left: 0.5rem;
+        }
+
+        .escalation-btn:hover {
+            background: #4b5563;
+        }
+
+        .escalation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .escalation-modal.active {
+            display: flex;
+        }
+
+        .escalation-modal-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .escalation-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .escalation-table th,
+        .escalation-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .escalation-table th {
+            background: var(--bg-primary);
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        .escalation-table input {
+            width: 80px;
+            padding: 0.5rem;
+            text-align: center;
+        }
+
         .season-modal {
             display: none;
             position: fixed;
@@ -972,6 +1042,7 @@
                     <button onclick="loadPublicData()">🔄 Refresh</button>
                     <button id="commissionerModeBtn" onclick="toggleCommissionerMode()">✏️ Edit Mode: OFF</button>
                     <button id="advanceSeasonBtn" class="advance-season-btn" style="display: none;" onclick="openAdvanceSeasonModal()">📅 Advance Season</button>
+                    <button id="escalationBtn" class="escalation-btn" style="display: none;" onclick="openEscalationModal()">⚙️ Escalation Settings</button>
                 </div>
             </div>
 
@@ -1073,6 +1144,30 @@
         </div>
     </div>
 
+    <div class="escalation-modal" id="escalationModal">
+        <div class="escalation-modal-content">
+            <h3>Keeper Escalation Settings</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Configure how much salaries increase for keepers each year.
+            </p>
+            <table class="escalation-table">
+                <thead>
+                    <tr>
+                        <th>Salary Range</th>
+                        <th>Escalation Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="escalationTableBody">
+                    <!-- Populated dynamically -->
+                </tbody>
+            </table>
+            <div class="button-group">
+                <button onclick="saveEscalationSettings()">✓ Save Settings</button>
+                <button class="btn-secondary" onclick="closeEscalationModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const SALARY_CAP = 200;
         let commissionerMode = false;
@@ -1081,15 +1176,33 @@
         let allTeamsData = [];
 
         function getKeeperEscalation(salary) {
-            if (salary >= 1 && salary <= 5) return 2;
-            if (salary >= 6 && salary <= 10) return 4;
-            if (salary >= 11 && salary <= 20) return 6;
-            if (salary >= 21 && salary <= 30) return 7;
-            if (salary >= 31 && salary <= 40) return 8;
-            if (salary >= 41 && salary <= 50) return 9;
-            if (salary >= 51 && salary <= 60) return 10;
-            if (salary >= 61 && salary <= 70) return 11;
+            const settings = getEscalationSettings();
+            for (const tier of settings) {
+                if (salary >= tier.min && salary <= tier.max) {
+                    return tier.escalation;
+                }
+            }
             return 0;
+        }
+
+        function getEscalationSettings() {
+            const defaultSettings = [
+                { min: 1, max: 5, escalation: 2 },
+                { min: 6, max: 10, escalation: 4 },
+                { min: 11, max: 20, escalation: 6 },
+                { min: 21, max: 30, escalation: 7 },
+                { min: 31, max: 40, escalation: 8 },
+                { min: 41, max: 50, escalation: 9 },
+                { min: 51, max: 60, escalation: 10 },
+                { min: 61, max: 200, escalation: 11 }
+            ];
+
+            const saved = localStorage.getItem('escalationSettings');
+            return saved ? JSON.parse(saved) : defaultSettings;
+        }
+
+        function saveEscalationSettingsToStorage(settings) {
+            localStorage.setItem('escalationSettings', JSON.stringify(settings));
         }
 
         function calculateDraftPicks(rosterId, totalRosters, tradedPicks, allTeams) {
@@ -1360,10 +1473,12 @@
             commissionerMode = !commissionerMode;
             const btn = document.getElementById('commissionerModeBtn');
             const advanceBtn = document.getElementById('advanceSeasonBtn');
+            const escalationBtn = document.getElementById('escalationBtn');
             btn.textContent = commissionerMode ? '✏️ Edit Mode: ON' : '✏️ Edit Mode: OFF';
             btn.style.background = commissionerMode ? 'var(--accent-primary)' : '';
             btn.style.color = commissionerMode ? 'white' : '';
             advanceBtn.style.display = commissionerMode ? 'block' : 'none';
+            escalationBtn.style.display = commissionerMode ? 'block' : 'none';
             
             // Reload to show/hide edit functionality
             loadPublicData();
@@ -1736,6 +1851,52 @@
             } catch (error) {
                 alert('Error advancing season: ' + error.message);
             }
+        }
+
+        function openEscalationModal() {
+            if (!commissionerMode) return;
+            
+            const settings = getEscalationSettings();
+            const tbody = document.getElementById('escalationTableBody');
+            
+            tbody.innerHTML = settings.map((tier, index) => `
+                <tr>
+                    <td>$${tier.min} - $${tier.max}</td>
+                    <td>
+                        <input 
+                            type="number" 
+                            id="esc-${index}" 
+                            value="${tier.escalation}" 
+                            min="0" 
+                            max="50"
+                        />
+                    </td>
+                </tr>
+            `).join('');
+            
+            document.getElementById('escalationModal').classList.add('active');
+        }
+
+        function closeEscalationModal() {
+            document.getElementById('escalationModal').classList.remove('active');
+        }
+
+        function saveEscalationSettings() {
+            const settings = getEscalationSettings();
+            
+            settings.forEach((tier, index) => {
+                const input = document.getElementById(`esc-${index}`);
+                if (input) {
+                    tier.escalation = parseInt(input.value) || 0;
+                }
+            });
+            
+            saveEscalationSettingsToStorage(settings);
+            alert('Escalation settings saved! These will be used for future keeper calculations.');
+            closeEscalationModal();
+            
+            // Reload to update display with new escalations
+            loadPublicData();
         }
 
         let currentDataCache = {};
