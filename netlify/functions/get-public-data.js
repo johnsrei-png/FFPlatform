@@ -1,4 +1,5 @@
 const { getSupabaseClient } = require('./supabase-client');
+const fetch = require('node-fetch');
 
 const SLEEPER_API_BASE = 'https://api.sleeper.app/v1';
 
