@@ -1589,8 +1589,65 @@
                     throw new Error(result.error || 'Failed to update salary');
                 }
 
+                // Update the player display instantly without reloading
+                const playerElement = document.querySelector(`[data-player-id="${editingPlayer.playerId}"]`);
+                if (playerElement) {
+                    // Update salary display
+                    const salaryElement = playerElement.querySelector('.player-salary');
+                    if (salaryElement) {
+                        salaryElement.textContent = `$${newSalary}`;
+                    }
+                    
+                    // Update keeper cost (next year)
+                    const customEsc = customEscalation !== '' ? parseInt(customEscalation) : null;
+                    const escalation = getKeeperEscalation(newSalary, customEsc);
+                    const keeperCost = newSalary + escalation;
+                    const keeperElement = playerElement.querySelector('.keeper-cost');
+                    if (keeperElement) {
+                        keeperElement.textContent = `Next: $${keeperCost}`;
+                    }
+                    
+                    // Update acquisition type styling
+                    playerElement.classList.remove('trade', 'waiver');
+                    if (acquisitionType) {
+                        playerElement.classList.add(acquisitionType);
+                    }
+                    
+                    // Update acquisition badge
+                    const playerNameDiv = playerElement.querySelector('.player-name');
+                    const existingBadge = playerNameDiv.querySelector('.acquisition-badge');
+                    if (existingBadge) {
+                        existingBadge.remove();
+                    }
+                    if (acquisitionType) {
+                        const badge = document.createElement('span');
+                        badge.className = `acquisition-badge ${acquisitionType}`;
+                        badge.textContent = acquisitionType === 'trade' ? 'TRADE' : 'WAIVER';
+                        playerNameDiv.appendChild(badge);
+                    }
+                    
+                    // Update team totals
+                    const teamCard = playerElement.closest('.team-card');
+                    if (teamCard) {
+                        const allPlayers = teamCard.querySelectorAll('.player-item');
+                        let totalSalary = 0;
+                        allPlayers.forEach(p => {
+                            const salText = p.querySelector('.player-salary').textContent;
+                            totalSalary += parseInt(salText.replace('$', ''));
+                        });
+                        const totalElement = teamCard.querySelector('.team-total');
+                        const capSpace = 200 - totalSalary;
+                        if (totalElement) {
+                            totalElement.textContent = `Total: $${totalSalary} / $200`;
+                        }
+                        const capElement = teamCard.querySelector('.cap-space');
+                        if (capElement) {
+                            capElement.textContent = `Cap Space: $${capSpace}`;
+                        }
+                    }
+                }
+
                 closeEditModal();
-                loadPublicData(); // Refresh data
 
             } catch (error) {
                 document.getElementById('editError').textContent = error.message;
