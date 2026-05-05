@@ -439,6 +439,36 @@
             text-transform: uppercase;
         }
 
+        .player-item.trade {
+            background: rgba(34, 197, 94, 0.15);
+            border-left: 3px solid var(--accent-success);
+        }
+
+        .player-item.waiver {
+            background: rgba(245, 158, 11, 0.15);
+            border-left: 3px solid var(--accent-warning);
+        }
+
+        .acquisition-badge {
+            display: inline-block;
+            padding: 0.125rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+            text-transform: uppercase;
+        }
+
+        .acquisition-badge.trade {
+            background: var(--accent-success);
+            color: white;
+        }
+
+        .acquisition-badge.waiver {
+            background: var(--accent-warning);
+            color: white;
+        }
+
         .search-panel {
             background: var(--bg-card);
             border: 1px solid var(--border);
@@ -1100,6 +1130,14 @@
                     If set, next year's salary will be current + this amount (instead of the default escalation)
                 </small>
             </div>
+            <div class="input-group">
+                <label>Acquisition Type</label>
+                <select id="acquisitionType">
+                    <option value="">None (Drafted/Keeper)</option>
+                    <option value="trade">Trade (Green)</option>
+                    <option value="waiver">Waiver (Orange)</option>
+                </select>
+            </div>
             <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
                 <button onclick="savePlayerSalary()">Save</button>
                 <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
@@ -1350,6 +1388,7 @@
                     const salary = salaryData ? salaryData.salary : 1;
                     const isNew = !salaryData;
                     const customEscalation = salaryData ? salaryData.customEscalation : null;
+                    const acquisitionType = salaryData ? salaryData.acquisitionType : null;
                     
                     const escalation = getKeeperEscalation(salary, customEscalation);
                     const keeperCost = salary + escalation;
@@ -1363,7 +1402,9 @@
                         keeperCost: keeperCost,
                         escalation: escalation,
                         isNew: isNew,
-                        teamName: teamName
+                        teamName: teamName,
+                        customEscalation: customEscalation,
+                        acquisitionType: acquisitionType
                     };
                 }).filter(p => p !== null).sort((a, b) => b.salary - a.salary);
 
@@ -1433,14 +1474,17 @@
                     </div>
                     <div class="player-list">
                         ${team.players.map(p => `
-                            <div class="player-item" 
+                            <div class="player-item ${p.acquisitionType ? p.acquisitionType : ''}" 
                                  data-player-id="${p.id}"
                                  data-salary="${p.salary}"
-                                 onclick="${commissionerMode ? `editPlayerSalary('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.salary})` : `simulatePlayerDrop(${team.rosterId}, '${p.id}', ${p.salary}, '${p.name.replace(/'/g, "\\'")}')`}">
+                                 data-custom-escalation="${p.customEscalation || ''}"
+                                 data-acquisition-type="${p.acquisitionType || ''}"
+                                 onclick="${commissionerMode ? `editPlayerSalary('${p.id}', '${p.name.replace(/'/g, "\\'")}', ${p.salary}, ${p.customEscalation || 'null'}, '${p.acquisitionType || ''}')` : `simulatePlayerDrop(${team.rosterId}, '${p.id}', ${p.salary}, '${p.name.replace(/'/g, "\\'")}')`}">
                                 <div>
                                     <div class="player-name">
                                         ${p.name}
                                         ${p.isNew ? '<span class="new-player-badge">NEW</span>' : ''}
+                                        ${p.acquisitionType ? `<span class="acquisition-badge ${p.acquisitionType}">${p.acquisitionType === 'trade' ? 'TRADE' : 'WAIVER'}</span>` : ''}
                                     </div>
                                     <div class="player-position">${p.position} • ${p.team}</div>
                                 </div>
@@ -1498,12 +1542,14 @@
             loadPublicData();
         }
 
-        function editPlayerSalary(playerId, playerName, currentSalary) {
+        function editPlayerSalary(playerId, playerName, currentSalary, customEscalation, acquisitionType) {
             if (!commissionerMode) return;
             
             editingPlayer = { playerId, leagueId };
             document.getElementById('editPlayerName').value = playerName;
             document.getElementById('editPlayerSalary').value = currentSalary;
+            document.getElementById('customEscalation').value = customEscalation === null || customEscalation === 'null' ? '' : customEscalation;
+            document.getElementById('acquisitionType').value = acquisitionType || '';
             document.getElementById('editModal').classList.add('active');
         }
 
@@ -1515,6 +1561,7 @@
         async function savePlayerSalary() {
             const newSalary = parseInt(document.getElementById('editPlayerSalary').value);
             const customEscalation = document.getElementById('customEscalation').value;
+            const acquisitionType = document.getElementById('acquisitionType').value;
             
             if (isNaN(newSalary) || newSalary < 1 || newSalary > 200) {
                 document.getElementById('editError').textContent = 'Salary must be between $1 and $200';
@@ -1530,7 +1577,8 @@
                         playerId: editingPlayer.playerId,
                         newSalary: newSalary,
                         leagueId: editingPlayer.leagueId,
-                        customEscalation: customEscalation
+                        customEscalation: customEscalation,
+                        acquisitionType: acquisitionType
                     })
                 });
 
