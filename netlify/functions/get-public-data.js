@@ -100,11 +100,12 @@ exports.handler = async function(event, context) {
     // Create salary lookup
     const salaryMap = {};
     playerSalaries.forEach(ps => {
-      salaryMap[ps.player_id] = {
-        salary: ps.current_salary,
-        isKeeper: ps.is_keeper,
-        yearsKept: ps.years_kept
-      };
+     salaryMap[ps.player_id] = {
+  salary: ps.current_salary,
+  isKeeper: ps.is_keeper,
+  yearsKept: ps.years_kept,
+  customEscalation: ps.custom_escalation
+};
     });
 
     // Find players to ADD (on roster but not in DB)
