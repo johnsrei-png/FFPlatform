@@ -25,7 +25,7 @@ exports.handler = async (event) => {
 
     const requestBody = JSON.stringify({
       model: 'claude-sonnet-5',
-      max_tokens: 1024,
+      max_tokens: 4096,
       messages: [{ role: 'user', content: prompt }]
     });
 
