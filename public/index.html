@@ -99,6 +99,21 @@
             align-items: center;
         }
 
+        .menu-toggle {
+            display: none;
+            background: transparent;
+            color: #f5f2ea;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.4375rem 0.875rem;
+            border-radius: 4px;
+            font-family: var(--font-display);
+            font-weight: 600;
+            font-size: 0.8125rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            cursor: pointer;
+        }
+
         .header-divider {
             width: 1px;
             height: 28px;
@@ -1353,22 +1368,63 @@
 
         /* Mobile Responsive Styles */
         @media (max-width: 768px) {
+            .header {
+                padding: 0.75rem 0;
+            }
+
             .header-content {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 1rem;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+                gap: 0.75rem;
+                position: relative;
+            }
+
+            .header-left h1 {
+                font-size: 1.125rem;
+                line-height: 1.15;
+            }
+
+            .header-left {
+                min-width: 0;
+                flex: 1;
+            }
+
+            .header-left .subtitle {
+                display: none;
+            }
+
+            .menu-toggle {
+                display: block;
+                flex-shrink: 0;
             }
 
             .header-right {
-                flex-wrap: wrap;
-                width: 100%;
+                display: none;
+                position: absolute;
+                top: calc(100% + 0.75rem);
+                right: 0;
+                left: 0;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 0.5rem;
+                background: var(--ink);
+                border: 1px solid rgba(255, 255, 255, 0.15);
+                border-radius: 6px;
+                padding: 0.75rem;
+                box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+                z-index: 200;
+            }
+
+            .header-right.open {
+                display: flex;
             }
 
             .header-right button {
-                flex: 1;
-                min-width: 140px;
-                font-size: 0.8125rem;
-                padding: 0.625rem 1rem;
+                width: 100%;
+                font-size: 0.875rem;
+                padding: 0.6875rem 1rem;
+                text-align: center;
             }
 
             .header-divider {
@@ -1377,9 +1433,10 @@
 
             .header-label {
                 width: 100%;
-                margin-top: 0.5rem;
+                margin-top: 0.25rem;
                 padding-bottom: 0.25rem;
-                border-bottom: 1px solid var(--border);
+                border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+                text-align: center;
             }
 
             .container {
@@ -1587,7 +1644,8 @@
                 <h1>BBR Fantasy Salary Manager</h1>
                 <p class="subtitle">Boom Boom Room • $200 Salary Cap • Keeper Dynasty League</p>
             </div>
-            <div class="header-right">
+            <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()" aria-label="Menu">Menu</button>
+            <div class="header-right" id="headerRight">
                 <button onclick="loadPublicData()">Refresh</button>
                 <button onclick="exportToCSV()">Export CSV</button>
                 <button onclick="alert('League History feature coming soon!')">League History</button>
@@ -2088,6 +2146,18 @@
                 teamsGrid.appendChild(teamCard);
             });
         }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('headerRight');
+            menu.classList.toggle('open');
+        }
+
+        // Close the mobile menu if the window grows back to desktop width
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 768) {
+                document.getElementById('headerRight').classList.remove('open');
+            }
+        });
 
         function toggleCommissionerMode() {
             if (!commissionerMode) {
