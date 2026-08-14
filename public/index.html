@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BBR Fantasy Salary Manager</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1228,7 +1227,7 @@
             </div>
             <div class="header-right">
                 <button onclick="loadPublicData()">🔄 Refresh</button>
-                <button onclick="exportToExcel()">📥 Export to Excel</button>
+                <button onclick="exportToCSV()">📥 Export to CSV</button>
                 <button onclick="alert('League History feature coming soon!')">📊 League History</button>
                 <div class="header-divider"></div>
                 <span class="header-label">Commissioner</span>
@@ -2218,97 +2217,56 @@
 
         let currentDataCache = {};
 
-        function exportToExcel() {
+        function exportToCSV() {
             if (!allTeamsData || allTeamsData.length === 0) {
                 alert('No data to export. Please wait for the page to load.');
                 return;
             }
 
-            // Create a new workbook
-            const wb = XLSX.utils.book_new();
+            // Helper to safely escape CSV values (wrap in quotes, double internal quotes)
+            const esc = (val) => {
+                const s = String(val ?? '');
+                return `"${s.replace(/"/g, '""')}"`;
+            };
 
-            // === SHEET 1: All Rosters (one row per player) ===
-            const rosterData = [];
+            const headers = ['Team', 'Owner', 'Player', 'Position', 'NFL Team', 'Salary', 'Next Year', 'Escalation', 'Acquisition'];
+            const rows = [headers.map(esc).join(',')];
+
             allTeamsData.forEach(team => {
                 team.players.forEach(player => {
-                    rosterData.push({
-                        'Team': team.name,
-                        'Owner': team.owner,
-                        'Player': player.name,
-                        'Position': player.position,
-                        'NFL Team': player.team,
-                        'Salary': player.salary,
-                        'Next Year': player.keeperCost,
-                        'Escalation': player.escalation,
-                        'Acquisition': player.acquisitionType ? (player.acquisitionType === 'trade' ? 'Trade' : 'Waiver') : 'Draft/Keeper'
-                    });
+                    const acquisition = player.acquisitionType
+                        ? (player.acquisitionType === 'trade' ? 'Trade' : 'Waiver')
+                        : 'Draft/Keeper';
+                    rows.push([
+                        esc(team.name),
+                        esc(team.owner),
+                        esc(player.name),
+                        esc(player.position),
+                        esc(player.team),
+                        esc(player.salary),
+                        esc(player.keeperCost),
+                        esc(player.escalation),
+                        esc(acquisition)
+                    ].join(','));
                 });
             });
-            const ws1 = XLSX.utils.json_to_sheet(rosterData);
-            
-            // Set column widths
-            ws1['!cols'] = [
-                { wch: 22 }, // Team
-                { wch: 18 }, // Owner
-                { wch: 22 }, // Player
-                { wch: 10 }, // Position
-                { wch: 10 }, // NFL Team
-                { wch: 8 },  // Salary
-                { wch: 10 }, // Next Year
-                { wch: 11 }, // Escalation
-                { wch: 15 }  // Acquisition
-            ];
-            XLSX.utils.book_append_sheet(wb, ws1, 'All Rosters');
 
-            // === SHEET 2: Team Summary ===
-            const summaryData = allTeamsData.map(team => ({
-                'Team': team.name,
-                'Owner': team.owner,
-                'Record': `${team.wins}-${team.losses}`,
-                'Players': team.players.length,
-                'Total Salary': team.totalSalary,
-                'Cap Space': team.capSpace,
-                'Avg Player Cost': team.players.length > 0 ? Math.round(team.totalSalary / team.players.length) : 0
-            }));
-            const ws2 = XLSX.utils.json_to_sheet(summaryData);
-            ws2['!cols'] = [
-                { wch: 22 }, // Team
-                { wch: 18 }, // Owner
-                { wch: 10 }, // Record
-                { wch: 9 },  // Players
-                { wch: 12 }, // Total Salary
-                { wch: 11 }, // Cap Space
-                { wch: 15 }  // Avg Cost
-            ];
-            XLSX.utils.book_append_sheet(wb, ws2, 'Team Summary');
+            const csvContent = rows.join('\r\n');
 
-            // === SHEET 3: One column per team (side by side rosters) ===
-            const maxPlayers = Math.max(...allTeamsData.map(t => t.players.length));
-            const sideByeSideData = [];
-            
-            for (let i = 0; i < maxPlayers; i++) {
-                const row = {};
-                allTeamsData.forEach(team => {
-                    const player = team.players[i];
-                    if (player) {
-                        row[team.name] = `${player.name} ($${player.salary})`;
-                    } else {
-                        row[team.name] = '';
-                    }
-                });
-                sideByeSideData.push(row);
-            }
-            const ws3 = XLSX.utils.json_to_sheet(sideByeSideData);
-            // Set all columns to reasonable width
-            ws3['!cols'] = allTeamsData.map(() => ({ wch: 25 }));
-            XLSX.utils.book_append_sheet(wb, ws3, 'Rosters Side-by-Side');
+            // Prepend BOM so Excel reads UTF-8 characters correctly
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
 
-            // Generate filename with current date
             const date = new Date().toISOString().split('T')[0];
-            const filename = `BBR_Fantasy_Salaries_${date}.xlsx`;
+            const filename = `BBR_Fantasy_Salaries_${date}.csv`;
 
-            // Write and download the file
-            XLSX.writeFile(wb, filename);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
         }
 
         window.addEventListener('DOMContentLoaded', () => {
