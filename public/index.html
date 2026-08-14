@@ -1547,7 +1547,7 @@
 
             <h2 class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <span>💰 Team Salary Caps</span>
-                <button class="roast-all-btn" onclick="roastAllTeams()">📊 Analyze &amp; Rank All Teams</button>
+                <button class="roast-all-btn" onclick="roastAllTeams()">📊 Power Rankings</button>
             </h2>
             <div class="position-legend">
                 <span class="pos-badge qb">QB</span>
@@ -2668,6 +2668,11 @@ ${allSummaries}`;
                 }
                 const text = (data.text || '').trim();
 
+                if (!text) {
+                    body.innerHTML = '<div style="color: var(--accent-danger);">The analysis came back empty. Try again.</div>';
+                    return;
+                }
+
                 // Parse lines like "1. Team Name :: roast text"
                 const lines = text.split('\n').filter(l => l.trim());
                 let html = '';
@@ -2690,7 +2695,7 @@ ${allSummaries}`;
 
                 body.innerHTML = html || text.replace(/\n/g, '<br>');
             } catch (err) {
-                body.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed. Try again.</div>';
+                body.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed: ' + (err.message || 'Unknown error') + '</div>';
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
