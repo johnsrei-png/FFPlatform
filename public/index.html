@@ -2559,11 +2559,15 @@ ${playerLines}`;
 
             const prompt = `You are a savage, hilarious fantasy football analyst roasting a team in a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap). Be brutal and funny — no mercy — but roast the ROSTER CONSTRUCTION and cap decisions, never attack the person. Mix in genuine analysis so it's actually useful.
 
+IMPORTANT LEAGUE CONTEXT:
+- This league does NOT use kickers. Never mention kickers or criticize a team for not having one.
+- Players are acquired by bidding on a waiver wire, so a high salary does NOT automatically mean an "overpay." Sometimes a manager has to bid well above a player's real value to win someone they need. Judge whether the salary makes sense given how badly the team needed that player and their roster situation — a pricey win can be justified. Reserve "overpay" criticism for cases where a team clearly wasted cap on a player they didn't need or who doesn't move the needle.
+
 Here is the team:
 
 ${summary}
 
-Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, positional holes, overpays, and bad value. Be specific about players and dollar amounts. End with a real one-sentence piece of advice. Do not use markdown headers or bullet points — just punchy paragraphs.`;
+Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, positional holes, genuinely wasteful bids, and bad value. Be specific about players and dollar amounts. End with a real one-sentence piece of advice. Do not use markdown headers or bullet points — just punchy paragraphs.`;
 
             try {
                 const response = await fetch("/api/roast", {
@@ -2636,6 +2640,10 @@ Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, pos
             const allSummaries = allTeamsData.map(t => buildTeamSummary(t)).join('\n\n---\n\n');
 
             const prompt = `You are a savage, hilarious fantasy football analyst for a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap). Below are all ${allTeamsData.length} teams.
+
+IMPORTANT LEAGUE CONTEXT:
+- This league does NOT use kickers. Never mention kickers or criticize a team for not having one.
+- Players are acquired by bidding on a waiver wire, so a high salary does NOT automatically mean an "overpay." Sometimes a manager has to bid well above a player's real value to win someone they need. Judge whether a salary makes sense given the team's needs and situation — a pricey win can be justified. Reserve "overpay" criticism for clear cases of wasted cap on players a team didn't need or who don't move the needle.
 
 Rank them from WORST to BEST based on roster quality, cap efficiency, and keeper value. Be brutal and funny — no mercy — but roast ROSTER CONSTRUCTION and cap decisions, never attack people. Mix in real analysis.
 
