@@ -2676,13 +2676,13 @@ IMPORTANT LEAGUE CONTEXT:
 - This league does NOT use kickers. Never mention kickers or criticize a team for not having one.
 - Players are acquired by bidding on a waiver wire, so a high salary does NOT automatically mean an "overpay." Sometimes a manager has to bid well above a player's real value to win someone they need. Judge whether a salary makes sense given the team's needs and situation — a pricey win can be justified. Reserve "overpay" criticism for clear cases of wasted cap on players a team didn't need or who don't move the needle.
 
-Rank all ${allTeamsData.length} teams from BEST to WORST based on roster quality, cap efficiency, and keeper value. The BEST team is #1 and the WORST team is #${allTeamsData.length}. Be brutal and funny — no mercy — but roast ROSTER CONSTRUCTION and cap decisions, never attack people. Mix in real analysis.
+Rank all ${allTeamsData.length} teams from BEST to WORST based on roster quality, cap efficiency, and keeper value. The BEST team is #1 and the WORST team is #${allTeamsData.length}. Be brutal and funny — no mercy — but roast ROSTER CONSTRUCTION and cap decisions, never attack people.
 
-Also give EACH team a short, funny superlative title (2-5 words) that captures their vibe — glowing and triumphant for the good teams, brutal and mocking for the bad ones. Examples of the flavor: "Cap Wizard Supreme", "Championship or Bust", "Dumpster Fire Deluxe", "Bold Strategy, Cotton", "The Salary Cap Casualty". Make them original and specific to each team's situation, not these exact examples.
+Also give EACH team a short, funny superlative title (2-5 words) capturing their vibe — glowing for good teams, mocking for bad ones. Make them original and specific.
 
-For EACH team, respond in EXACTLY this format (no markdown, no bullets), one team per line:
+Keep each team's roast to ONE punchy sentence so the full response stays short. For EACH team, respond in EXACTLY this format (no markdown, no bullets), one team per line:
 
-[RANK]. [Team Name] :: [Superlative Title] :: [2-3 sentence roast/analysis with specific players and dollar figures]
+[RANK]. [Team Name] :: [Superlative Title] :: [one-sentence roast with a specific player or dollar figure]
 
 Start at 1 for the BEST team and count up to ${allTeamsData.length} for the WORST. Here are the teams:
 
@@ -2692,7 +2692,11 @@ ${allSummaries}`;
                 const response = await fetch("/api/roast", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt })
+                    body: JSON.stringify({
+                        prompt,
+                        model: "claude-haiku-4-5-20251001",
+                        maxTokens: 1500
+                    })
                 });
 
                 const data = await response.json();
