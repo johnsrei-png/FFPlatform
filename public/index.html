@@ -2242,7 +2242,7 @@
         function editPlayerSalary(playerId, playerName, currentSalary, customEscalation, acquisitionType) {
             if (!commissionerMode) return;
             
-            editingPlayer = { playerId, leagueId };
+            editingPlayer = { playerId, leagueId, playerName };
             document.getElementById('editPlayerName').value = playerName;
             document.getElementById('editPlayerSalary').value = currentSalary;
             document.getElementById('customEscalation').value = customEscalation === null || customEscalation === 'null' ? '' : customEscalation;
@@ -2272,6 +2272,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         playerId: editingPlayer.playerId,
+                        playerName: editingPlayer.playerName,
                         newSalary: newSalary,
                         leagueId: editingPlayer.leagueId,
                         customEscalation: customEscalation,
@@ -2515,6 +2516,7 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         playerId: playerId,
+                        playerName: playerName,
                         newSalary: salary,
                         leagueId: leagueId
                     })
