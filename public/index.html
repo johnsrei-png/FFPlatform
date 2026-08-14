@@ -444,6 +444,34 @@
             align-items: center;
         }
 
+        .team-jump {
+            display: none;
+            margin-bottom: 1.25rem;
+        }
+
+        .team-jump select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.9375rem;
+            font-weight: 600;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b6558' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+        }
+
+        .team-jump select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
         .roast-section {
             margin-top: 1rem;
             padding-top: 1rem;
@@ -1399,6 +1427,10 @@
                 flex-shrink: 0;
             }
 
+            .team-jump {
+                display: block;
+            }
+
             .header-right {
                 display: none;
                 position: absolute;
@@ -1706,6 +1738,11 @@
                 <span class="pos-badge wr">WR</span>
                 <span class="pos-badge te">TE</span>
                 <span class="pos-badge def">DEF</span>
+            </div>
+            <div class="team-jump" id="teamJump">
+                <select id="teamJumpSelect" onchange="jumpToTeam(this.value)" aria-label="Jump to team">
+                    <option value="">Jump to team…</option>
+                </select>
             </div>
             <div id="teamsGrid" class="teams-grid"></div>
         </div>
@@ -2075,6 +2112,7 @@
                 const teamCard = document.createElement('div');
                 teamCard.className = 'team-card';
                 teamCard.setAttribute('data-roster-id', team.rosterId);
+                teamCard.id = 'team-anchor-' + team.rosterId;
                 teamCard.innerHTML = `
                     <div class="team-header">
                         <div>
@@ -2145,6 +2183,25 @@
                 `;
                 teamsGrid.appendChild(teamCard);
             });
+
+            // Populate the mobile jump-to-team dropdown
+            const jumpSelect = document.getElementById('teamJumpSelect');
+            if (jumpSelect) {
+                jumpSelect.innerHTML = '<option value="">Jump to team…</option>' +
+                    teams.map(team =>
+                        `<option value="${team.rosterId}">${team.name}</option>`
+                    ).join('');
+            }
+        }
+
+        function jumpToTeam(rosterId) {
+            if (!rosterId) return;
+            const target = document.getElementById('team-anchor-' + rosterId);
+            if (target) {
+                const headerHeight = document.querySelector('.header').offsetHeight;
+                const top = target.getBoundingClientRect().top + window.pageYOffset - headerHeight - 12;
+                window.scrollTo({ top, behavior: 'smooth' });
+            }
         }
 
         function toggleMobileMenu() {
