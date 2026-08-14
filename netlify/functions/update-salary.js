@@ -6,7 +6,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { playerId, newSalary, leagueId, customEscalation, acquisitionType } = JSON.parse(event.body);
+    const { playerId, playerName, newSalary, leagueId, customEscalation, acquisitionType } = JSON.parse(event.body);
 
     if (!playerId || !newSalary || !leagueId) {
       return {
@@ -51,6 +51,7 @@ exports.handler = async (event) => {
         'POST',
         {
           player_id: playerId,
+          player_name: playerName || 'Unknown Player',
           league_id: leagueId,
           current_salary: newSalary,
           is_keeper: true,
