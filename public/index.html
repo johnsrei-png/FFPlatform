@@ -385,6 +385,195 @@
             align-items: center;
         }
 
+        .roast-section {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        .roast-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 0.625rem 1rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+        }
+
+        .roast-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+        }
+
+        .roast-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+            transform: none;
+        }
+
+        .roast-result {
+            margin-top: 0.875rem;
+            padding: 0;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--text-primary);
+            display: none;
+        }
+
+        .roast-result.active {
+            display: block;
+            padding: 1rem;
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.08) 0%, rgba(220, 38, 38, 0.08) 100%);
+            border: 1px solid rgba(220, 38, 38, 0.2);
+            border-radius: 10px;
+            animation: fadeInRoast 0.3s ease;
+        }
+
+        @keyframes fadeInRoast {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .roast-loading {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--accent-danger);
+            font-weight: 600;
+            font-style: italic;
+        }
+
+        .roast-all-btn {
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            padding: 0.625rem 1.25rem;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(220, 38, 38, 0.25);
+        }
+
+        .roast-all-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+        }
+
+        .roast-all-btn:disabled {
+            opacity: 0.6;
+            cursor: wait;
+        }
+
+        .roast-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .roast-modal.active {
+            display: flex;
+        }
+
+        .roast-modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .roast-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.5rem 1.75rem;
+            border-bottom: 1px solid var(--border);
+            background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+            border-radius: 16px 16px 0 0;
+        }
+
+        .roast-modal-header h3 {
+            color: white;
+            margin: 0;
+            font-size: 1.375rem;
+        }
+
+        .roast-modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            font-size: 1.25rem;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0;
+        }
+
+        .roast-modal-close:hover {
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .roast-modal-body {
+            padding: 1.75rem;
+            overflow-y: auto;
+            line-height: 1.7;
+        }
+
+        .roast-rank-item {
+            padding: 1rem 1.25rem;
+            margin-bottom: 1rem;
+            background: #f9fafb;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-danger);
+        }
+
+        .roast-rank-item:last-child {
+            border-left-color: var(--accent-success);
+        }
+
+        .roast-rank-team {
+            font-weight: 700;
+            font-size: 1.0625rem;
+            margin-bottom: 0.375rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .roast-rank-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            background: var(--accent-danger);
+            color: white;
+            border-radius: 999px;
+            font-size: 0.875rem;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
         .player-salary {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-weight: 700;
@@ -1306,7 +1495,10 @@
                 <div id="transactionsList"></div>
             </div>
 
-            <h2 class="section-title">💰 Team Salary Caps</h2>
+            <h2 class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <span>💰 Team Salary Caps</span>
+                <button class="roast-all-btn" onclick="roastAllTeams()">📊 Analyze &amp; Rank All Teams</button>
+            </h2>
             <div class="position-legend">
                 <span class="pos-badge qb">QB</span>
                 <span class="pos-badge rb">RB</span>
@@ -1415,6 +1607,18 @@
             <div class="button-group">
                 <button onclick="saveEscalationSettings()">✓ Save Settings</button>
                 <button class="btn-secondary" onclick="closeEscalationModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="roast-modal" id="roastModal">
+        <div class="roast-modal-content">
+            <div class="roast-modal-header">
+                <h3>📊 League Analysis &amp; Power Rankings</h3>
+                <button class="roast-modal-close" onclick="closeRoastModal()">×</button>
+            </div>
+            <div class="roast-modal-body" id="roastModalBody">
+                <!-- Populated dynamically -->
             </div>
         </div>
     </div>
@@ -1732,6 +1936,10 @@
                             <button class="add-pick-btn" onclick="openAddPickModal(${team.rosterId})">+ Add Pick</button>
                         </div>
                     ` : ''}
+                    <div class="roast-section">
+                        <button class="roast-btn" onclick="roastTeam(${team.rosterId})">📊 Team Analysis</button>
+                        <div class="roast-result" id="roast-result-${team.rosterId}"></div>
+                    </div>
                 `;
                 teamsGrid.appendChild(teamCard);
             });
@@ -2263,6 +2471,148 @@
         }
 
         let currentDataCache = {};
+
+        // Build a compact text summary of a team's roster for the AI
+        function buildTeamSummary(team) {
+            const posOrder = { QB: 0, RB: 1, WR: 2, TE: 3, DEF: 4 };
+            const sorted = [...team.players].sort((a, b) => {
+                const pa = posOrder[(a.position || '').toUpperCase()] ?? 5;
+                const pb = posOrder[(b.position || '').toUpperCase()] ?? 5;
+                if (pa !== pb) return pa - pb;
+                return b.salary - a.salary;
+            });
+            const playerLines = sorted.map(p =>
+                `${p.name} (${p.position}, ${p.team}) - $${p.salary}`
+            ).join('\n');
+            return `Team: ${team.name}
+Owner: ${team.owner}
+Record: ${team.wins}-${team.losses}
+Total Salary: $${team.totalSalary} / $${SALARY_CAP}
+Cap Space: $${team.capSpace}
+Roster (${team.players.length} players):
+${playerLines}`;
+        }
+
+        // Call Claude to roast a single team
+        async function roastTeam(rosterId) {
+            const team = allTeamsData.find(t => t.rosterId === rosterId);
+            if (!team) return;
+
+            const btn = event.target;
+            const resultDiv = document.getElementById(`roast-result-${rosterId}`);
+            btn.disabled = true;
+            btn.textContent = '📊 Analyzing...';
+            resultDiv.className = 'roast-result active';
+            resultDiv.innerHTML = '<div class="roast-loading">📊 Analyzing roster...</div>';
+
+            const summary = buildTeamSummary(team);
+
+            const prompt = `You are a savage, hilarious fantasy football analyst roasting a team in a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap). Be brutal and funny — no mercy — but roast the ROSTER CONSTRUCTION and cap decisions, never attack the person. Mix in genuine analysis so it's actually useful.
+
+Here is the team:
+
+${summary}
+
+Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, positional holes, overpays, and bad value. Be specific about players and dollar amounts. End with a real one-sentence piece of advice. Do not use markdown headers or bullet points — just punchy paragraphs.`;
+
+            try {
+                const response = await fetch("/api/roast", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Roast failed');
+                }
+                const text = (data.text || '').trim();
+
+                resultDiv.innerHTML = text.replace(/\n/g, '<br>');
+            } catch (err) {
+                resultDiv.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed. Try again.</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '📊 Team Analysis';
+            }
+        }
+
+        // Call Claude to roast + rank all teams
+        async function roastAllTeams() {
+            if (!allTeamsData || allTeamsData.length === 0) {
+                alert('No data loaded yet. Give it a sec.');
+                return;
+            }
+
+            const btn = event.target;
+            btn.disabled = true;
+            const originalText = btn.textContent;
+            btn.textContent = '📊 Analyzing everyone...';
+
+            const modal = document.getElementById('roastModal');
+            const body = document.getElementById('roastModalBody');
+            modal.classList.add('active');
+            body.innerHTML = '<div class="roast-loading">📊 Analyzing all ' + allTeamsData.length + ' teams... this takes a moment.</div>';
+
+            const allSummaries = allTeamsData.map(t => buildTeamSummary(t)).join('\n\n---\n\n');
+
+            const prompt = `You are a savage, hilarious fantasy football analyst for a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap). Below are all ${allTeamsData.length} teams.
+
+Rank them from WORST to BEST based on roster quality, cap efficiency, and keeper value. Be brutal and funny — no mercy — but roast ROSTER CONSTRUCTION and cap decisions, never attack people. Mix in real analysis.
+
+For EACH team, respond in EXACTLY this format (no markdown, no bullets):
+
+[RANK]. [Team Name] :: [2-3 sentence brutal roast with real analysis, specific players and dollar figures]
+
+Start at 1 for the WORST team and count up to the best. Put each team on its own line starting with the number. Here are the teams:
+
+${allSummaries}`;
+
+            try {
+                const response = await fetch("/api/roast", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ prompt })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.error || 'Roast failed');
+                }
+                const text = (data.text || '').trim();
+
+                // Parse lines like "1. Team Name :: roast text"
+                const lines = text.split('\n').filter(l => l.trim());
+                let html = '';
+                lines.forEach(line => {
+                    const match = line.match(/^\s*(\d+)\.\s*(.+?)\s*::\s*(.+)$/);
+                    if (match) {
+                        const [, num, teamName, roast] = match;
+                        html += `
+                            <div class="roast-rank-item">
+                                <div class="roast-rank-team">
+                                    <span class="roast-rank-number">${num}</span>
+                                    ${teamName}
+                                </div>
+                                <div>${roast}</div>
+                            </div>`;
+                    } else if (line.trim()) {
+                        html += `<div style="margin-bottom: 0.75rem;">${line}</div>`;
+                    }
+                });
+
+                body.innerHTML = html || text.replace(/\n/g, '<br>');
+            } catch (err) {
+                body.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed. Try again.</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        function closeRoastModal() {
+            document.getElementById('roastModal').classList.remove('active');
+        }
 
         function exportToCSV() {
             if (!allTeamsData || allTeamsData.length === 0) {
