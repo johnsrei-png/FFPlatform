@@ -14,7 +14,7 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { prompt } = JSON.parse(event.body);
+    const { prompt, model, maxTokens } = JSON.parse(event.body);
 
     if (!prompt) {
       return {
@@ -24,8 +24,8 @@ exports.handler = async (event) => {
     }
 
     const requestBody = JSON.stringify({
-      model: 'claude-sonnet-5',
-      max_tokens: 4096,
+      model: model || 'claude-sonnet-5',
+      max_tokens: maxTokens || 1024,
       messages: [{ role: 'user', content: prompt }]
     });
 
