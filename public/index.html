@@ -1011,6 +1011,52 @@
             padding: 1.25rem;
         }
 
+        .askboom-team-row {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .askboom-team-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .askboom-team-select {
+            flex: 1;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--border-strong);
+            border-radius: 6px;
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .askboom-team-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .askboom-preset:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .askboom-input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
         .askboom-presets {
             display: flex;
             flex-wrap: wrap;
@@ -2841,6 +2887,12 @@
                 <button class="roast-modal-close" onclick="closeAskBoom()">×</button>
             </div>
             <div class="askboom-body">
+                <div class="askboom-team-row">
+                    <label class="askboom-team-label">Your team:</label>
+                    <select id="askBoomTeam" class="askboom-team-select" onchange="askBoomTeamChanged()">
+                        <option value="">Select your team…</option>
+                    </select>
+                </div>
                 <div class="askboom-presets">
                     <button class="askboom-preset" onclick="askBoomPreset('startsit')">Start/Sit Help</button>
                     <button class="askboom-preset" onclick="askBoomPreset('trade')">Trade Advice</button>
@@ -4147,6 +4199,7 @@ ${allSummaries}`;
         // ===== Ask B.O.O.M. =====
         let askBoomHistory = []; // {role, content} conversation turns
         let askBoomBusy = false;
+        let askBoomTeamId = null; // roster id of the user's chosen team
 
         function openAskBoom() {
             if (!allTeamsData || allTeamsData.length === 0) { alert('Data still loading, give it a sec.'); return; }
@@ -4154,8 +4207,29 @@ ${allSummaries}`;
             if (!historyData) {
                 fetch('/api/get-history').then(function(r){return r.json();}).then(function(d){ historyData = d; }).catch(function(){});
             }
+            // Populate the team selector
+            const sel = document.getElementById('askBoomTeam');
+            sel.innerHTML = '<option value="">Select your team…</option>' +
+                (allTeamsData || []).map(function(t){
+                    return '<option value="' + t.rosterId + '"' + (String(t.rosterId) === String(askBoomTeamId) ? ' selected' : '') + '>' + t.name + '</option>';
+                }).join('');
             document.getElementById('askBoomModal').classList.add('active');
-            document.getElementById('askBoomInput').focus();
+            updateAskBoomInputState();
+        }
+
+        function askBoomTeamChanged() {
+            askBoomTeamId = document.getElementById('askBoomTeam').value || null;
+            updateAskBoomInputState();
+        }
+
+        function updateAskBoomInputState() {
+            const hasTeam = !!askBoomTeamId;
+            const input = document.getElementById('askBoomInput');
+            const send = document.getElementById('askBoomSend');
+            input.disabled = !hasTeam;
+            send.disabled = !hasTeam || askBoomBusy;
+            input.placeholder = hasTeam ? 'Ask B.O.O.M. anything…' : 'Select your team above to start…';
+            document.querySelectorAll('.askboom-preset').forEach(function(b){ b.disabled = !hasTeam; });
         }
 
         function closeAskBoom() {
@@ -4187,12 +4261,13 @@ ${allSummaries}`;
             lines.push('\nALL TEAMS (name, owner, cap space, players with salary and projected season points):');
             (allTeamsData || []).forEach(function(t) {
                 const owner = (typeof ownerForTeam === 'function' ? ownerForTeam(t.name) : null) || t.owner || '';
+                const isMine = String(t.rosterId) === String(askBoomTeamId);
                 const players = (t.players || []).map(function(p) {
                     const proj = (typeof projectedSeasonPoints === 'function') ? projectedSeasonPoints(p.id) : null;
                     const projTxt = (proj !== null && proj !== undefined) ? ' ~' + Math.round(proj) + 'pts' : '';
                     return p.name + ' (' + p.position + ' $' + p.salary + projTxt + ')';
                 }).join(', ');
-                lines.push('- ' + t.name + ' [' + owner + '], $' + t.capSpace + ' cap space: ' + players);
+                lines.push('- ' + t.name + (isMine ? ' <<< THIS IS THE USER\'S TEAM' : '') + ' [' + owner + '], $' + t.capSpace + ' cap space: ' + players);
             });
 
             // Compact history summary
@@ -4235,6 +4310,7 @@ ${allSummaries}`;
 
         async function sendAskBoom() {
             if (askBoomBusy) return;
+            if (!askBoomTeamId) { alert('Pick your team first so B.O.O.M. knows whose side it is on.'); return; }
             const input = document.getElementById('askBoomInput');
             const question = input.value.trim();
             if (!question) return;
@@ -4255,6 +4331,8 @@ ${allSummaries}`;
             document.getElementById('askBoomSend').disabled = true;
 
             const context = buildLeagueContext();
+            const myTeam = (allTeamsData || []).find(function(t){ return String(t.rosterId) === String(askBoomTeamId); });
+            const myTeamName = myTeam ? myTeam.name : '';
             // Build a conversation-style prompt with the last few turns for continuity
             const recent = askBoomHistory.slice(-6);
             let convo = '';
@@ -4262,7 +4340,7 @@ ${allSummaries}`;
                 convo += (t.role === 'user' ? '\nUSER: ' : '\nB.O.O.M.: ') + t.content;
             });
 
-            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, and scoring rules. Reference real players, salaries, and projected points. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M.:';
+            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, and scoring rules. Reference real players, salaries, and projected points. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
 
             try {
                 const res = await fetch('/api/roast', {
@@ -4278,7 +4356,7 @@ ${allSummaries}`;
                 askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. is temporarily offline: ' + (err.message || 'error') });
             } finally {
                 askBoomBusy = false;
-                document.getElementById('askBoomSend').disabled = false;
+                updateAskBoomInputState();
                 renderAskBoomThread();
             }
         }
