@@ -4264,7 +4264,9 @@ ${allSummaries}`;
                 const isMine = String(t.rosterId) === String(askBoomTeamId);
                 const players = (t.players || []).map(function(p) {
                     const proj = (typeof projectedSeasonPoints === 'function') ? projectedSeasonPoints(p.id) : null;
-                    const projTxt = (proj !== null && proj !== undefined) ? ' ~' + Math.round(proj) + 'pts' : '';
+                    // Include projections for the user's team always; for others only for higher-salary players to save tokens
+                    const showProj = proj !== null && proj !== undefined && (isMine || p.salary >= 10);
+                    const projTxt = showProj ? ' ~' + Math.round(proj) + 'pts' : '';
                     return p.name + ' (' + p.position + ' $' + p.salary + projTxt + ')';
                 }).join(', ');
                 lines.push('- ' + t.name + (isMine ? ' <<< THIS IS THE USER\'S TEAM' : '') + ' [' + owner + '], $' + t.capSpace + ' cap space: ' + players);
@@ -4346,14 +4348,19 @@ ${allSummaries}`;
                 const res = await fetch('/api/roast', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt, model: 'claude-sonnet-5', maxTokens: 1024 })
+                    body: JSON.stringify({ prompt: prompt, model: 'claude-haiku-4-5-20251001', maxTokens: 1024 })
                 });
                 const data = await res.json();
-                if (!res.ok) throw new Error(data.error || 'Request failed');
-                const answer = (data.text || 'No response.').trim();
-                askBoomHistory.push({ role: 'boom', content: answer });
+                if (!res.ok) throw new Error(data.error || ('Server returned ' + res.status));
+                const answer = (data.text || '').trim();
+                if (!answer) {
+                    // Empty text — likely the prompt was too large or the model returned no text block.
+                    askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. drew a blank (empty response). This usually means the request was too large. Try a more specific question, or ask again.' });
+                } else {
+                    askBoomHistory.push({ role: 'boom', content: answer });
+                }
             } catch (err) {
-                askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. is temporarily offline: ' + (err.message || 'error') });
+                askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. hit an error: ' + (err.message || 'unknown') });
             } finally {
                 askBoomBusy = false;
                 updateAskBoomInputState();
