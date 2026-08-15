@@ -326,6 +326,63 @@
             color: var(--border-strong);
         }
 
+        .playoff-odds {
+            margin-top: 0.75rem;
+            padding-top: 0.625rem;
+            border-top: 1px solid var(--rule);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .playoff-odds:empty {
+            display: none;
+        }
+
+        .po-label {
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        .po-value {
+            font-family: var(--font-mono);
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .playoff-odds.good .po-value { color: var(--accent-primary); }
+        .playoff-odds.bad .po-value { color: var(--accent-danger); }
+        .playoff-odds.dormant .po-value {
+            font-family: var(--font-body);
+            font-size: 0.6875rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .po-bar {
+            flex: 1;
+            min-width: 60px;
+            height: 5px;
+            background: var(--bg-sunken);
+            border: 1px solid var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .po-bar-fill {
+            display: block;
+            height: 100%;
+            background: var(--accent-primary);
+        }
+
+        .playoff-odds.bad .po-bar-fill { background: var(--accent-danger); }
+        .playoff-odds.mid .po-bar-fill { background: var(--accent-warning); }
+
         .cap-space {
             font-family: var(--font-mono);
             font-weight: 600;
@@ -2619,6 +2676,20 @@
     <script>
         const LEAGUE_ID = '1312069771746885632'; // Your Sleeper league ID
         const SALARY_CAP = 200;
+
+        // Shared league scoring/rules summary injected into every AI prompt so analysis
+        // reflects THIS league's settings. Edit here if scoring ever changes.
+        const LEAGUE_RULES = [
+            'LEAGUE SCORING & RULES (Boom Boom Room):',
+            '- Format: Full PPR (1.0 point per reception, all positions equally — no premium TE/RB PPR).',
+            '- Passing: 1 pt per 25 pass yards (0.04/yd); PASSING TD = 5 POINTS (higher than standard 4, so elite QBs are more valuable here); INT = -2; +2 bonus for any 40+ yard passing TD. No sack/attempt/completion scoring.',
+            '- Rushing: 1 pt per 10 yards (0.1/yd); rushing TD = 6 (QB rushing TD also 6); +2 bonus for any 40+ yard rushing TD. No first-down or PPC scoring.',
+            '- Receiving: 1 pt per 10 yards (0.1/yd); receiving TD = 6; +2 bonus for any 40+ yard receiving TD. No positional PPR differences and no first-down scoring.',
+            '- Fumbles: fumble lost = -2; fumble recovery TD = 6.',
+            '- No kickers at all.',
+            '- Team Defense IS scored and matters: DEF TD = 6, INT = +2, fumble recovery = +2, sack = +1, safety = +2, blocked kick = +2; plus tiered POINTS ALLOWED (10 pts for a shutout down to -7 for 35+ allowed) and tiered YARDS ALLOWED bonuses. So streaming/owning a strong defense has real value.',
+            '- Net effect on strategy: QBs are boosted by 5-pt passing TDs, big-play/downfield players get a lift from the 40+ yard TD bonuses, full PPR rewards high-volume pass-catchers (RBs and slot WRs included), and a good team defense is a genuine roster asset, not a throwaway.'
+        ].join('\\n');
         let commissionerMode = false;
         let editingPlayer = null;
         let leagueId = null;
@@ -2858,6 +2929,9 @@
                 setTimeout(applyHistoryToCards, 0);
             }
 
+            // Load playoff odds in the background (dormant until the season starts)
+            setTimeout(loadPlayoffOdds, 0);
+
             document.getElementById('totalTeams').textContent = teams.length;
             const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
             document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
@@ -2898,6 +2972,7 @@
                         <span class="cap-total-label">Committed</span>
                         <span class="cap-total-figure">$${team.totalSalary} / $${SALARY_CAP}</span>
                     </div>
+                    <div class="playoff-odds" data-roster="${team.rosterId}"></div>
                     <div class="cap-preview" id="cap-preview-${team.rosterId}">
                         <div class="cap-preview-label">Select players to preview cap impact</div>
                         <div class="cap-preview-value" id="preview-value-${team.rosterId}"></div>
@@ -3551,6 +3626,7 @@ ${playerLines}`;
             const prompt = `You are a savage, hilarious fantasy football analyst roasting a team in a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap). Be brutal and funny — no mercy — but roast the ROSTER CONSTRUCTION and cap decisions, never attack the person. Mix in genuine analysis so it's actually useful.
 
 IMPORTANT LEAGUE CONTEXT:
+${LEAGUE_RULES}
 - This league does NOT use kickers. Never mention kickers or criticize a team for not having one.
 - Roster structure: each team has 16 total roster spots — 9 starters plus 7 bench. The starting lineup is: 1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX (RB/WR/TE), 1 FLEX (WR/TE only), and 1 DEF. Because BOTH flex spots accept WR and TE (and one also accepts RB), depth at WR and TE is especially valuable. Judge roster construction against this format — a team needs enough startable bodies to fill 9 starting spots weekly plus useful bench depth, and should not waste bench spots on redundant players at a shallow-value position.
 - Players are acquired by bidding on a waiver wire, so a high salary does NOT automatically mean an "overpay." Sometimes a manager has to bid well above a player's real value to win someone they need. Judge whether the salary makes sense given how badly the team needed that player and their roster situation — a pricey win can be justified. Reserve "overpay" criticism for cases where a team clearly wasted cap on a player they didn't need or who doesn't move the needle.
@@ -3634,6 +3710,7 @@ Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, pos
             const prompt = `You are a savage, hilarious fantasy football analyst for a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap). Below are all ${allTeamsData.length} teams.
 
 IMPORTANT LEAGUE CONTEXT:
+${LEAGUE_RULES}
 - This league does NOT use kickers. Never mention kickers or criticize a team for not having one.
 - Roster structure: 16 total spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE only, 1 DEF) plus 7 bench. Both flex spots take WR/TE, so WR and TE depth is especially valuable. Judge rosters against this format.
 - Players are acquired by bidding on a waiver wire, so a high salary does NOT automatically mean an "overpay." Sometimes a manager has to bid well above a player's real value to win someone they need. Judge whether a salary makes sense given the team's needs and situation — a pricey win can be justified. Reserve "overpay" criticism for clear cases of wasted cap on players a team didn't need or who don't move the needle.
@@ -3865,6 +3942,159 @@ ${allSummaries}`;
                     '</div>';
             });
             document.getElementById('panel-champions').innerHTML = html;
+        }
+
+        // ===== Playoff Odds (Monte Carlo) =====
+        // 6 of 10 teams make the playoffs. Regular season = weeks 1-14.
+        const PLAYOFF_SPOTS = 6;
+        let playoffData = null;
+
+        function randNormal(mean, sd) {
+            let u = 0, v = 0;
+            while (u === 0) u = Math.random();
+            while (v === 0) v = Math.random();
+            const n = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+            return mean + sd * n;
+        }
+
+        function buildTeamProfiles(weeklyScores) {
+            const profiles = {};
+            const allScores = [];
+            Object.keys(weeklyScores).forEach(function(rid) {
+                (weeklyScores[rid] || []).forEach(function(s){ allScores.push(s); });
+            });
+            const leagueMean = allScores.length
+                ? allScores.reduce(function(a,b){return a+b;},0) / allScores.length
+                : 110;
+            let leagueSd = 25;
+            if (allScores.length > 1) {
+                const m = leagueMean;
+                leagueSd = Math.sqrt(allScores.reduce(function(a,b){return a+(b-m)*(b-m);},0) / allScores.length);
+            }
+            Object.keys(weeklyScores).forEach(function(rid) {
+                const scores = weeklyScores[rid] || [];
+                if (!scores.length) { profiles[rid] = { mean: leagueMean, sd: leagueSd }; return; }
+                const mean = scores.reduce(function(a,b){return a+b;},0) / scores.length;
+                let sd = leagueSd;
+                if (scores.length > 1) {
+                    sd = Math.sqrt(scores.reduce(function(a,b){return a+(b-mean)*(b-mean);},0) / scores.length);
+                    const w = Math.min(scores.length / 6, 1);
+                    sd = w * sd + (1 - w) * leagueSd;
+                }
+                profiles[rid] = { mean: mean, sd: Math.max(sd, 8) };
+            });
+            return profiles;
+        }
+
+        function buildRemainingSchedule(rosterIds, weeksRemaining) {
+            const sched = [];
+            if (rosterIds.length < 2) return sched;
+            const ids = rosterIds.slice();
+            if (ids.length % 2 === 1) ids.push(null);
+            const rounds = ids.length - 1;
+            const half = ids.length / 2;
+            const arr = ids.slice();
+            const schedule = [];
+            for (let r = 0; r < rounds; r++) {
+                const pairs = [];
+                for (let i = 0; i < half; i++) {
+                    const a = arr[i], b = arr[arr.length - 1 - i];
+                    if (a !== null && b !== null) pairs.push([a, b]);
+                }
+                schedule.push(pairs);
+                const fixed = arr[0];
+                const rest = arr.slice(1);
+                rest.unshift(rest.pop());
+                arr.splice(0, arr.length, fixed);
+                for (let k = 0; k < rest.length; k++) arr.push(rest[k]);
+            }
+            for (let w = 0; w < weeksRemaining; w++) sched.push(schedule[w % schedule.length]);
+            return sched;
+        }
+
+        function simulatePlayoffs(profiles, currentWins, schedule, iterations) {
+            const rosterIds = Object.keys(profiles);
+            const madeCount = {};
+            rosterIds.forEach(function(r){ madeCount[r] = 0; });
+            for (let it = 0; it < iterations; it++) {
+                const wins = {};
+                rosterIds.forEach(function(r){ wins[r] = currentWins[r] || 0; });
+                schedule.forEach(function(week) {
+                    week.forEach(function(pair) {
+                        const a = pair[0], b = pair[1];
+                        if (profiles[a] === undefined || profiles[b] === undefined) return;
+                        const sa = randNormal(profiles[a].mean, profiles[a].sd);
+                        const sb = randNormal(profiles[b].mean, profiles[b].sd);
+                        if (sa >= sb) wins[a] += 1; else wins[b] += 1;
+                    });
+                });
+                const ranked = rosterIds.slice().sort(function(x, y) {
+                    const dw = (wins[y] - wins[x]);
+                    if (dw !== 0) return dw;
+                    return Math.random() - 0.5;
+                });
+                for (let i = 0; i < PLAYOFF_SPOTS && i < ranked.length; i++) madeCount[ranked[i]] += 1;
+            }
+            const probs = {};
+            rosterIds.forEach(function(r){ probs[r] = madeCount[r] / iterations; });
+            return probs;
+        }
+
+        async function loadPlayoffOdds() {
+            try {
+                const res = await fetch('/api/get-playoff-data?leagueId=' + LEAGUE_ID);
+                playoffData = await res.json();
+            } catch (e) { playoffData = null; return; }
+            applyPlayoffOddsToCards();
+        }
+
+        function applyPlayoffOddsToCards() {
+            const els = document.querySelectorAll('.playoff-odds');
+            if (!els.length) return;
+            const notStarted = !playoffData ||
+                playoffData.seasonType !== 'regular' ||
+                (playoffData.weeksCompleted || 0) < 1;
+            if (notStarted) {
+                els.forEach(function(el){
+                    el.className = 'playoff-odds dormant';
+                    el.innerHTML = '<span class="po-label">Playoff Odds</span><span class="po-value">\u2014 preseason</span>';
+                });
+                return;
+            }
+            const weeklyScores = playoffData.weeklyScores || {};
+            const profiles = buildTeamProfiles(weeklyScores);
+            (allTeamsData || []).forEach(function(t){
+                const r = String(t.rosterId);
+                if (!profiles[r]) profiles[r] = { mean: 110, sd: 25 };
+            });
+            const currentWins = {};
+            (allTeamsData || []).forEach(function(t){ currentWins[String(t.rosterId)] = t.wins || 0; });
+            const allRosterIds = (allTeamsData || []).map(function(t){ return String(t.rosterId); });
+            const weeksRemaining = Math.max(0, (playoffData.regularSeasonWeeks || 14) - (playoffData.weeksCompleted || 0));
+            const schedule = buildRemainingSchedule(allRosterIds, weeksRemaining);
+
+            let probs;
+            if (weeksRemaining <= 0) {
+                const ranked = allRosterIds.slice().sort(function(x,y){ return (currentWins[y]||0) - (currentWins[x]||0); });
+                probs = {};
+                ranked.forEach(function(r, i){ probs[r] = i < PLAYOFF_SPOTS ? 1 : 0; });
+            } else {
+                probs = simulatePlayoffs(profiles, currentWins, schedule, 3000);
+            }
+
+            els.forEach(function(el){
+                const rid = el.getAttribute('data-roster');
+                const p = probs[rid];
+                if (p === undefined) { el.className = 'playoff-odds'; el.innerHTML = ''; return; }
+                const pct = Math.round(p * 100);
+                let tier = 'mid';
+                if (pct >= 75) tier = 'good';
+                else if (pct <= 25) tier = 'bad';
+                el.className = 'playoff-odds ' + tier;
+                el.innerHTML = '<span class="po-label">Playoff Odds</span>' +
+                    '<span class="po-value">' + pct + '%</span>' +
+                    '<span class="po-bar"><span class="po-bar-fill" style="width:' + pct + '%"></span></span>';
+            });
         }
 
         function applyHistoryToCards() {
@@ -4294,6 +4524,7 @@ ${allSummaries}`;
             const prompt = `You are a sharp, funny fantasy football analyst evaluating a proposed trade in a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap).
 
 LEAGUE CONTEXT:
+${LEAGUE_RULES}
 - No kickers.
 - Roster: 16 spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE only, 1 DEF) + 7 bench. Both flex spots take WR/TE, so WR/TE depth is valuable.
 - Players are kept year to year and their salaries escalate, so cap hits and long-term value matter, not just this season.
