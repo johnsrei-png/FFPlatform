@@ -3936,7 +3936,7 @@ ${allSummaries}`;
                 const res = await fetch('/api/roast', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt, model: 'claude-sonnet-5', maxTokens: 1024 })
+                    body: JSON.stringify({ prompt: prompt, model: 'claude-haiku-4-5-20251001', maxTokens: 2048 })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Failed');
