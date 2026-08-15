@@ -3951,11 +3951,13 @@ ${allSummaries}`;
 
         function renderAddSeasonForm() {
             const container = document.getElementById('addSeasonForm');
-            let html = '<div class="add-season-grid">' +
+            const ownerOptions = LEAGUE_OWNERS.map(function(o){ return '<option value="' + o + '">'; }).join('');
+            let html = '<datalist id="owner-options">' + ownerOptions + '</datalist>' +
+                '<div class="add-season-grid">' +
                 '<div class="add-season-field"><label>Year</label><input type="number" id="as-year" placeholder="2026"></div>' +
-                '<div class="add-season-field"><label>Champion</label><input type="text" id="as-champ" placeholder="Owner"></div>' +
-                '<div class="add-season-field"><label>Runner-Up</label><input type="text" id="as-second" placeholder="Owner"></div>' +
-                '<div class="add-season-field"><label>Third</label><input type="text" id="as-third" placeholder="Owner"></div>' +
+                '<div class="add-season-field"><label>Champion</label><input type="text" list="owner-options" id="as-champ" placeholder="Pick or type"></div>' +
+                '<div class="add-season-field"><label>Runner-Up</label><input type="text" list="owner-options" id="as-second" placeholder="Pick or type"></div>' +
+                '<div class="add-season-field"><label>Third</label><input type="text" list="owner-options" id="as-third" placeholder="Pick or type"></div>' +
                 '</div>' +
                 '<div class="add-season-owner-head"><span>Owner</span><span>Reg W</span><span>Reg L</span><span>PO W</span><span>PO L</span><span>PF</span><span>PA</span></div>';
             LEAGUE_OWNERS.forEach(function(o) {
