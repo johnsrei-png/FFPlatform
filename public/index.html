@@ -3721,7 +3721,12 @@ ${allSummaries}`;
             document.getElementById('historyView').classList.add('active');
             document.getElementById('historyAddSeason').style.display = commissionerMode ? 'block' : 'none';
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            if (!historyData) loadHistory();
+            if (!historyData) {
+                loadHistory();
+            } else if (commissionerMode) {
+                // Data already cached — make sure the form is built if entering as commissioner
+                renderAddSeasonForm();
+            }
         }
 
         function closeHistory() {
@@ -3930,7 +3935,7 @@ ${allSummaries}`;
             const champLines = (historyData.seasons||[]).filter(function(s){return s.champion;}).sort(function(a,b){return b.year-a.year;})
                 .map(function(s){ return s.year + ': ' + s.champion; }).join('\n');
 
-            const prompt = 'You are the official league historian for a long-running fantasy football league (the "Boom Boom Room"), founded in 2007. Write a fun, punchy narrative recap of the league\'s all-time history \u2014 dynasties, chokers, droughts, and rivalries. Be entertaining and a little irreverent, but base everything on the real data below.\n\nCAREER RECORDS:\n' + summary + '\n\nCHAMPIONS BY YEAR:\n' + champLines + '\n\nWrite 2-3 short paragraphs. Name the dynasty (who has dominated), call out the lovable losers, note any long title droughts, and end with a line about the current state of the league. No markdown headers or bullets \u2014 just flowing prose.';
+            const prompt = 'You are the official league historian for a long-running fantasy football league (the "Boom Boom Room"), founded in 2007. Write a fun, punchy narrative recap of the league\'s all-time history \u2014 dynasties, chokers, droughts, and rivalries. Be entertaining and a little irreverent, but base everything on the real data below.\n\nCAREER RECORDS:\n' + summary + '\n\nCHAMPIONS BY YEAR:\n' + champLines + '\n\nSPECIAL EDITORIAL NOTES:\n- Be especially brutal and merciless about how bad Lance and Duke have been. They are the league\'s all-time punchlines \u2014 lean hard into their futility, losing records, and total lack of titles. Do not hold back on those two.\n- "Bad Karma" is a former owner nobody in the league liked, who was essentially run out of town and kicked out. Treat him as the league\'s despised exile \u2014 be as savage and funny as possible about him. Mock his memory freely.\n\nWrite 2-3 short paragraphs. Name the dynasty (who has dominated), roast the lovable losers (especially Lance and Duke), take your shots at Bad Karma, note any long title droughts, and end with a line about the current state of the league. No markdown headers or bullets \u2014 just flowing prose.';
 
             try {
                 const res = await fetch('/api/roast', {
