@@ -893,11 +893,39 @@
 
         .trade-analysis.active {
             display: block;
-            padding: 1rem 1.125rem;
+        }
+
+        .trade-section {
+            padding: 0.875rem 1rem;
+            margin-bottom: 0.625rem;
             background: var(--bg-sunken);
             border: 1px solid var(--border);
-            border-left: 3px solid var(--accent-primary);
+            border-left: 3px solid var(--border-strong);
             border-radius: 3px;
+        }
+
+        .trade-section.verdict {
+            border-left-color: var(--accent-primary);
+            background: rgba(26, 77, 58, 0.05);
+        }
+
+        .trade-section-label {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--accent-primary);
+            margin-bottom: 0.3125rem;
+        }
+
+        .trade-section.verdict .trade-section-label {
+            color: var(--accent-primary);
+        }
+
+        .trade-section-body {
+            color: var(--text-primary);
+            line-height: 1.55;
         }
 
         .roast-rank-item {
@@ -3352,6 +3380,29 @@ ${allSummaries}`;
             summary.classList.add('active');
         }
 
+        function renderTradeSections(text) {
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+            let html = '';
+            let matched = false;
+            lines.forEach(line => {
+                const m = line.match(/^(.+?)\s*::\s*(.+)$/);
+                if (m) {
+                    matched = true;
+                    const label = m[1].trim();
+                    const content = m[2].trim();
+                    // Verdict gets a highlighted treatment
+                    const isVerdict = /^verdict$/i.test(label);
+                    html += `
+                        <div class="trade-section ${isVerdict ? 'verdict' : ''}">
+                            <div class="trade-section-label">${label}</div>
+                            <div class="trade-section-body">${content}</div>
+                        </div>`;
+                }
+            });
+            // Fallback: if nothing parsed, just show the raw text
+            return matched ? html : text.replace(/\n/g, '<br>');
+        }
+
         async function analyzeTrade() {
             const a = getTradeSideData('A');
             const b = getTradeSideData('B');
@@ -3396,7 +3447,15 @@ CAP IMPACT:
 - ${a.team.name}: currently $${a.team.totalSalary} committed, would be $${a.team.totalSalary - aOut + bOut} after the trade.
 - ${b.team.name}: currently $${b.team.totalSalary} committed, would be $${b.team.totalSalary - bOut + aOut} after the trade.
 
-Give a verdict in 4-6 punchy sentences: who wins the trade and why, whether it's fair or lopsided, how it affects each team's positional needs and cap, and any long-term keeper angle. Be honest and a little funny, but fair. Do not use markdown headers or bullet points — just punchy paragraphs.`;
+Give your evaluation in EXACTLY these five labeled sections. Put each label on its own line followed by its content, using this exact format with the double colons:
+
+VERDICT :: One clear sentence naming who wins the trade (or "even") and the headline reason.
+FAIRNESS :: 1-2 sentences on whether it's balanced or lopsided, and by how much.
+${a.team.name.toUpperCase()} :: 1-2 sentences on how this trade affects this team — positional needs, cap, and fit.
+${b.team.name.toUpperCase()} :: 1-2 sentences on how this trade affects this team — positional needs, cap, and fit.
+LONG TERM :: 1-2 sentences on the keeper/dynasty angle given salaries escalate year to year.
+
+Be honest and a little funny, but fair. Do not use markdown, asterisks, or bullet points — just the label, the double colon, and plain sentences.`;
 
             try {
                 const response = await fetch('/api/roast', {
@@ -3407,7 +3466,11 @@ Give a verdict in 4-6 punchy sentences: who wins the trade and why, whether it's
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Analysis failed');
                 const text = (data.text || '').trim();
-                out.innerHTML = text ? text.replace(/\n/g, '<br>') : 'No analysis came back. Try again.';
+                if (!text) {
+                    out.innerHTML = 'No analysis came back. Try again.';
+                } else {
+                    out.innerHTML = renderTradeSections(text);
+                }
             } catch (err) {
                 out.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed: ' + (err.message || 'Unknown error') + '</div>';
             } finally {
