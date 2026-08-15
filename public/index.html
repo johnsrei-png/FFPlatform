@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BBR Fantasy Salary Manager</title>
+    <title>B.O.O.M. — Boom-Room Optimization &amp; Overlord Machine</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Orbitron:wght@700;800;900&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -75,21 +75,42 @@
         }
 
         .header-left h1 {
-            font-family: var(--font-display);
-            font-size: 1.875rem;
-            font-weight: 700;
-            color: #f5f2ea;
+            font-family: 'Orbitron', var(--font-display);
+            font-size: 2.75rem;
+            font-weight: 900;
+            color: #eafff2;
             margin: 0;
-            letter-spacing: 0.02em;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
+            line-height: 1;
+            text-shadow:
+                0 0 4px rgba(46, 204, 113, 0.7),
+                0 0 12px rgba(26, 122, 74, 0.6),
+                0 0 24px rgba(26, 122, 74, 0.35);
+            animation: boomPulse 3.5s ease-in-out infinite;
+        }
+
+        @keyframes boomPulse {
+            0%, 100% {
+                text-shadow:
+                    0 0 4px rgba(46, 204, 113, 0.7),
+                    0 0 12px rgba(26, 122, 74, 0.6),
+                    0 0 24px rgba(26, 122, 74, 0.35);
+            }
+            50% {
+                text-shadow:
+                    0 0 6px rgba(46, 204, 113, 0.9),
+                    0 0 18px rgba(46, 204, 113, 0.7),
+                    0 0 36px rgba(26, 122, 74, 0.5);
+            }
         }
 
         .header-left .subtitle {
-            color: #a89f8d;
-            font-size: 0.75rem;
+            color: #7fae97;
+            font-size: 0.7rem;
             font-weight: 500;
-            margin: 0.25rem 0 0 0;
-            letter-spacing: 0.03em;
+            margin: 0.4rem 0 0 0;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
         }
 
@@ -2143,8 +2164,9 @@
             }
 
             .header-left h1 {
-                font-size: 1.125rem;
-                line-height: 1.15;
+                font-size: 1.5rem;
+                line-height: 1.1;
+                letter-spacing: 0.08em;
             }
 
             .header-left {
@@ -2415,8 +2437,8 @@
     <div class="header">
         <div class="header-content">
             <div class="header-left">
-                <h1>BBR Fantasy Salary Manager</h1>
-                <p class="subtitle">Boom Boom Room • $200 Salary Cap • Keeper Dynasty League</p>
+                <h1>B.O.O.M.</h1>
+                <p class="subtitle">Boom-Room Optimization &amp; Overlord Machine • $200 Cap • Keeper Dynasty</p>
             </div>
             <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()" aria-label="Menu">Menu</button>
             <div class="header-right" id="headerRight">
