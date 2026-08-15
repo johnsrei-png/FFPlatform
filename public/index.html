@@ -1529,6 +1529,30 @@
             line-height: 1.3;
         }
 
+        .player-proj {
+            display: flex;
+            gap: 0.375rem;
+            align-items: baseline;
+            margin-top: 0.1875rem;
+        }
+
+        .player-proj:empty {
+            display: none;
+        }
+
+        .proj-total {
+            font-family: var(--font-mono);
+            font-size: 0.625rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+        }
+
+        .proj-pergame {
+            font-size: 0.5625rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+        }
+
         .loading {
             text-align: center;
             padding: 3rem;
@@ -2721,6 +2745,76 @@
         let leagueId = null;
         let allTeamsData = [];
 
+        // ===== Projection scoring (uses THIS league's rules) =====
+        let projectionData = null; // player_id -> { stats, pos }
+
+        // Convert a player's raw projected stats into fantasy points using our league scoring.
+        function scoreProjection(stats) {
+            if (!stats) return 0;
+            let pts = 0;
+            // Passing: 1 pt / 25 yds, 5 pts / pass TD, -2 / INT, 2 / 2pt
+            pts += (stats.pass_yd || 0) * 0.04;
+            pts += (stats.pass_td || 0) * 5;
+            pts += (stats.pass_int || 0) * -2;
+            pts += (stats.pass_2pt || 0) * 2;
+            // Rushing: 1 pt / 10 yds, 6 / rush TD, 2 / 2pt
+            pts += (stats.rush_yd || 0) * 0.1;
+            pts += (stats.rush_td || 0) * 6;
+            pts += (stats.rush_2pt || 0) * 2;
+            // Receiving: full PPR, 1 pt / 10 yds, 6 / rec TD, 2 / 2pt
+            pts += (stats.rec || 0) * 1;
+            pts += (stats.rec_yd || 0) * 0.1;
+            pts += (stats.rec_td || 0) * 6;
+            pts += (stats.rec_2pt || 0) * 2;
+            // Big-play bonus: +2 per 40+ yard reception TD (approximated from rec_40p when present)
+            pts += (stats.rec_40p || 0) * 0; // rec_40p is receptions of 40+, not TDs; leave out to avoid over-counting
+            // Fumbles lost: -2
+            pts += (stats.fum_lost || 0) * -2;
+            return pts;
+        }
+
+        // Season projected points for a player id (0 if unknown).
+        function projectedSeasonPoints(playerId) {
+            if (!projectionData || !projectionData[playerId]) return null;
+            return scoreProjection(projectionData[playerId].stats);
+        }
+
+        // Projected games (default 17 if not provided).
+        function projectedGames(playerId) {
+            if (!projectionData || !projectionData[playerId]) return 17;
+            const gp = projectionData[playerId].stats.gp;
+            return (gp && gp > 0) ? gp : 17;
+        }
+
+        function projectedPerGame(playerId) {
+            const total = projectedSeasonPoints(playerId);
+            if (total === null) return null;
+            return total / projectedGames(playerId);
+        }
+
+        async function loadProjections() {
+            try {
+                const res = await fetch('/api/get-projections?season=2025');
+                const data = await res.json();
+                projectionData = data.projections || null;
+            } catch (e) {
+                projectionData = null;
+            }
+            applyProjectionsToRows();
+        }
+
+        function applyProjectionsToRows() {
+            if (!projectionData) return;
+            document.querySelectorAll('.player-proj').forEach(function(el) {
+                const pid = el.getAttribute('data-proj-player');
+                const total = projectedSeasonPoints(pid);
+                if (total === null) { el.innerHTML = ''; return; }
+                const perGame = projectedPerGame(pid);
+                el.innerHTML = '<span class="proj-total">' + Math.round(total) + ' pts</span>' +
+                    '<span class="proj-pergame">' + perGame.toFixed(1) + '/gm</span>';
+            });
+        }
+
         function getPositionClass(position) {
             const pos = (position || '').toUpperCase();
             if (pos === 'QB') return 'qb';
@@ -2958,6 +3052,9 @@
             // Load playoff odds in the background (dormant until the season starts)
             setTimeout(loadPlayoffOdds, 0);
 
+            // Load player projections in the background (scored by our league rules)
+            setTimeout(loadProjections, 0);
+
             document.getElementById('totalTeams').textContent = teams.length;
             const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
             document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
@@ -3018,6 +3115,7 @@
                                         ${p.acquisitionType ? `<span class="acquisition-badge ${p.acquisitionType}">${p.acquisitionType === 'trade' ? 'TRADE' : 'WAIVER'}</span>` : ''}
                                     </div>
                                     <div class="player-position"><span class="pos-badge ${getPositionClass(p.position)}">${p.position}</span> ${p.team}</div>
+                                    <div class="player-proj" data-proj-player="${p.id}"></div>
                                 </div>
                                 <div style="text-align: right;">
                                     <div class="player-salary">$${p.salary}</div>
@@ -3887,6 +3985,8 @@ ${allSummaries}`;
                 alert('No data loaded yet. Give it a sec.');
                 return;
             }
+            // Load projections if not yet available (used for the value swing)
+            if (!projectionData) loadProjections();
             // Reset state
             tradeSelected.A.clear();
             tradeSelected.B.clear();
@@ -4510,6 +4610,18 @@ ${allSummaries}`;
             return { team, players, picks };
         }
 
+        // Sum projected season points for the players on one side of a trade
+        function sideProjectedPoints(side) {
+            if (!projectionData) return null;
+            let total = 0;
+            let anyKnown = false;
+            side.players.forEach(function(p) {
+                const pts = projectedSeasonPoints(p.id);
+                if (pts !== null) { total += pts; anyKnown = true; }
+            });
+            return anyKnown ? total : (side.players.length ? 0 : 0);
+        }
+
         function updateTradeSummary() {
             const a = getTradeSideData('A');
             const b = getTradeSideData('B');
@@ -4530,15 +4642,32 @@ ${allSummaries}`;
             const aNewSpace = SALARY_CAP - aNewSalary;
             const bNewSpace = SALARY_CAP - bNewSalary;
 
-            const card = (team, newSalary, newSpace) => `
+            // Projected points: each team GIVES its own players and RECEIVES the other side's
+            const aGiveProj = sideProjectedPoints(a);
+            const bGiveProj = sideProjectedPoints(b);
+            const haveProj = projectionData && (aGiveProj !== null || bGiveProj !== null);
+            // A's net = what it receives (bGive) minus what it sends (aGive)
+            const aNet = haveProj ? (bGiveProj - aGiveProj) : null;
+            const bNet = haveProj ? (aGiveProj - bGiveProj) : null;
+
+            const projRow = function(net) {
+                if (net === null) return '';
+                const sign = net >= 0 ? '+' : '';
+                const cls = net >= 0 ? 'ok' : 'over';
+                return '<div class="trade-summary-row"><span class="label">Proj. points swing</span>' +
+                    '<span class="figure ' + cls + '">' + sign + Math.round(net) + '</span></div>';
+            };
+
+            const card = (team, newSalary, newSpace, net) => `
                 <div class="trade-summary-card">
                     <div class="trade-summary-team">${team.name}</div>
                     <div class="trade-summary-row"><span class="label">Current salary</span><span class="figure">$${team.totalSalary}</span></div>
                     <div class="trade-summary-row"><span class="label">After trade</span><span class="figure">$${newSalary}</span></div>
                     <div class="trade-summary-row result"><span class="label">Cap space</span><span class="figure ${newSpace < 0 ? 'over' : 'ok'}">$${newSpace}${newSpace < 0 ? ' OVER' : ''}</span></div>
+                    ${projRow(net)}
                 </div>`;
 
-            summary.innerHTML = card(a.team, aNewSalary, aNewSpace) + card(b.team, bNewSalary, bNewSpace);
+            summary.innerHTML = card(a.team, aNewSalary, aNewSpace, aNet) + card(b.team, bNewSalary, bNewSpace, bNet);
             summary.classList.add('active');
         }
 
@@ -4589,10 +4718,28 @@ ${allSummaries}`;
             const bOut = b.players.reduce((s, p) => s + p.salary, 0);
             const describe = (side) => {
                 const parts = [];
-                side.players.forEach(p => parts.push(`${p.name} (${p.position}, $${p.salary})`));
+                side.players.forEach(p => {
+                    const proj = projectedSeasonPoints(p.id);
+                    const projTxt = proj !== null ? `, ~${Math.round(proj)} proj pts` : '';
+                    parts.push(`${p.name} (${p.position}, $${p.salary}${projTxt})`);
+                });
                 side.picks.forEach(pk => parts.push(pk.label));
                 return parts.length ? parts.join(', ') : 'nothing';
             };
+
+            // Projected-points swing for the prompt
+            const aGiveProj = sideProjectedPoints(a);
+            const bGiveProj = sideProjectedPoints(b);
+            const haveProj = projectionData && (aGiveProj !== null || bGiveProj !== null);
+            let projectionBlock = '';
+            if (haveProj) {
+                const aNet = Math.round(bGiveProj - aGiveProj);
+                const bNet = Math.round(aGiveProj - bGiveProj);
+                projectionBlock = `\nPROJECTED POINTS (season totals, scored by THIS league's rules — use these as the main value signal):\n` +
+                    `- ${a.team.name} sends ~${Math.round(aGiveProj)} projected points, receives ~${Math.round(bGiveProj)} → net ${aNet >= 0 ? '+' : ''}${aNet}.\n` +
+                    `- ${b.team.name} sends ~${Math.round(bGiveProj)} projected points, receives ~${Math.round(aGiveProj)} → net ${bNet >= 0 ? '+' : ''}${bNet}.\n` +
+                    `(Draft picks have no projection attached; weigh them separately as future value.)\n`;
+            }
 
             const prompt = `You are a sharp, funny fantasy football analyst evaluating a proposed trade in a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap).
 
@@ -4613,7 +4760,7 @@ So after the trade, ${a.team.name}'s new players are what ${b.team.name} sent ($
 CAP IMPACT:
 - ${a.team.name}: currently $${a.team.totalSalary} committed, would be $${a.team.totalSalary - aOut + bOut} after the trade.
 - ${b.team.name}: currently $${b.team.totalSalary} committed, would be $${b.team.totalSalary - bOut + aOut} after the trade.
-
+${projectionBlock}
 Give your evaluation in EXACTLY these five labeled sections. Put each label on its own line followed by its content, using this exact format with the double colons:
 
 VERDICT :: One clear sentence naming who wins the trade (or "even") and the headline reason.
