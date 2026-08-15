@@ -727,6 +727,31 @@
             cursor: wait;
         }
 
+        .askboom-btn {
+            animation: askboomBtnPulse 3s ease-in-out infinite;
+        }
+
+        .askboom-btn-boom {
+            font-family: 'Orbitron', var(--font-display);
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            color: #eafff2;
+            text-shadow:
+                0 0 3px rgba(46, 204, 113, 0.8),
+                0 0 8px rgba(26, 122, 74, 0.6);
+        }
+
+        @keyframes askboomBtnPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(46, 204, 113, 0);
+                border-color: var(--ink);
+            }
+            50% {
+                box-shadow: 0 0 12px 1px rgba(46, 204, 113, 0.45);
+                border-color: rgba(46, 204, 113, 0.6);
+            }
+        }
+
         .roast-modal {
             display: none;
             position: fixed;
@@ -2679,7 +2704,7 @@
             <h2 class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <span>Team Salary Caps</span>
                 <span style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-                    <button class="roast-all-btn" onclick="openAskBoom()">Ask B.O.O.M.</button>
+                    <button class="roast-all-btn askboom-btn" onclick="openAskBoom()">Summon <span class="askboom-btn-boom">B.O.O.M.</span></button>
                     <button class="roast-all-btn" onclick="openTradeSimulator()">Trade Simulator</button>
                     <button class="roast-all-btn" onclick="roastAllTeams()">Power Rankings</button>
                 </span>
