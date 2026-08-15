@@ -3610,6 +3610,44 @@ ${playerLines}`;
         }
 
         // Call Claude to roast a single team
+        function buildOwnerHistoryBlurb(teamName) {
+            // Returns a prompt-ready block about the owner's league history, or '' if unavailable.
+            if (!historyData) return '';
+            const owner = ownerForTeam(teamName);
+            if (!owner) return '';
+            const careers = computeCareers();
+            const c = careers[owner];
+            if (!c || (c.regW + c.regL === 0 && c.titles === 0)) return '';
+
+            const winPct = (c.regW + c.regL) ? ((c.winPct * 100).toFixed(0) + '%') : 'N/A';
+            const parts = [];
+            parts.push(owner + ' has ' + c.titles + ' championship' + (c.titles === 1 ? '' : 's'));
+            if (c.seconds > 0) parts.push(c.seconds + ' runner-up finish' + (c.seconds === 1 ? '' : 'es'));
+            if (c.thirds > 0) parts.push(c.thirds + ' third-place finish' + (c.thirds === 1 ? '' : 'es'));
+            const finishes = parts.join(', ');
+
+            // Rank owner among all owners by titles and by win% for extra ammo
+            const all = Object.values(careers);
+            const titleLeader = all.slice().sort(function(a,b){ return b.titles - a.titles; })[0];
+            const worstPct = all.filter(function(x){ return (x.regW+x.regL) >= 30; })
+                .slice().sort(function(a,b){ return a.winPct - b.winPct; })[0];
+
+            let flavor = '';
+            if (titleLeader && titleLeader.owner === owner && c.titles > 0) {
+                flavor = ' This owner is the winningest in league history — the closest thing to a dynasty.';
+            } else if (c.titles === 0) {
+                flavor = ' This owner has NEVER won a title in league history — feel free to bring up the ring-less drought.';
+            }
+            if (worstPct && worstPct.owner === owner) {
+                flavor += ' They also own the worst career winning percentage of anyone in the league.';
+            }
+
+            return '\nOWNER LEAGUE HISTORY (use this for personalized jabs about their track record):\n' +
+                '- Team owner: ' + owner + '.\n' +
+                '- ' + finishes + '.\n' +
+                '- All-time regular season record: ' + c.regW + '-' + c.regL + ' (' + winPct + '), playoffs ' + c.poW + '-' + c.poL + '.' + flavor + '\n';
+        }
+
         async function roastTeam(rosterId) {
             const team = allTeamsData.find(t => t.rosterId === rosterId);
             if (!team) return;
@@ -3621,7 +3659,16 @@ ${playerLines}`;
             resultDiv.className = 'roast-result active';
             resultDiv.innerHTML = '<div class="roast-loading">Analyzing roster…</div>';
 
+            // Make sure league history is available so the roast can reference it
+            if (!historyData) {
+                try {
+                    const hr = await fetch('/api/get-history');
+                    historyData = await hr.json();
+                } catch (e) { /* history is optional; roast still works without it */ }
+            }
+
             const summary = buildTeamSummary(team);
+            const historyBlurb = buildOwnerHistoryBlurb(team.name);
 
             const prompt = `You are a savage, hilarious fantasy football analyst roasting a team in a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap). Be brutal and funny — no mercy — but roast the ROSTER CONSTRUCTION and cap decisions, never attack the person. Mix in genuine analysis so it's actually useful.
 
@@ -3630,12 +3677,12 @@ ${LEAGUE_RULES}
 - This league does NOT use kickers. Never mention kickers or criticize a team for not having one.
 - Roster structure: each team has 16 total roster spots — 9 starters plus 7 bench. The starting lineup is: 1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX (RB/WR/TE), 1 FLEX (WR/TE only), and 1 DEF. Because BOTH flex spots accept WR and TE (and one also accepts RB), depth at WR and TE is especially valuable. Judge roster construction against this format — a team needs enough startable bodies to fill 9 starting spots weekly plus useful bench depth, and should not waste bench spots on redundant players at a shallow-value position.
 - Players are acquired by bidding on a waiver wire, so a high salary does NOT automatically mean an "overpay." Sometimes a manager has to bid well above a player's real value to win someone they need. Judge whether the salary makes sense given how badly the team needed that player and their roster situation — a pricey win can be justified. Reserve "overpay" criticism for cases where a team clearly wasted cap on a player they didn't need or who doesn't move the needle.
-
+${historyBlurb}
 Here is the team:
 
 ${summary}
 
-Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, positional holes, genuinely wasteful bids, and bad value. Be specific about players and dollar amounts. End with a real one-sentence piece of advice. Do not use markdown headers or bullet points — just punchy paragraphs.`;
+Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, positional holes, genuinely wasteful bids, and bad value. Be specific about players and dollar amounts.${historyBlurb ? ' Work in at least one sharp jab that ties their roster moves to their league history (their title count or lack of one, their all-time record, their choke jobs or dynasty).' : ''} End with a real one-sentence piece of advice. Do not use markdown headers or bullet points — just punchy paragraphs.`;
 
             try {
                 const response = await fetch("/api/roast", {
