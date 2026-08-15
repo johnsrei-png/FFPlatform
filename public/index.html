@@ -1099,6 +1099,91 @@
             margin-top: 0.125rem;
         }
 
+        .record-card {
+            position: relative;
+        }
+
+        .record-card.has-hover {
+            cursor: pointer;
+        }
+
+        .record-card.has-hover::after {
+            content: '⋯';
+            position: absolute;
+            top: 0.625rem;
+            right: 0.875rem;
+            color: var(--text-muted);
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .record-hover {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            margin-top: 4px;
+            background: var(--ink);
+            border-radius: 6px;
+            padding: 0.75rem 0.875rem;
+            box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+            z-index: 50;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-4px);
+            transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
+        }
+
+        .record-card.has-hover:hover .record-hover {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .record-hover-title {
+            font-family: var(--font-display);
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #a89f8d;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .rank-row {
+            display: flex;
+            align-items: baseline;
+            gap: 0.5rem;
+            padding: 0.25rem 0;
+            font-size: 0.8125rem;
+        }
+
+        .rank-pos {
+            font-family: var(--font-mono);
+            color: #a89f8d;
+            font-size: 0.75rem;
+            width: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .rank-owner {
+            color: #f5f2ea;
+            font-weight: 600;
+            flex: 1;
+        }
+
+        .rank-year {
+            color: #a89f8d;
+            font-weight: 400;
+            font-size: 0.6875rem;
+        }
+
+        .rank-val {
+            font-family: var(--font-mono);
+            color: #f5f2ea;
+            font-weight: 600;
+        }
+
         /* Standings table */
         .standings-table {
             width: 100%;
@@ -3726,39 +3811,69 @@ ${allSummaries}`;
             const careers = computeCareers();
             const list = Object.values(careers);
             const seasons = historyData.ownerSeasons || [];
-            const maxBy = function(arr, fn) { if (!arr || !arr.length) return null; return arr.reduce(function(best, x){ return fn(x) > fn(best) ? x : best; }, arr[0]); };
 
-            let bestSeasonWins = { reg_wins: 0 };
-            let bestSeasonPF = { points_for: 0 };
-            seasons.forEach(function(r) {
-                if (r.reg_wins != null && r.reg_wins > bestSeasonWins.reg_wins) bestSeasonWins = r;
-                if (r.points_for != null && r.points_for > bestSeasonPF.points_for) bestSeasonPF = r;
-            });
+            // Build a season-lookup so single-season records can list the top few
+            const seasonWinList = seasons.filter(function(r){ return r.reg_wins != null; })
+                .map(function(r){ return { owner: r.owner, value: r.reg_wins, detail: String(r.year) }; });
+            const seasonPFList = seasons.filter(function(r){ return r.points_for != null; })
+                .map(function(r){ return { owner: r.owner, value: r.points_for, detail: String(r.year), display: Math.round(r.points_for) }; });
 
-            const mostTitles = maxBy(list, function(c){ return c.titles; });
-            const mostRegWins = maxBy(list, function(c){ return c.regW; });
-            const bestWinPct = maxBy(list.filter(function(c){ return (c.regW+c.regL) >= 30; }), function(c){ return c.winPct; });
-            const mostPoWins = maxBy(list, function(c){ return c.poW; });
-            const bestPoPct = maxBy(list.filter(function(c){ return (c.poW+c.poL) >= 5; }), function(c){ return c.poPct; });
-            const bestDiff = maxBy(list, function(c){ return c.diff; });
+            // Helper: build a ranked list of {owner, value, display, detail} from careers
+            const careerList = function(valueFn, displayFn, minGamesFn) {
+                return list
+                    .filter(function(c){ return minGamesFn ? minGamesFn(c) : true; })
+                    .map(function(c){ return { owner: c.owner, value: valueFn(c), display: displayFn(c), detail: 'career' }; })
+                    .sort(function(a,b){ return b.value - a.value; });
+            };
 
-            const card = function(label, value, holder, detail) {
-                if (holder == null) return '';
-                return '<div class="record-card"><div class="record-label">' + label + '</div>' +
-                    '<div class="record-value">' + value + '</div>' +
-                    '<div class="record-holder">' + holder + '</div>' +
-                    (detail ? '<div class="record-detail">' + detail + '</div>' : '') + '</div>';
+            const sortList = function(arr, displayFn) {
+                return arr.slice().sort(function(a,b){ return b.value - a.value; })
+                    .map(function(x){ return { owner: x.owner, display: displayFn ? displayFn(x) : x.value, detail: x.detail }; });
+            };
+
+            // Each record: label, its ranked array (already sorted desc), and a detail line for the leader
+            const records = [
+                { label: 'Most Championships', ranked: careerList(function(c){return c.titles;}, function(c){return c.titles;}), leaderDetail: '' },
+                { label: 'Most Regular Season Wins', ranked: careerList(function(c){return c.regW;}, function(c){return c.regW;}), leaderDetail: 'career' },
+                { label: 'Highest Win %', ranked: careerList(function(c){return c.winPct;}, function(c){return (c.winPct*100).toFixed(1)+'%';}, function(c){return (c.regW+c.regL)>=30;}), leaderDetail: 'min. 30 games' },
+                { label: 'Most Single-Season Wins', ranked: seasonWinList.slice().sort(function(a,b){return b.value-a.value;}).map(function(x){return {owner:x.owner, display:x.value, detail:x.detail};}), leaderDetail: '' },
+                { label: 'Most Playoff Wins', ranked: careerList(function(c){return c.poW;}, function(c){return c.poW;}), leaderDetail: 'career' },
+                { label: 'Highest Playoff Win %', ranked: careerList(function(c){return c.poPct;}, function(c){return (c.poPct*100).toFixed(0)+'%';}, function(c){return (c.poW+c.poL)>=5;}), leaderDetail: 'min. 5 games' },
+                { label: 'Most Points, Single Season', ranked: seasonPFList.slice().sort(function(a,b){return b.value-a.value;}).map(function(x){return {owner:x.owner, display:Math.round(x.value), detail:x.detail};}), leaderDetail: '' },
+                { label: 'Best Point Differential', ranked: careerList(function(c){return c.diff;}, function(c){return (c.diff>=0?'+':'')+Math.round(c.diff);}), leaderDetail: 'career' }
+            ];
+
+            const card = function(rec) {
+                const ranked = rec.ranked;
+                if (!ranked || !ranked.length) return '';
+                const leader = ranked[0];
+                // Leader detail: prefer the record's own detail line; for single-season, use the year
+                const detailLine = rec.leaderDetail || (leader.detail && leader.detail !== 'career' ? leader.detail : '');
+
+                // Build the hover list from ranks 2 onward (up to 5 more)
+                const rest = ranked.slice(1, 6);
+                let hoverRows = '';
+                rest.forEach(function(r, i) {
+                    const yr = (r.detail && r.detail !== 'career') ? ' <span class="rank-year">' + r.detail + '</span>' : '';
+                    hoverRows += '<div class="rank-row"><span class="rank-pos">' + (i+2) + '</span>' +
+                        '<span class="rank-owner">' + r.owner + yr + '</span>' +
+                        '<span class="rank-val">' + r.display + '</span></div>';
+                });
+                const hoverPanel = rest.length
+                    ? '<div class="record-hover"><div class="record-hover-title">Next Best</div>' + hoverRows + '</div>'
+                    : '';
+
+                return '<div class="record-card' + (rest.length ? ' has-hover' : '') + '">' +
+                    '<div class="record-label">' + rec.label + '</div>' +
+                    '<div class="record-value">' + leader.display + '</div>' +
+                    '<div class="record-holder">' + leader.owner + '</div>' +
+                    (detailLine ? '<div class="record-detail">' + detailLine + '</div>' : '') +
+                    hoverPanel +
+                    '</div>';
             };
 
             let html = '<div class="record-grid">';
-            if (mostTitles) html += card('Most Championships', mostTitles.titles, mostTitles.owner, '');
-            if (mostRegWins) html += card('Most Regular Season Wins', mostRegWins.regW, mostRegWins.owner, 'career');
-            if (bestWinPct) html += card('Highest Win %', (bestWinPct.winPct*100).toFixed(1)+'%', bestWinPct.owner, 'min. 30 games');
-            if (bestSeasonWins.owner) html += card('Most Single-Season Wins', bestSeasonWins.reg_wins, bestSeasonWins.owner, bestSeasonWins.year || '');
-            if (mostPoWins) html += card('Most Playoff Wins', mostPoWins.poW, mostPoWins.owner, 'career');
-            if (bestPoPct) html += card('Highest Playoff Win %', (bestPoPct.poPct*100).toFixed(0)+'%', bestPoPct.owner, 'min. 5 games');
-            if (bestSeasonPF.owner) html += card('Most Points, Single Season', Math.round(bestSeasonPF.points_for), bestSeasonPF.owner, bestSeasonPF.year || '');
-            if (bestDiff) html += card('Best Point Differential', '+'+Math.round(bestDiff.diff), bestDiff.owner, 'career');
+            records.forEach(function(rec){ html += card(rec); });
             html += '</div>';
             document.getElementById('panel-records').innerHTML = html;
         }
