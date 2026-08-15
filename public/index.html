@@ -2885,7 +2885,7 @@
                         <div>
                             <div class="team-name">${team.name}</div>
                             <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
-                            <div class="team-history" id="team-history-${team.rosterId}" data-team="${(team.name||'').replace(/"/g,'&quot;')}"></div>
+                            <div class="team-history" id="team-history-${team.rosterId}" data-team="${(team.name||'').replace(/"/g,'&quot;')}" data-owner="${(team.owner||'').replace(/"/g,'&quot;')}"></div>
                         </div>
                         <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
                             $${team.capSpace}
@@ -3765,6 +3765,7 @@ ${allSummaries}`;
         // Explicit map from Sleeper team name -> history owner first name.
         // Keys are normalized (lowercased, punctuation stripped) for robust matching.
         const TEAM_OWNER_MAP = {
+            'rosterbaters anonymous': 'Tyler',
             'rosterbators anonymous': 'Tyler',
             'the scramblers': 'Kurt',
             'fuck it': 'Reid',
@@ -3781,8 +3782,27 @@ ${allSummaries}`;
             return (name || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
         }
 
-        function ownerForTeam(teamName) {
-            return TEAM_OWNER_MAP[normalizeTeamName(teamName)] || null;
+        function ownerForTeam(teamName, ownerName) {
+            // 1) Exact team-name match via the map
+            const mapped = TEAM_OWNER_MAP[normalizeTeamName(teamName)];
+            if (mapped) return mapped;
+            // 2) Fuzzy team-name match (handles minor spelling/renames)
+            const nt = normalizeTeamName(teamName);
+            if (nt) {
+                const fuzzy = Object.keys(TEAM_OWNER_MAP).find(function(k) {
+                    return k.indexOf(nt) === 0 || nt.indexOf(k) === 0;
+                });
+                if (fuzzy) return TEAM_OWNER_MAP[fuzzy];
+            }
+            // 3) Fallback: match the Sleeper owner display name to a history first name
+            if (ownerName) {
+                const o = ownerName.toLowerCase();
+                const hit = LEAGUE_OWNERS.find(function(name) {
+                    return o === name.toLowerCase() || o.split(' ')[0] === name.toLowerCase();
+                });
+                if (hit) return hit;
+            }
+            return null;
         }
         let historyData = null;
 
@@ -3852,7 +3872,8 @@ ${allSummaries}`;
             const careers = computeCareers();
             document.querySelectorAll('.team-history').forEach(function(el) {
                 const teamName = el.getAttribute('data-team');
-                const owner = ownerForTeam(teamName);
+                const ownerName = el.getAttribute('data-owner');
+                const owner = ownerForTeam(teamName, ownerName);
                 if (!owner) { el.innerHTML = ''; return; }
                 const c = careers[owner];
                 if (!c || (c.regW + c.regL === 0 && c.titles === 0)) { el.innerHTML = ''; return; }
