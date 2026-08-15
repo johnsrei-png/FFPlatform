@@ -4576,9 +4576,13 @@ ${LEAGUE_RULES}
 - Roster: 16 spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE only, 1 DEF) + 7 bench. Both flex spots take WR/TE, so WR/TE depth is valuable.
 - Players are kept year to year and their salaries escalate, so cap hits and long-term value matter, not just this season.
 
-THE TRADE:
-${a.team.name} sends: ${describe(a)}
-${b.team.name} sends: ${describe(b)}
+THE TRADE (read carefully — do not mix up the sides):
+- ${a.team.name} GIVES UP: ${describe(a)}
+- ${a.team.name} RECEIVES: ${describe(b)}
+- ${b.team.name} GIVES UP: ${describe(b)}
+- ${b.team.name} RECEIVES: ${describe(a)}
+
+So after the trade, ${a.team.name}'s new players are what ${b.team.name} sent (${describe(b)}), and ${b.team.name}'s new players are what ${a.team.name} sent (${describe(a)}). Evaluate each team based on what they RECEIVE, not what they give away.
 
 CAP IMPACT:
 - ${a.team.name}: currently $${a.team.totalSalary} committed, would be $${a.team.totalSalary - aOut + bOut} after the trade.
@@ -4598,7 +4602,7 @@ Be honest and a little funny, but fair. Do not use markdown, asterisks, or bulle
                 const response = await fetch('/api/roast', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, model: 'claude-sonnet-5', maxTokens: 1024 })
+                    body: JSON.stringify({ prompt, model: 'claude-sonnet-5', maxTokens: 2048 })
                 });
                 const data = await response.json();
                 if (!response.ok) throw new Error(data.error || 'Analysis failed');
