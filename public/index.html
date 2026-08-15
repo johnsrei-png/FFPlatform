@@ -686,6 +686,220 @@
             line-height: 1.7;
         }
 
+        .trade-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.75);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .trade-modal.active {
+            display: flex;
+        }
+
+        .trade-modal-content {
+            background: var(--bg-card);
+            border-radius: 6px;
+            max-width: 920px;
+            width: 100%;
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(28, 26, 23, 0.35);
+        }
+
+        .trade-modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .trade-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+        }
+
+        .trade-side {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+            background: var(--bg-sunken);
+        }
+
+        .trade-team-select {
+            width: 100%;
+            padding: 0.625rem 0.75rem;
+            background: var(--bg-card);
+            border: 1px solid var(--border-strong);
+            border-radius: 4px;
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 0.875rem;
+        }
+
+        .trade-team-select:focus {
+            outline: none;
+            border-color: var(--accent-primary);
+        }
+
+        .trade-assets {
+            max-height: 320px;
+            overflow-y: auto;
+        }
+
+        .trade-asset-group-label {
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--text-secondary);
+            font-weight: 700;
+            margin: 0.75rem 0 0.375rem;
+        }
+
+        .trade-asset {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.375rem 0.5rem;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.12s ease;
+        }
+
+        .trade-asset:hover {
+            background: var(--bg-card);
+        }
+
+        .trade-asset input {
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .trade-asset-name {
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--ink);
+            flex: 1;
+        }
+
+        .trade-asset-meta {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+        }
+
+        .trade-asset-salary {
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .trade-summary {
+            display: none;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-top: 1.25rem;
+        }
+
+        .trade-summary.active {
+            display: grid;
+        }
+
+        .trade-summary-card {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem;
+        }
+
+        .trade-summary-team {
+            font-family: var(--font-display);
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.02em;
+            margin-bottom: 0.75rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .trade-summary-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 0.8125rem;
+            margin-bottom: 0.375rem;
+        }
+
+        .trade-summary-row .label {
+            color: var(--text-secondary);
+        }
+
+        .trade-summary-row .figure {
+            font-family: var(--font-mono);
+            font-weight: 600;
+        }
+
+        .trade-summary-row.result {
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--rule);
+            font-weight: 700;
+        }
+
+        .figure.over { color: var(--accent-danger); }
+        .figure.ok { color: var(--accent-primary); }
+
+        .trade-actions {
+            margin-top: 1.25rem;
+            text-align: center;
+        }
+
+        .trade-analyze-btn {
+            background: var(--ink);
+            color: #f5f2ea;
+            border: 1px solid var(--ink);
+            padding: 0.625rem 1.5rem;
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+        }
+
+        .trade-analyze-btn:hover {
+            background: var(--accent-primary);
+            border-color: var(--accent-primary);
+        }
+
+        .trade-analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: wait;
+        }
+
+        .trade-analysis {
+            margin-top: 1.25rem;
+            padding: 0;
+            display: none;
+            line-height: 1.6;
+            font-size: 0.875rem;
+        }
+
+        .trade-analysis.active {
+            display: block;
+            padding: 1rem 1.125rem;
+            background: var(--bg-sunken);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: 3px;
+        }
+
         .roast-rank-item {
             padding: 0.875rem 1.125rem;
             margin-bottom: 0.625rem;
@@ -1431,6 +1645,14 @@
                 display: block;
             }
 
+            .trade-columns {
+                grid-template-columns: 1fr;
+            }
+
+            .trade-summary.active {
+                grid-template-columns: 1fr;
+            }
+
             .header-right {
                 display: none;
                 position: absolute;
@@ -1730,7 +1952,10 @@
 
             <h2 class="section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                 <span>Team Salary Caps</span>
-                <button class="roast-all-btn" onclick="roastAllTeams()">Power Rankings</button>
+                <span style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                    <button class="roast-all-btn" onclick="openTradeSimulator()">Trade Simulator</button>
+                    <button class="roast-all-btn" onclick="roastAllTeams()">Power Rankings</button>
+                </span>
             </h2>
             <div class="position-legend">
                 <span class="pos-badge qb">QB</span>
@@ -1857,6 +2082,39 @@
             </div>
             <div class="roast-modal-body" id="roastModalBody">
                 <!-- Populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <div class="trade-modal" id="tradeModal">
+        <div class="trade-modal-content">
+            <div class="roast-modal-header">
+                <h3>Trade Simulator</h3>
+                <button class="roast-modal-close" onclick="closeTradeSimulator()">×</button>
+            </div>
+            <div class="trade-modal-body">
+                <div class="trade-columns">
+                    <div class="trade-side">
+                        <select class="trade-team-select" id="tradeTeamA" onchange="renderTradeSide('A')">
+                            <option value="">Select team…</option>
+                        </select>
+                        <div class="trade-assets" id="tradeAssetsA"></div>
+                    </div>
+                    <div class="trade-side">
+                        <select class="trade-team-select" id="tradeTeamB" onchange="renderTradeSide('B')">
+                            <option value="">Select team…</option>
+                        </select>
+                        <div class="trade-assets" id="tradeAssetsB"></div>
+                    </div>
+                </div>
+
+                <div class="trade-summary" id="tradeSummary"></div>
+
+                <div class="trade-actions">
+                    <button class="trade-analyze-btn" id="tradeAnalyzeBtn" onclick="analyzeTrade()">Analyze Trade</button>
+                </div>
+
+                <div class="trade-analysis" id="tradeAnalysis"></div>
             </div>
         </div>
     </div>
@@ -2959,6 +3217,203 @@ ${allSummaries}`;
 
         function closeRoastModal() {
             document.getElementById('roastModal').classList.remove('active');
+        }
+
+        // ===== Trade Simulator =====
+        const tradeSelected = { A: new Set(), B: new Set() };
+
+        function openTradeSimulator() {
+            if (!allTeamsData || allTeamsData.length === 0) {
+                alert('No data loaded yet. Give it a sec.');
+                return;
+            }
+            // Reset state
+            tradeSelected.A.clear();
+            tradeSelected.B.clear();
+            document.getElementById('tradeAssetsA').innerHTML = '';
+            document.getElementById('tradeAssetsB').innerHTML = '';
+            document.getElementById('tradeSummary').classList.remove('active');
+            document.getElementById('tradeAnalysis').classList.remove('active');
+            document.getElementById('tradeAnalysis').innerHTML = '';
+
+            // Populate both team dropdowns
+            const opts = '<option value="">Select team…</option>' +
+                allTeamsData.map(t => `<option value="${t.rosterId}">${t.name}</option>`).join('');
+            document.getElementById('tradeTeamA').innerHTML = opts;
+            document.getElementById('tradeTeamB').innerHTML = opts;
+
+            document.getElementById('tradeModal').classList.add('active');
+        }
+
+        function closeTradeSimulator() {
+            document.getElementById('tradeModal').classList.remove('active');
+        }
+
+        function renderTradeSide(side) {
+            const select = document.getElementById('tradeTeam' + side);
+            const rosterId = select.value;
+            const container = document.getElementById('tradeAssets' + side);
+            tradeSelected[side].clear();
+
+            if (!rosterId) {
+                container.innerHTML = '';
+                updateTradeSummary();
+                return;
+            }
+
+            const team = allTeamsData.find(t => String(t.rosterId) === String(rosterId));
+            if (!team) return;
+
+            let html = '<div class="trade-asset-group-label">Players</div>';
+            team.players.forEach(p => {
+                html += `
+                    <label class="trade-asset">
+                        <input type="checkbox" onchange="toggleTradeAsset('${side}', 'player', '${p.id}')">
+                        <span class="trade-asset-name">${p.name}</span>
+                        <span class="trade-asset-meta">${p.position} · ${p.team}</span>
+                        <span class="trade-asset-salary">$${p.salary}</span>
+                    </label>`;
+            });
+
+            if (team.draftPicks && team.draftPicks.length > 0) {
+                html += '<div class="trade-asset-group-label">Draft Picks</div>';
+                team.draftPicks.forEach((pick, idx) => {
+                    html += `
+                        <label class="trade-asset">
+                            <input type="checkbox" onchange="toggleTradeAsset('${side}', 'pick', '${idx}')">
+                            <span class="trade-asset-name">${pick.label}</span>
+                        </label>`;
+                });
+            }
+
+            container.innerHTML = html;
+            updateTradeSummary();
+        }
+
+        function toggleTradeAsset(side, type, id) {
+            const key = type + ':' + id;
+            if (tradeSelected[side].has(key)) {
+                tradeSelected[side].delete(key);
+            } else {
+                tradeSelected[side].add(key);
+            }
+            updateTradeSummary();
+        }
+
+        function getTradeSideData(side) {
+            const rosterId = document.getElementById('tradeTeam' + side).value;
+            const team = allTeamsData.find(t => String(t.rosterId) === String(rosterId));
+            if (!team) return null;
+
+            const players = [];
+            const picks = [];
+            tradeSelected[side].forEach(key => {
+                const [type, id] = key.split(':');
+                if (type === 'player') {
+                    const p = team.players.find(pl => String(pl.id) === String(id));
+                    if (p) players.push(p);
+                } else if (type === 'pick') {
+                    const pick = team.draftPicks[parseInt(id)];
+                    if (pick) picks.push(pick);
+                }
+            });
+            return { team, players, picks };
+        }
+
+        function updateTradeSummary() {
+            const a = getTradeSideData('A');
+            const b = getTradeSideData('B');
+            const summary = document.getElementById('tradeSummary');
+
+            if (!a || !b) {
+                summary.classList.remove('active');
+                return;
+            }
+
+            // Salary leaving each side
+            const aOut = a.players.reduce((s, p) => s + p.salary, 0);
+            const bOut = b.players.reduce((s, p) => s + p.salary, 0);
+
+            // After the trade: team A loses aOut, gains bOut
+            const aNewSalary = a.team.totalSalary - aOut + bOut;
+            const bNewSalary = b.team.totalSalary - bOut + aOut;
+            const aNewSpace = SALARY_CAP - aNewSalary;
+            const bNewSpace = SALARY_CAP - bNewSalary;
+
+            const card = (team, newSalary, newSpace) => `
+                <div class="trade-summary-card">
+                    <div class="trade-summary-team">${team.name}</div>
+                    <div class="trade-summary-row"><span class="label">Current salary</span><span class="figure">$${team.totalSalary}</span></div>
+                    <div class="trade-summary-row"><span class="label">After trade</span><span class="figure">$${newSalary}</span></div>
+                    <div class="trade-summary-row result"><span class="label">Cap space</span><span class="figure ${newSpace < 0 ? 'over' : 'ok'}">$${newSpace}${newSpace < 0 ? ' OVER' : ''}</span></div>
+                </div>`;
+
+            summary.innerHTML = card(a.team, aNewSalary, aNewSpace) + card(b.team, bNewSalary, bNewSpace);
+            summary.classList.add('active');
+        }
+
+        async function analyzeTrade() {
+            const a = getTradeSideData('A');
+            const b = getTradeSideData('B');
+
+            if (!a || !b) {
+                alert('Select both teams first.');
+                return;
+            }
+            if (a.players.length === 0 && a.picks.length === 0 && b.players.length === 0 && b.picks.length === 0) {
+                alert('Add at least one player or pick to the trade.');
+                return;
+            }
+
+            const btn = document.getElementById('tradeAnalyzeBtn');
+            const out = document.getElementById('tradeAnalysis');
+            btn.disabled = true;
+            btn.textContent = 'Analyzing…';
+            out.className = 'trade-analysis active';
+            out.innerHTML = '<div class="roast-loading">Evaluating the trade…</div>';
+
+            const aOut = a.players.reduce((s, p) => s + p.salary, 0);
+            const bOut = b.players.reduce((s, p) => s + p.salary, 0);
+            const describe = (side) => {
+                const parts = [];
+                side.players.forEach(p => parts.push(`${p.name} (${p.position}, $${p.salary})`));
+                side.picks.forEach(pk => parts.push(pk.label));
+                return parts.length ? parts.join(', ') : 'nothing';
+            };
+
+            const prompt = `You are a sharp, funny fantasy football analyst evaluating a proposed trade in a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap).
+
+LEAGUE CONTEXT:
+- No kickers.
+- Roster: 16 spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE only, 1 DEF) + 7 bench. Both flex spots take WR/TE, so WR/TE depth is valuable.
+- Players are kept year to year and their salaries escalate, so cap hits and long-term value matter, not just this season.
+
+THE TRADE:
+${a.team.name} sends: ${describe(a)}
+${b.team.name} sends: ${describe(b)}
+
+CAP IMPACT:
+- ${a.team.name}: currently $${a.team.totalSalary} committed, would be $${a.team.totalSalary - aOut + bOut} after the trade.
+- ${b.team.name}: currently $${b.team.totalSalary} committed, would be $${b.team.totalSalary - bOut + aOut} after the trade.
+
+Give a verdict in 4-6 punchy sentences: who wins the trade and why, whether it's fair or lopsided, how it affects each team's positional needs and cap, and any long-term keeper angle. Be honest and a little funny, but fair. Do not use markdown headers or bullet points — just punchy paragraphs.`;
+
+            try {
+                const response = await fetch('/api/roast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, model: 'claude-sonnet-5', maxTokens: 1024 })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error || 'Analysis failed');
+                const text = (data.text || '').trim();
+                out.innerHTML = text ? text.replace(/\n/g, '<br>') : 'No analysis came back. Try again.';
+            } catch (err) {
+                out.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed: ' + (err.message || 'Unknown error') + '</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Analyze Trade';
+            }
         }
 
         function exportToCSV() {
