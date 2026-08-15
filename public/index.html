@@ -928,6 +928,321 @@
             line-height: 1.55;
         }
 
+        /* ===== League History ===== */
+        .history-view {
+            display: none;
+        }
+
+        .history-view.active {
+            display: block;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .history-back-btn {
+            background: var(--bg-card);
+            color: var(--accent-primary);
+            border: 1px solid var(--border-strong);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 0.8125rem;
+            cursor: pointer;
+        }
+
+        .history-back-btn:hover {
+            background: var(--accent-primary);
+            color: #f5f2ea;
+            border-color: var(--accent-primary);
+        }
+
+        .history-subtabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 2px solid var(--ink);
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .history-subtab {
+            background: transparent;
+            border: none;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            padding: 0.75rem 1.25rem;
+            font-family: var(--font-display);
+            font-size: 0.9375rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 0;
+        }
+
+        .history-subtab:hover {
+            background: transparent;
+            color: var(--ink);
+        }
+
+        .history-subtab.active {
+            color: var(--ink);
+            border-bottom-color: var(--accent-primary);
+        }
+
+        .history-panel {
+            display: none;
+        }
+
+        .history-panel.active {
+            display: block;
+        }
+
+        .history-loading {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--text-secondary);
+        }
+
+        /* Hall of Champions */
+        .champ-row {
+            display: grid;
+            grid-template-columns: 70px 1fr 1fr 1fr;
+            gap: 1rem;
+            align-items: center;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--rule);
+        }
+
+        .champ-row.header {
+            font-family: var(--font-display);
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            border-bottom: 2px solid var(--ink);
+        }
+
+        .champ-year {
+            font-family: var(--font-mono);
+            font-weight: 600;
+            font-size: 1rem;
+            color: var(--ink);
+        }
+
+        .champ-name {
+            font-weight: 600;
+        }
+
+        .champ-name.gold {
+            color: var(--accent-primary);
+            font-weight: 700;
+        }
+
+        .champ-trophy {
+            font-size: 0.6875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        /* Record Book */
+        .record-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 0.875rem;
+        }
+
+        .record-card {
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 1rem 1.125rem;
+            background: var(--bg-card);
+        }
+
+        .record-label {
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .record-value {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--ink);
+            line-height: 1;
+        }
+
+        .record-holder {
+            font-size: 0.8125rem;
+            color: var(--accent-primary);
+            font-weight: 600;
+            margin-top: 0.375rem;
+        }
+
+        .record-detail {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            margin-top: 0.125rem;
+        }
+
+        /* Standings table */
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8125rem;
+        }
+
+        .standings-table th {
+            font-family: var(--font-display);
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-align: right;
+            padding: 0.625rem 0.75rem;
+            border-bottom: 2px solid var(--ink);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .standings-table th:first-child,
+        .standings-table td:first-child {
+            text-align: left;
+        }
+
+        .standings-table th:hover {
+            color: var(--ink);
+        }
+
+        .standings-table td {
+            padding: 0.625rem 0.75rem;
+            text-align: right;
+            border-bottom: 1px solid var(--rule);
+            font-family: var(--font-mono);
+        }
+
+        .standings-table td.owner-cell {
+            font-family: var(--font-body);
+            font-weight: 600;
+            color: var(--ink);
+        }
+
+        .standings-table tr:hover td {
+            background: var(--bg-sunken);
+        }
+
+        .history-historian {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--rule);
+        }
+
+        .historian-result {
+            margin-top: 1rem;
+            display: none;
+            line-height: 1.7;
+            font-size: 0.9375rem;
+        }
+
+        .historian-result.active {
+            display: block;
+            padding: 1.25rem 1.5rem;
+            background: var(--bg-sunken);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent-primary);
+            border-radius: 3px;
+        }
+
+        .history-add-season {
+            margin-top: 2rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--rule);
+        }
+
+        .add-season-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+        }
+
+        .add-season-field label {
+            display: block;
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .add-season-field input {
+            width: 100%;
+            padding: 0.5rem 0.625rem;
+            border: 1px solid var(--border-strong);
+            border-radius: 4px;
+            font-family: var(--font-body);
+            font-size: 0.875rem;
+        }
+
+        .add-season-owner-row {
+            display: grid;
+            grid-template-columns: 90px repeat(6, 1fr);
+            gap: 0.5rem;
+            align-items: center;
+            margin-bottom: 0.375rem;
+        }
+
+        .add-season-owner-row .owner-label {
+            font-weight: 600;
+            font-size: 0.8125rem;
+        }
+
+        .add-season-owner-row input {
+            width: 100%;
+            padding: 0.375rem 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            font-family: var(--font-mono);
+            font-size: 0.8125rem;
+            text-align: center;
+        }
+
+        .add-season-owner-head {
+            display: grid;
+            grid-template-columns: 90px repeat(6, 1fr);
+            gap: 0.5rem;
+            font-size: 0.625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            color: var(--text-secondary);
+            font-weight: 600;
+            margin-bottom: 0.375rem;
+        }
+
+        .add-season-owner-head span {
+            text-align: center;
+        }
+
+        .add-season-owner-head span:first-child {
+            text-align: left;
+        }
+
         .roast-rank-item {
             padding: 0.875rem 1.125rem;
             margin-bottom: 0.625rem;
@@ -1930,7 +2245,7 @@
             <div class="header-right" id="headerRight">
                 <button onclick="loadPublicData()">Refresh</button>
                 <button onclick="exportToCSV()">Export CSV</button>
-                <button onclick="alert('League History feature coming soon!')">League History</button>
+                <button onclick="openHistory()">League History</button>
                 <div class="header-divider"></div>
                 <span class="header-label">Commissioner</span>
                 <button id="commissionerModeBtn" onclick="toggleCommissionerMode()">Commissioner Mode</button>
@@ -1998,6 +2313,40 @@
                 </select>
             </div>
             <div id="teamsGrid" class="teams-grid"></div>
+        </div>
+
+        <div id="historyView" class="history-view">
+            <div class="history-header">
+                <h2 class="section-title" style="margin-top:0; border:none;">League History</h2>
+                <button class="history-back-btn" onclick="closeHistory()">← Back to Salaries</button>
+            </div>
+
+            <div class="history-subtabs">
+                <button class="history-subtab active" data-tab="champions" onclick="switchHistoryTab('champions')">Hall of Champions</button>
+                <button class="history-subtab" data-tab="records" onclick="switchHistoryTab('records')">Record Book</button>
+                <button class="history-subtab" data-tab="standings" onclick="switchHistoryTab('standings')">All-Time Standings</button>
+            </div>
+
+            <div class="history-loading" id="historyLoading">
+                <div class="spinner"></div>
+                <p>Loading league history…</p>
+            </div>
+
+            <div class="history-content" id="historyContent" style="display:none;">
+                <div class="history-panel active" id="panel-champions"></div>
+                <div class="history-panel" id="panel-records"></div>
+                <div class="history-panel" id="panel-standings"></div>
+            </div>
+
+            <div class="history-historian">
+                <button class="roast-all-btn" onclick="runLeagueHistorian()">League Historian (AI Recap)</button>
+                <div class="historian-result" id="historianResult"></div>
+            </div>
+
+            <div class="history-add-season" id="historyAddSeason" style="display:none;">
+                <h3 class="section-title" style="font-size:1.125rem;">Add / Edit a Season</h3>
+                <div id="addSeasonForm"></div>
+            </div>
         </div>
     </div>
 
@@ -3275,6 +3624,277 @@ ${allSummaries}`;
 
         function closeTradeSimulator() {
             document.getElementById('tradeModal').classList.remove('active');
+        }
+
+        // ===== League History =====
+        const LEAGUE_OWNERS = ['Tyler','Lance','Mark','Russ','Duke','Steve','Jason','Bob','Kurt','Reid'];
+        let historyData = null;
+
+        function openHistory() {
+            document.getElementById('dashboard').classList.remove('active');
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('historyView').classList.add('active');
+            document.getElementById('historyAddSeason').style.display = commissionerMode ? 'block' : 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (!historyData) loadHistory();
+        }
+
+        function closeHistory() {
+            document.getElementById('historyView').classList.remove('active');
+            document.getElementById('dashboard').style.display = 'block';
+            document.getElementById('dashboard').classList.add('active');
+        }
+
+        function switchHistoryTab(tab) {
+            document.querySelectorAll('.history-subtab').forEach(function(b) {
+                b.classList.toggle('active', b.dataset.tab === tab);
+            });
+            document.querySelectorAll('.history-panel').forEach(function(p) {
+                p.classList.toggle('active', p.id === 'panel-' + tab);
+            });
+        }
+
+        async function loadHistory() {
+            document.getElementById('historyLoading').style.display = 'block';
+            document.getElementById('historyContent').style.display = 'none';
+            try {
+                const res = await fetch('/api/get-history');
+                historyData = await res.json();
+                renderChampions();
+                renderRecords();
+                renderStandings();
+                if (commissionerMode) renderAddSeasonForm();
+                document.getElementById('historyLoading').style.display = 'none';
+                document.getElementById('historyContent').style.display = 'block';
+            } catch (err) {
+                document.getElementById('historyLoading').innerHTML =
+                    '<p style="color: var(--accent-danger);">Could not load history: ' + (err.message || 'error') + '</p>';
+            }
+        }
+
+        function renderChampions() {
+            const seasons = (historyData.seasons || []).slice().sort(function(a,b){ return b.year - a.year; });
+            let html = '<div class="champ-row header"><span>Year</span><span>Champion</span><span>Runner-Up</span><span>Third</span></div>';
+            seasons.forEach(function(s) {
+                html += '<div class="champ-row">' +
+                    '<span class="champ-year">' + s.year + '</span>' +
+                    '<span class="champ-name gold">' + (s.champion || '\u2014') + '</span>' +
+                    '<span class="champ-name">' + (s.runner_up || '\u2014') + '</span>' +
+                    '<span class="champ-name">' + (s.third || '\u2014') + '</span>' +
+                    '</div>';
+            });
+            document.getElementById('panel-champions').innerHTML = html;
+        }
+
+        function computeCareers() {
+            const careers = {};
+            const ensure = function(o) { return careers[o] || (careers[o] = {
+                owner:o, regW:0, regL:0, poW:0, poL:0, pf:0, pa:0, seasons:0,
+                titles:0, seconds:0, thirds:0, bestWins:0, bestPF:0
+            }); };
+
+            (historyData.ownerSeasons || []).forEach(function(r) {
+                const c = ensure(r.owner);
+                if (r.reg_wins != null) c.regW += r.reg_wins;
+                if (r.reg_losses != null) c.regL += r.reg_losses;
+                if (r.playoff_wins != null) c.poW += r.playoff_wins;
+                if (r.playoff_losses != null) c.poL += r.playoff_losses;
+                if (r.points_for != null) c.pf += r.points_for;
+                if (r.points_against != null) c.pa += r.points_against;
+                if (r.reg_wins != null || r.reg_losses != null) c.seasons += 1;
+                if (r.reg_wins != null && r.reg_wins > c.bestWins) c.bestWins = r.reg_wins;
+                if (r.points_for != null && r.points_for > c.bestPF) c.bestPF = r.points_for;
+            });
+
+            (historyData.seasons || []).forEach(function(s) {
+                if (s.champion && careers[s.champion]) careers[s.champion].titles += 1;
+                if (s.runner_up && careers[s.runner_up]) careers[s.runner_up].seconds += 1;
+                if (s.third && careers[s.third]) careers[s.third].thirds += 1;
+            });
+
+            Object.values(careers).forEach(function(c) {
+                const totG = c.regW + c.regL;
+                c.winPct = totG ? c.regW / totG : 0;
+                const poG = c.poW + c.poL;
+                c.poPct = poG ? c.poW / poG : 0;
+                c.diff = c.pf - c.pa;
+            });
+            return careers;
+        }
+
+        function renderRecords() {
+            const careers = computeCareers();
+            const list = Object.values(careers);
+            const seasons = historyData.ownerSeasons || [];
+            const maxBy = function(arr, fn) { if (!arr || !arr.length) return null; return arr.reduce(function(best, x){ return fn(x) > fn(best) ? x : best; }, arr[0]); };
+
+            let bestSeasonWins = { reg_wins: 0 };
+            let bestSeasonPF = { points_for: 0 };
+            seasons.forEach(function(r) {
+                if (r.reg_wins != null && r.reg_wins > bestSeasonWins.reg_wins) bestSeasonWins = r;
+                if (r.points_for != null && r.points_for > bestSeasonPF.points_for) bestSeasonPF = r;
+            });
+
+            const mostTitles = maxBy(list, function(c){ return c.titles; });
+            const mostRegWins = maxBy(list, function(c){ return c.regW; });
+            const bestWinPct = maxBy(list.filter(function(c){ return (c.regW+c.regL) >= 30; }), function(c){ return c.winPct; });
+            const mostPoWins = maxBy(list, function(c){ return c.poW; });
+            const bestPoPct = maxBy(list.filter(function(c){ return (c.poW+c.poL) >= 5; }), function(c){ return c.poPct; });
+            const bestDiff = maxBy(list, function(c){ return c.diff; });
+
+            const card = function(label, value, holder, detail) {
+                if (holder == null) return '';
+                return '<div class="record-card"><div class="record-label">' + label + '</div>' +
+                    '<div class="record-value">' + value + '</div>' +
+                    '<div class="record-holder">' + holder + '</div>' +
+                    (detail ? '<div class="record-detail">' + detail + '</div>' : '') + '</div>';
+            };
+
+            let html = '<div class="record-grid">';
+            if (mostTitles) html += card('Most Championships', mostTitles.titles, mostTitles.owner, '');
+            if (mostRegWins) html += card('Most Regular Season Wins', mostRegWins.regW, mostRegWins.owner, 'career');
+            if (bestWinPct) html += card('Highest Win %', (bestWinPct.winPct*100).toFixed(1)+'%', bestWinPct.owner, 'min. 30 games');
+            if (bestSeasonWins.owner) html += card('Most Single-Season Wins', bestSeasonWins.reg_wins, bestSeasonWins.owner, bestSeasonWins.year || '');
+            if (mostPoWins) html += card('Most Playoff Wins', mostPoWins.poW, mostPoWins.owner, 'career');
+            if (bestPoPct) html += card('Highest Playoff Win %', (bestPoPct.poPct*100).toFixed(0)+'%', bestPoPct.owner, 'min. 5 games');
+            if (bestSeasonPF.owner) html += card('Most Points, Single Season', Math.round(bestSeasonPF.points_for), bestSeasonPF.owner, bestSeasonPF.year || '');
+            if (bestDiff) html += card('Best Point Differential', '+'+Math.round(bestDiff.diff), bestDiff.owner, 'career');
+            html += '</div>';
+            document.getElementById('panel-records').innerHTML = html;
+        }
+
+        let standingsSort = { key: 'titles', dir: -1 };
+        function renderStandings() {
+            const careers = computeCareers();
+            const list = Object.values(careers);
+            list.sort(function(a,b){ return (a[standingsSort.key] - b[standingsSort.key]) * standingsSort.dir; });
+
+            const cols = [
+                ['owner','Owner'], ['titles','Titles'], ['seconds','2nd'], ['thirds','3rd'],
+                ['regW','Reg W'], ['regL','Reg L'], ['winPct','Win %'],
+                ['poW','PO W'], ['poL','PO L'], ['pf','PF'], ['pa','PA'], ['diff','Diff']
+            ];
+
+            let html = '<table class="standings-table"><thead><tr>';
+            cols.forEach(function(pair){ html += '<th onclick="sortStandings(\'' + pair[0] + '\')">' + pair[1] + '</th>'; });
+            html += '</tr></thead><tbody>';
+            list.forEach(function(c) {
+                html += '<tr>';
+                html += '<td class="owner-cell">' + c.owner + '</td>';
+                html += '<td>' + (c.titles||0) + '</td><td>' + (c.seconds||0) + '</td><td>' + (c.thirds||0) + '</td>';
+                html += '<td>' + c.regW + '</td><td>' + c.regL + '</td><td>' + (c.winPct*100).toFixed(1) + '</td>';
+                html += '<td>' + c.poW + '</td><td>' + c.poL + '</td>';
+                html += '<td>' + Math.round(c.pf) + '</td><td>' + Math.round(c.pa) + '</td>';
+                html += '<td>' + (c.diff>=0?'+':'') + Math.round(c.diff) + '</td>';
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            document.getElementById('panel-standings').innerHTML = html;
+        }
+
+        function sortStandings(key) {
+            if (standingsSort.key === key) standingsSort.dir *= -1;
+            else standingsSort = { key: key, dir: (key === 'owner' ? 1 : -1) };
+            renderStandings();
+        }
+
+        async function runLeagueHistorian() {
+            if (!historyData) { alert('History still loading.'); return; }
+            const btn = event.target;
+            const out = document.getElementById('historianResult');
+            btn.disabled = true;
+            const orig = btn.textContent;
+            btn.textContent = 'Writing\u2026';
+            out.className = 'historian-result active';
+            out.innerHTML = '<div class="roast-loading">Consulting the league archives\u2026</div>';
+
+            const careers = computeCareers();
+            const summary = Object.values(careers).map(function(c) {
+                return c.owner + ': ' + c.titles + ' titles, ' + c.regW + '-' + c.regL + ' regular season (' + (c.winPct*100).toFixed(0) + '%), ' + c.poW + '-' + c.poL + ' playoffs';
+            }).join('\n');
+            const champLines = (historyData.seasons||[]).filter(function(s){return s.champion;}).sort(function(a,b){return b.year-a.year;})
+                .map(function(s){ return s.year + ': ' + s.champion; }).join('\n');
+
+            const prompt = 'You are the official league historian for a long-running fantasy football league (the "Boom Boom Room"), founded in 2007. Write a fun, punchy narrative recap of the league\'s all-time history \u2014 dynasties, chokers, droughts, and rivalries. Be entertaining and a little irreverent, but base everything on the real data below.\n\nCAREER RECORDS:\n' + summary + '\n\nCHAMPIONS BY YEAR:\n' + champLines + '\n\nWrite 2-3 short paragraphs. Name the dynasty (who has dominated), call out the lovable losers, note any long title droughts, and end with a line about the current state of the league. No markdown headers or bullets \u2014 just flowing prose.';
+
+            try {
+                const res = await fetch('/api/roast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, model: 'claude-sonnet-5', maxTokens: 1024 })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Failed');
+                out.innerHTML = (data.text || 'No recap came back.').replace(/\n/g, '<br>');
+            } catch (err) {
+                out.innerHTML = '<div style="color: var(--accent-danger);">Historian is on break: ' + (err.message||'error') + '</div>';
+            } finally {
+                btn.disabled = false;
+                btn.textContent = orig;
+            }
+        }
+
+        function renderAddSeasonForm() {
+            const container = document.getElementById('addSeasonForm');
+            let html = '<div class="add-season-grid">' +
+                '<div class="add-season-field"><label>Year</label><input type="number" id="as-year" placeholder="2026"></div>' +
+                '<div class="add-season-field"><label>Champion</label><input type="text" id="as-champ" placeholder="Owner"></div>' +
+                '<div class="add-season-field"><label>Runner-Up</label><input type="text" id="as-second" placeholder="Owner"></div>' +
+                '<div class="add-season-field"><label>Third</label><input type="text" id="as-third" placeholder="Owner"></div>' +
+                '</div>' +
+                '<div class="add-season-owner-head"><span>Owner</span><span>Reg W</span><span>Reg L</span><span>PO W</span><span>PO L</span><span>PF</span><span>PA</span></div>';
+            LEAGUE_OWNERS.forEach(function(o) {
+                html += '<div class="add-season-owner-row">' +
+                    '<span class="owner-label">' + o + '</span>' +
+                    '<input type="number" id="as-' + o + '-rw">' +
+                    '<input type="number" id="as-' + o + '-rl">' +
+                    '<input type="number" id="as-' + o + '-pw">' +
+                    '<input type="number" id="as-' + o + '-pl">' +
+                    '<input type="number" id="as-' + o + '-pf" step="0.01">' +
+                    '<input type="number" id="as-' + o + '-pa" step="0.01">' +
+                    '</div>';
+            });
+            html += '<div style="margin-top:1rem;"><button class="roast-all-btn" onclick="saveSeason()">Save Season</button> <span id="as-status" style="margin-left:0.75rem; font-size:0.8125rem;"></span></div>';
+            container.innerHTML = html;
+        }
+
+        async function saveSeason() {
+            const year = document.getElementById('as-year').value;
+            if (!year) { alert('Enter a year.'); return; }
+            const status = document.getElementById('as-status');
+            status.textContent = 'Saving\u2026';
+            status.style.color = 'var(--text-secondary)';
+
+            const val = function(id){ const el = document.getElementById(id); return el && el.value !== '' ? el.value : null; };
+            const ownerRecords = LEAGUE_OWNERS.map(function(o){ return {
+                owner: o,
+                regWins: val('as-' + o + '-rw'), regLosses: val('as-' + o + '-rl'),
+                playoffWins: val('as-' + o + '-pw'), playoffLosses: val('as-' + o + '-pl'),
+                pointsFor: val('as-' + o + '-pf'), pointsAgainst: val('as-' + o + '-pa')
+            }; }).filter(function(r){ return r.regWins!=null || r.regLosses!=null || r.pointsFor!=null; });
+
+            try {
+                const res = await fetch('/api/save-season', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        year: year,
+                        champion: val('as-champ'),
+                        runnerUp: val('as-second'),
+                        third: val('as-third'),
+                        ownerRecords: ownerRecords
+                    })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || 'Save failed');
+                status.textContent = 'Saved!';
+                status.style.color = 'var(--accent-primary)';
+                historyData = null;
+                await loadHistory();
+            } catch (err) {
+                status.textContent = 'Error: ' + (err.message || 'failed');
+                status.style.color = 'var(--accent-danger)';
+            }
         }
 
         function renderTradeSide(side) {
