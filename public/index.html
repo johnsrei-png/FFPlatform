@@ -291,6 +291,41 @@
             letter-spacing: 0.02em;
         }
 
+        .team-history {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.375rem;
+            align-items: center;
+            margin-top: 0.375rem;
+        }
+
+        .team-history:empty {
+            display: none;
+        }
+
+        .hist-badge.titles {
+            font-family: var(--font-mono);
+            font-size: 0.6875rem;
+            font-weight: 600;
+            color: var(--accent-primary);
+            background: rgba(26, 77, 58, 0.08);
+            border: 1px solid rgba(26, 77, 58, 0.2);
+            border-radius: 3px;
+            padding: 0.0625rem 0.375rem;
+        }
+
+        .hist-stat {
+            font-size: 0.6875rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .hist-stat + .hist-stat::before {
+            content: '\00b7';
+            margin-right: 0.375rem;
+            color: var(--border-strong);
+        }
+
         .cap-space {
             font-family: var(--font-mono);
             font-weight: 600;
@@ -2811,6 +2846,18 @@
             // Store teams globally for pick management
             allTeamsData = teams;
 
+            // Load league history in the background so team cards can show titles/records.
+            // If it's already loaded, re-render cards immediately with the data.
+            if (!historyData) {
+                fetch('/api/get-history')
+                    .then(function(r){ return r.json(); })
+                    .then(function(data){ historyData = data; applyHistoryToCards(); })
+                    .catch(function(){ /* history is optional on the main view */ });
+            } else {
+                // Defer so the cards exist in the DOM first
+                setTimeout(applyHistoryToCards, 0);
+            }
+
             document.getElementById('totalTeams').textContent = teams.length;
             const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
             document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
@@ -2838,6 +2885,7 @@
                         <div>
                             <div class="team-name">${team.name}</div>
                             <div class="team-owner">${team.owner} • ${team.wins}-${team.losses}</div>
+                            <div class="team-history" id="team-history-${team.rosterId}" data-team="${(team.name||'').replace(/"/g,'&quot;')}"></div>
                         </div>
                         <div class="cap-space ${team.capSpace >= 0 ? 'positive' : 'negative'}">
                             $${team.capSpace}
@@ -3713,6 +3761,29 @@ ${allSummaries}`;
 
         // ===== League History =====
         const LEAGUE_OWNERS = ['Tyler','Lance','Mark','Russ','Duke','Steve','Jason','Bob','Kurt','Reid'];
+
+        // Explicit map from Sleeper team name -> history owner first name.
+        // Keys are normalized (lowercased, punctuation stripped) for robust matching.
+        const TEAM_OWNER_MAP = {
+            'rosterbators anonymous': 'Tyler',
+            'the scramblers': 'Kurt',
+            'fuck it': 'Reid',
+            'beavers': 'Russ',
+            'franks little beauties': 'Jason',
+            'irrelevant wonz': 'Lance',
+            'amon top of the world': 'Steve',
+            'poptart': 'Mark',
+            'retiredlife82': 'Bob',
+            'hock tuah': 'Duke'
+        };
+
+        function normalizeTeamName(name) {
+            return (name || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        function ownerForTeam(teamName) {
+            return TEAM_OWNER_MAP[normalizeTeamName(teamName)] || null;
+        }
         let historyData = null;
 
         function openHistory() {
@@ -3774,6 +3845,31 @@ ${allSummaries}`;
                     '</div>';
             });
             document.getElementById('panel-champions').innerHTML = html;
+        }
+
+        function applyHistoryToCards() {
+            if (!historyData) return;
+            const careers = computeCareers();
+            document.querySelectorAll('.team-history').forEach(function(el) {
+                const teamName = el.getAttribute('data-team');
+                const owner = ownerForTeam(teamName);
+                if (!owner) { el.innerHTML = ''; return; }
+                const c = careers[owner];
+                if (!c || (c.regW + c.regL === 0 && c.titles === 0)) { el.innerHTML = ''; return; }
+
+                const parts = [];
+                if (c.titles > 0) {
+                    parts.push('<span class="hist-badge titles">' + c.titles + '\u00d7 \ud83c\udfc6</span>');
+                }
+                parts.push('<span class="hist-stat">' + c.regW + '-' + c.regL + ' all-time</span>');
+                if (c.seconds > 0 || c.thirds > 0) {
+                    const podium = [];
+                    if (c.seconds > 0) podium.push(c.seconds + '\u00d7 2nd');
+                    if (c.thirds > 0) podium.push(c.thirds + '\u00d7 3rd');
+                    parts.push('<span class="hist-stat">' + podium.join(' \u00b7 ') + '</span>');
+                }
+                el.innerHTML = parts.join('');
+            });
         }
 
         function computeCareers() {
