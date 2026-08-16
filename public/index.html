@@ -3343,7 +3343,8 @@
             }
         }
 
-        function playerName(pid) {
+        function playerName(pid, resolvedName) {
+            if (resolvedName) return resolvedName;
             const p = playersLookup[pid];
             if (!p) return 'Player ' + pid;
             const nm = ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
@@ -3399,15 +3400,15 @@
                 if (t.type === 'trade') {
                     // Group adds by owner
                     const byOwner = {};
-                    (t.adds || []).forEach(function(a){ (byOwner[a.owner] = byOwner[a.owner] || []).push(playerName(a.pid)); });
+                    (t.adds || []).forEach(function(a){ (byOwner[a.owner] = byOwner[a.owner] || []).push(playerName(a.pid, a.name)); });
                     (t.picks || []).forEach(function(pk){ (byOwner[pk.to] = byOwner[pk.to] || []).push(pk.season + ' R' + pk.round + ' pick'); });
                     detail = Object.keys(byOwner).map(function(o){
                         return '<strong>' + o + '</strong> gets ' + byOwner[o].join(', ');
                     }).join('<br>');
                     if (!detail) detail = (t.owners || []).join(' ↔ ');
                 } else {
-                    const adds = (t.adds || []).map(function(a){ return '+' + playerName(a.pid); });
-                    const drops = (t.drops || []).map(function(d){ return '−' + playerName(d.pid); });
+                    const adds = (t.adds || []).map(function(a){ return '+' + playerName(a.pid, a.name); });
+                    const drops = (t.drops || []).map(function(d){ return '−' + playerName(d.pid, d.name); });
                     const who = (t.owners && t.owners[0]) ? '<strong>' + t.owners[0] + '</strong> ' : '';
                     detail = who + [adds.join(', '), drops.join(', ')].filter(Boolean).join(' · ');
                 }
