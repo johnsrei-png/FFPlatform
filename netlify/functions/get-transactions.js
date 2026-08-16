@@ -59,14 +59,38 @@ exports.handler = async (event) => {
       lid = lg.previous_league_id;
     }
 
+    // Map fractured historical Sleeper team names back to the 10 real owners so
+    // behavioral stats aggregate correctly at the source (mirrors the frontend map).
+    const normalizeTeamName = (name) =>
+      (name || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
+    const TEAM_OWNER_MAP = {
+      'rosterbaters anonymous': 'Tyler', 'rosterbators anonymous': 'Tyler',
+      'the scramblers': 'Kurt', 'fuck it': 'Reid', 'beavers': 'Russ',
+      'franks little beauties': 'Jason', 'irrelevant wonz': 'Lance',
+      'amon top of the world': 'Steve', 'poptart': 'Mark',
+      'retiredlife82': 'Bob', 'hock tuah': 'Duke',
+      // Historical aliases:
+      'jt started the fire': 'Jason', 'all set see you in 2026': 'Jason', 'neverjason': 'Jason',
+      'the peoples champion': 'Tyler', 'make america gronk again': 'Tyler',
+      'americas team': 'Tyler', 'foxys team murica': 'Tyler',
+      'jauan some': 'Russ', 'tentenths': 'Russ', 'sloppy seconds': 'Russ',
+      'roster 4': 'Russ', 'dontbeatwat': 'Russ', 'headshot by a snowflake': 'Russ',
+      'game of mahomes': 'Steve', 'stevefarnham': 'Steve', 'hawk tua': 'Duke'
+    };
+    // Canonical owner name: map alias -> real owner, else keep original display name.
+    const canonOwner = (name) => TEAM_OWNER_MAP[normalizeTeamName(name)] || name;
+
     // 2) For each season, fetch users + rosters to map roster_id -> owner display name
     // 3) Then fetch transactions week by week
     const allTxns = [];
-    const ownerStats = {}; // ownerName -> { trades, waivers, freeAgents, adds, drops, faabSpent }
+    const ownerStats = {}; // canonical owner -> { trades, waivers, freeAgents, adds, drops, faabSpent }
 
-    const ensureOwner = (name) => ownerStats[name] || (ownerStats[name] = {
-      owner: name, trades: 0, waivers: 0, freeAgents: 0, adds: 0, drops: 0, faabSpent: 0, seasons: {}
-    });
+    const ensureOwner = (rawName) => {
+      const name = canonOwner(rawName);
+      return ownerStats[name] || (ownerStats[name] = {
+        owner: name, trades: 0, waivers: 0, freeAgents: 0, adds: 0, drops: 0, faabSpent: 0, seasons: {}
+      });
+    };
 
     for (const season of chain) {
       const [users, rosters] = await Promise.all([
@@ -124,14 +148,29 @@ exports.handler = async (event) => {
     // Sort log newest first
     allTxns.sort((a, b) => (b.created || 0) - (a.created || 0));
 
+    // Balanced cap: keep up to PER_SEASON_CAP newest txns per season so older
+    // seasons (2022-2024) aren't crowded out of the payload by recent activity.
+    // Then re-sort the kept set newest-first for display.
+    const PER_SEASON_CAP = 120;
+    const perSeasonCount = {};
+    const capped = [];
+    for (const t of allTxns) { // already newest-first, so we keep the newest per season
+      const key = String(t.season);
+      perSeasonCount[key] = (perSeasonCount[key] || 0) + 1;
+      if (perSeasonCount[key] <= PER_SEASON_CAP) capped.push(t);
+    }
+    capped.sort((a, b) => (b.created || 0) - (a.created || 0));
+
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=3600' },
       body: JSON.stringify({
         seasons: chain.map(c => c.season),
         transactionCount: allTxns.length,
+        returnedCount: capped.length,
+        perSeasonReturned: perSeasonCount,
         ownerStats: Object.values(ownerStats),
-        transactions: allTxns.slice(0, 400) // cap payload
+        transactions: capped
       })
     };
 
