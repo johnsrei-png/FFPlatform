@@ -5130,20 +5130,41 @@ ${allSummaries}`;
             var useSmart = hardHints.test(lastUserQ) || lastUserQ.length > 220;
             var chosenModel = useSmart ? MODEL_SMART : MODEL_QUICK;
 
+            // Helper: one call to the model endpoint. Returns { answer, stopReason, error }.
+            async function callBoom(modelId, tokens){
+                try {
+                    const res = await fetch('/api/roast', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt: prompt, model: modelId, maxTokens: tokens })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) return { answer: '', error: (data.error || ('Server returned ' + res.status)) };
+                    return { answer: (data.text || '').trim(), stopReason: data.stopReason || null };
+                } catch (e) {
+                    return { answer: '', error: (e.message || 'unknown') };
+                }
+            }
+
             try {
-                const res = await fetch('/api/roast', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt, model: chosenModel, maxTokens: 1024 })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || ('Server returned ' + res.status));
-                const answer = (data.text || '').trim();
-                if (!answer) {
-                    // Empty text — likely the prompt was too large or the model returned no text block.
-                    askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. drew a blank (empty response). This usually means the request was too large. Try a more specific question, or ask again.' });
+                // 2048 tokens gives detailed trade/strategy answers room to finish
+                // (1024 was tight and could truncate to an empty text block).
+                var result = await callBoom(chosenModel, 2048);
+
+                // Fallback: if the smart model came back empty (e.g. truncated or no
+                // text block), retry once on the fast Haiku model before giving up.
+                if (!result.answer && chosenModel !== MODEL_QUICK) {
+                    var fb = await callBoom(MODEL_QUICK, 1536);
+                    if (fb.answer) result = fb;
+                    else if (fb.error) result.error = fb.error;
+                }
+
+                if (result.answer) {
+                    askBoomHistory.push({ role: 'boom', content: result.answer });
+                } else if (result.error) {
+                    askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. hit an error: ' + result.error });
                 } else {
-                    askBoomHistory.push({ role: 'boom', content: answer });
+                    askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. drew a blank (empty response' + (result.stopReason ? ', stop reason: ' + result.stopReason : '') + '). Try a more specific question, or ask again.' });
                 }
             } catch (err) {
                 askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. hit an error: ' + (err.message || 'unknown') });
