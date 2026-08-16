@@ -4977,6 +4977,55 @@ ${allSummaries}`;
                     });
             }
 
+            // Detailed trade history — the actual players/picks each side got, so
+            // B.O.O.M. can discuss specific past trades (best/worst deals, who fleeced
+            // who, trade tendencies), not just aggregate counts.
+            if (transactionData && Array.isArray(transactionData.transactions) && transactionData.transactions.length) {
+                var canon = function(n){ return (typeof ownerForTeam === 'function' ? ownerForTeam(n) : null) || n; };
+
+                // Format one trade as "SEASON Wk: OwnerA got X, Y  |  OwnerB got Z"
+                var formatTrade = function(t){
+                    var byOwner = {};
+                    (t.adds || []).forEach(function(a){
+                        var o = canon(a.owner);
+                        (byOwner[o] = byOwner[o] || []).push(a.name || ('Player ' + a.pid));
+                    });
+                    (t.picks || []).forEach(function(pk){
+                        var o = canon(pk.to);
+                        if (o) (byOwner[o] = byOwner[o] || []).push(pk.season + ' R' + pk.round + ' pick');
+                    });
+                    var sides = Object.keys(byOwner).map(function(o){
+                        return o + ' got ' + byOwner[o].join(', ');
+                    }).join('  |  ');
+                    if (!sides) sides = (t.owners || []).map(canon).join(' <-> ');
+                    return '- ' + (t.season || '?') + ' W' + (t.week || '?') + ': ' + sides;
+                };
+
+                var allTrades = transactionData.transactions.filter(function(t){ return t.type === 'trade'; });
+
+                // 1) The user's own trades (deeper history, since it's most relevant)
+                var myTeamObj = (allTeamsData || []).find(function(t){ return String(t.rosterId) === String(askBoomTeamId); });
+                var myOwner = myTeamObj ? (canon(myTeamObj.name) || myTeamObj.owner || myTeamObj.name) : null;
+                if (myOwner) {
+                    var myTrades = allTrades.filter(function(t){
+                        return (t.owners || []).map(canon).indexOf(myOwner) !== -1;
+                    });
+                    if (myTrades.length) {
+                        lines.push('\nMY TRADE HISTORY (' + myOwner + "'s completed trades, newest first — use for questions about specific past trades, best/worst deals, and trade tendencies):");
+                        myTrades.slice(0, 40).forEach(function(t){ lines.push(formatTrade(t)); });
+                        if (myTrades.length > 40) lines.push('  (...' + (myTrades.length - 40) + ' older ' + myOwner + ' trades omitted)');
+                    }
+                }
+
+                // 2) League-wide trades (all owners) so B.O.O.M. can COMPARE deals
+                //    across the league — who fleeced who, biggest heists, etc.
+                if (allTrades.length) {
+                    lines.push('\nLEAGUE-WIDE TRADE HISTORY (every owner\'s completed trades, newest first — use to compare deals across the league, judge which side won, and identify the biggest steals/busts. Judge quality by who the players/picks turned out to be):');
+                    allTrades.slice(0, 80).forEach(function(t){ lines.push(formatTrade(t)); });
+                    if (allTrades.length > 80) lines.push('  (...' + (allTrades.length - 80) + ' older league trades omitted)');
+                }
+            }
+
             return lines.join('\n');
         }
 
