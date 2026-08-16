@@ -2097,6 +2097,83 @@
             box-shadow: none;
         }
 
+        .boomsday {
+            margin-bottom: 2rem;
+            background: var(--ink);
+            border: 1px solid rgba(46, 204, 113, 0.35);
+            border-radius: 8px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 0 24px rgba(46, 204, 113, 0.15);
+            text-align: center;
+        }
+
+        .boomsday-label {
+            font-family: 'Orbitron', var(--font-display);
+            font-weight: 900;
+            font-size: 0.9rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #6effa8;
+            text-shadow: 0 0 8px rgba(46, 204, 113, 0.7);
+            margin-bottom: 0.875rem;
+        }
+
+        .boomsday-clock {
+            display: flex;
+            justify-content: center;
+            align-items: baseline;
+            gap: 0.5rem;
+            flex-wrap: nowrap;
+        }
+
+        .boomsday-unit {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 58px;
+        }
+
+        .bd-num {
+            font-family: 'Orbitron', var(--font-mono);
+            font-weight: 800;
+            font-size: 2rem;
+            color: #eafff2;
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.6);
+            line-height: 1;
+        }
+
+        .bd-lab {
+            font-size: 0.5625rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #7fae97;
+            font-weight: 600;
+            margin-top: 0.375rem;
+        }
+
+        .boomsday-sep {
+            font-family: 'Orbitron', var(--font-mono);
+            font-weight: 800;
+            font-size: 1.75rem;
+            color: rgba(46, 204, 113, 0.5);
+            align-self: flex-start;
+            line-height: 1;
+        }
+
+        .boomsday-date {
+            margin-top: 0.875rem;
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #a89f8d;
+        }
+
+        @media (max-width: 480px) {
+            .boomsday-unit { min-width: 44px; }
+            .bd-num { font-size: 1.5rem; }
+            .boomsday-sep { font-size: 1.25rem; }
+        }
+
         .search-box {
             position: relative;
             width: 100%;
@@ -2793,6 +2870,7 @@
                 <button id="commissionerModeBtn" onclick="toggleCommissionerMode()">Commissioner Mode</button>
                 <button id="advanceSeasonBtn" class="advance-season-btn" style="display: none;" onclick="openAdvanceSeasonModal()">Advance Season</button>
                 <button id="escalationBtn" class="escalation-btn" style="display: none;" onclick="openEscalationModal()">Settings</button>
+                <button id="boomsdayBtn" class="escalation-btn" style="display: none;" onclick="openBoomsdayModal()">Set BoomsDay</button>
             </div>
         </div>
     </div>
@@ -2826,6 +2904,22 @@
             <div class="search-panel">
                 <div class="search-box">
                     <input type="text" id="playerSearch" placeholder="Search players by name…" oninput="filterPlayers()">
+                </div>
+            </div>
+
+            <div id="boomsdayCountdown" class="boomsday" style="display: none;">
+                <div class="boomsday-inner">
+                    <div class="boomsday-label" id="boomsdayLabel">Countdown to BoomsDay</div>
+                    <div class="boomsday-clock" id="boomsdayClock">
+                        <div class="boomsday-unit"><span class="bd-num" id="bd-days">0</span><span class="bd-lab">Days</span></div>
+                        <div class="boomsday-sep">:</div>
+                        <div class="boomsday-unit"><span class="bd-num" id="bd-hours">0</span><span class="bd-lab">Hrs</span></div>
+                        <div class="boomsday-sep">:</div>
+                        <div class="boomsday-unit"><span class="bd-num" id="bd-mins">0</span><span class="bd-lab">Min</span></div>
+                        <div class="boomsday-sep">:</div>
+                        <div class="boomsday-unit"><span class="bd-num" id="bd-secs">0</span><span class="bd-lab">Sec</span></div>
+                    </div>
+                    <div class="boomsday-date" id="boomsdayDate"></div>
                 </div>
             </div>
 
@@ -2966,6 +3060,28 @@
             <div class="button-group">
                 <button onclick="confirmAdvanceSeason()">✓ Confirm Advance Season</button>
                 <button class="btn-secondary" onclick="closeSeasonModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="escalation-modal" id="boomsdayModal">
+        <div class="escalation-modal-content">
+            <h3>Set BoomsDay</h3>
+            <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                Set the date and label for the countdown clock (your draft, kickoff, whatever the big day is).
+            </p>
+            <div class="input-group">
+                <label>Event Name</label>
+                <input type="text" id="boomsdayNameInput" placeholder="BoomsDay" maxlength="40">
+            </div>
+            <div class="input-group">
+                <label>Date &amp; Time</label>
+                <input type="datetime-local" id="boomsdayDateInput">
+            </div>
+            <div style="display: flex; gap: 0.5rem; margin-top: 1.25rem; flex-wrap: wrap;">
+                <button class="roast-all-btn" onclick="saveBoomsday()">Save Countdown</button>
+                <button onclick="clearBoomsday()" style="background: transparent; color: var(--accent-danger); border: 1px solid var(--border-strong);">Remove</button>
+                <button onclick="closeBoomsdayModal()" style="background: transparent; color: var(--text-secondary); border: 1px solid var(--border-strong);">Cancel</button>
             </div>
         </div>
     </div>
@@ -3452,6 +3568,9 @@
             // Load player projections in the background (scored by our league rules)
             setTimeout(loadProjections, 0);
 
+            // Load the BoomsDay countdown
+            setTimeout(loadBoomsday, 0);
+
             document.getElementById('totalTeams').textContent = teams.length;
             const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
             document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
@@ -3598,6 +3717,8 @@
             btn.style.color = 'white';
             advanceBtn.style.display = commissionerMode ? 'block' : 'none';
             escalationBtn.style.display = commissionerMode ? 'block' : 'none';
+            const boomsdayBtn = document.getElementById('boomsdayBtn');
+            if (boomsdayBtn) boomsdayBtn.style.display = commissionerMode ? 'block' : 'none';
             
             // Reload to show/hide edit functionality
             loadPublicData();
@@ -4059,6 +4180,114 @@
             } catch (error) {
                 alert('Error advancing season: ' + error.message);
             }
+        }
+
+        // ===== BoomsDay Countdown =====
+        let boomsdayTarget = null;   // Date object
+        let boomsdayName = 'BoomsDay';
+        let boomsdayTimer = null;
+
+        async function loadBoomsday() {
+            try {
+                const res = await fetch('/api/app-settings?key=boomsday');
+                const data = await res.json();
+                if (data && data.value) {
+                    const parsed = JSON.parse(data.value);
+                    boomsdayName = parsed.name || 'BoomsDay';
+                    boomsdayTarget = parsed.date ? new Date(parsed.date) : null;
+                }
+            } catch (e) { /* countdown is optional */ }
+            startBoomsdayClock();
+        }
+
+        function startBoomsdayClock() {
+            const el = document.getElementById('boomsdayCountdown');
+            if (!el) return;
+            if (boomsdayTimer) { clearInterval(boomsdayTimer); boomsdayTimer = null; }
+
+            if (!boomsdayTarget || isNaN(boomsdayTarget.getTime())) {
+                el.style.display = 'none';
+                return;
+            }
+            el.style.display = 'block';
+            document.getElementById('boomsdayLabel').textContent = 'Countdown to ' + boomsdayName;
+            const dateEl = document.getElementById('boomsdayDate');
+            dateEl.textContent = boomsdayTarget.toLocaleString([], { weekday:'long', month:'long', day:'numeric', year:'numeric', hour:'numeric', minute:'2-digit' });
+
+            function tick() {
+                const now = new Date().getTime();
+                let diff = boomsdayTarget.getTime() - now;
+                if (diff <= 0) {
+                    document.getElementById('bd-days').textContent = '0';
+                    document.getElementById('bd-hours').textContent = '0';
+                    document.getElementById('bd-mins').textContent = '0';
+                    document.getElementById('bd-secs').textContent = '0';
+                    document.getElementById('boomsdayLabel').textContent = boomsdayName + ' is HERE';
+                    if (boomsdayTimer) { clearInterval(boomsdayTimer); boomsdayTimer = null; }
+                    return;
+                }
+                const d = Math.floor(diff / 86400000); diff -= d*86400000;
+                const h = Math.floor(diff / 3600000); diff -= h*3600000;
+                const m = Math.floor(diff / 60000); diff -= m*60000;
+                const s = Math.floor(diff / 1000);
+                document.getElementById('bd-days').textContent = d;
+                document.getElementById('bd-hours').textContent = String(h).padStart(2,'0');
+                document.getElementById('bd-mins').textContent = String(m).padStart(2,'0');
+                document.getElementById('bd-secs').textContent = String(s).padStart(2,'0');
+            }
+            tick();
+            boomsdayTimer = setInterval(tick, 1000);
+        }
+
+        function openBoomsdayModal() {
+            const nameInput = document.getElementById('boomsdayNameInput');
+            const dateInput = document.getElementById('boomsdayDateInput');
+            nameInput.value = boomsdayName || '';
+            if (boomsdayTarget && !isNaN(boomsdayTarget.getTime())) {
+                // Convert to local datetime-local string
+                const tz = boomsdayTarget.getTimezoneOffset() * 60000;
+                dateInput.value = new Date(boomsdayTarget.getTime() - tz).toISOString().slice(0,16);
+            } else {
+                dateInput.value = '';
+            }
+            document.getElementById('boomsdayModal').classList.add('active');
+        }
+
+        function closeBoomsdayModal() {
+            document.getElementById('boomsdayModal').classList.remove('active');
+        }
+
+        async function saveBoomsday() {
+            const name = document.getElementById('boomsdayNameInput').value.trim() || 'BoomsDay';
+            const dateVal = document.getElementById('boomsdayDateInput').value;
+            if (!dateVal) { alert('Pick a date and time.'); return; }
+            const payload = { name: name, date: new Date(dateVal).toISOString() };
+            try {
+                await fetch('/api/app-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'boomsday', value: JSON.stringify(payload) })
+                });
+                boomsdayName = name;
+                boomsdayTarget = new Date(dateVal);
+                startBoomsdayClock();
+                closeBoomsdayModal();
+            } catch (e) {
+                alert('Could not save: ' + (e.message || 'error'));
+            }
+        }
+
+        async function clearBoomsday() {
+            try {
+                await fetch('/api/app-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'boomsday', value: '' })
+                });
+            } catch (e) {}
+            boomsdayTarget = null;
+            startBoomsdayClock();
+            closeBoomsdayModal();
         }
 
         function openEscalationModal() {
