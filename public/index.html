@@ -3393,7 +3393,7 @@
 
             const typeLabel = { trade: 'TRADE', waiver: 'WAIVER', free_agent: 'FREE AGENT' };
             let html = '';
-            filtered.slice(0, 300).forEach(function(t){
+            filtered.forEach(function(t){
                 const dateTxt = t.created ? new Date(t.created).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}) : '';
                 let detail = '';
 
