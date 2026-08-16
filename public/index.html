@@ -1040,11 +1040,19 @@
             cursor: wait;
         }
 
+        #askBoomModal.active {
+            z-index: 3100;
+            background: rgba(0, 0, 0, 0.15);
+            align-items: flex-end;
+            padding-bottom: 3vh;
+        }
+
         .askboom-content {
             max-width: 640px;
             display: flex;
             flex-direction: column;
-            height: 80vh;
+            height: 72vh;
+            box-shadow: 0 0 60px rgba(46, 204, 113, 0.25), 0 20px 60px rgba(0,0,0,0.6);
         }
 
         .boom-awaken {
@@ -1066,6 +1074,28 @@
 
         .boom-awaken.closing {
             animation: boomAwakenOut 0.4s ease forwards;
+        }
+
+        /* Backdrop mode: eyes loom at the top, staring down at the chat below */
+        .boom-awaken.backdrop {
+            display: block;
+            opacity: 1;
+            animation: none;
+            padding: 0;
+        }
+
+        .boom-awaken.backdrop .boom-awaken-text {
+            display: none;
+        }
+
+        .boom-awaken.backdrop .boom-eyes {
+            position: absolute;
+            top: 4vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: min(46vw, 320px);
+            opacity: 0.92;
+            z-index: 3200;
         }
 
         @keyframes boomAwakenFade {
@@ -4373,18 +4403,15 @@ ${allSummaries}`;
                     return '<option value="' + t.rosterId + '"' + (String(t.rosterId) === String(askBoomTeamId) ? ' selected' : '') + '>' + t.name + '</option>';
                 }).join('');
 
-            // Play the "awakening eyes" intro, then reveal the chat
+            // Play the "awakening" intro, then keep the eyes as the backdrop with the chat on top
             const awaken = document.getElementById('boomAwaken');
             awaken.classList.remove('closing');
             awaken.classList.add('active');
             setTimeout(function() {
-                awaken.classList.add('closing');
-                setTimeout(function() {
-                    awaken.classList.remove('active');
-                    awaken.classList.remove('closing');
-                    document.getElementById('askBoomModal').classList.add('active');
-                    updateAskBoomInputState();
-                }, 400);
+                // Eyes STAY visible behind the chat; just settle them into backdrop mode
+                awaken.classList.add('backdrop');
+                document.getElementById('askBoomModal').classList.add('active');
+                updateAskBoomInputState();
             }, 1600);
         }
 
@@ -4405,6 +4432,9 @@ ${allSummaries}`;
 
         function closeAskBoom() {
             document.getElementById('askBoomModal').classList.remove('active');
+            const awaken = document.getElementById('boomAwaken');
+            awaken.classList.remove('active');
+            awaken.classList.remove('backdrop');
         }
 
         function askBoomKey(e) {
