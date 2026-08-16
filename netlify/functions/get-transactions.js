@@ -23,8 +23,30 @@ exports.handler = async (event) => {
   }
 
   const startLeague = (event.queryStringParameters && event.queryStringParameters.leagueId) || '1312069771746885632';
-  // Cap how many weeks we scan per season (regular + playoffs is well under 20)
   const MAX_WEEKS = 18;
+
+  // Fetch Sleeper's full player dictionary once, build a compact id -> name map.
+  // This is the authoritative source for names, including dropped/retired players.
+  let playerNames = {};
+  try {
+    const allPlayers = await fetchJson('https://api.sleeper.com/players/nfl');
+    if (allPlayers && typeof allPlayers === 'object') {
+      Object.keys(allPlayers).forEach(function(pid) {
+        const p = allPlayers[pid];
+        if (!p) return;
+        if (p.position === 'DEF') {
+          playerNames[pid] = (p.last_name || p.first_name || pid) + ' DEF';
+        } else {
+          const nm = ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+          if (nm) playerNames[pid] = nm;
+        }
+      });
+    }
+  } catch (e) {
+    // If this fails, we fall back to raw IDs (front-end still has its own lookup)
+  }
+
+  const nameFor = function(pid) { return playerNames[pid] || null; };
 
   try {
     // 1) Build the season chain
@@ -91,8 +113,8 @@ exports.handler = async (event) => {
             type: t.type,
             created: t.created,
             owners: owners,
-            adds: t.adds ? Object.entries(t.adds).map(([pid, rid]) => ({ pid, owner: ownerByRoster[rid] })) : [],
-            drops: t.drops ? Object.entries(t.drops).map(([pid, rid]) => ({ pid, owner: ownerByRoster[rid] })) : [],
+            adds: t.adds ? Object.entries(t.adds).map(([pid, rid]) => ({ pid, name: nameFor(pid), owner: ownerByRoster[rid] })) : [],
+            drops: t.drops ? Object.entries(t.drops).map(([pid, rid]) => ({ pid, name: nameFor(pid), owner: ownerByRoster[rid] })) : [],
             picks: (t.draft_picks || []).map(dp => ({ round: dp.round, season: dp.season, to: ownerByRoster[dp.owner_id], from: ownerByRoster[dp.previous_owner_id] }))
           });
         });
