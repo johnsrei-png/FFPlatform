@@ -29,7 +29,7 @@ exports.handler = async (event) => {
   // This is the authoritative source for names, including dropped/retired players.
   let playerNames = {};
   try {
-    const allPlayers = await fetchJson('https://api.sleeper.com/players/nfl');
+    const allPlayers = await fetchJson('https://api.sleeper.app/v1/players/nfl');
     if (allPlayers && typeof allPlayers === 'object') {
       Object.keys(allPlayers).forEach(function(pid) {
         const p = allPlayers[pid];
