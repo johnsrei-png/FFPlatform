@@ -1047,6 +1047,91 @@
             height: 80vh;
         }
 
+        .boom-awaken {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 3000;
+            background: radial-gradient(ellipse at center, #0a1a12 0%, #000000 80%);
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .boom-awaken.active {
+            display: flex;
+            animation: boomAwakenFade 0.3s ease;
+        }
+
+        .boom-awaken.closing {
+            animation: boomAwakenOut 0.4s ease forwards;
+        }
+
+        @keyframes boomAwakenFade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes boomAwakenOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .boom-eyes {
+            width: min(70vw, 520px);
+            height: auto;
+        }
+
+        .boom-eye {
+            transform-origin: center;
+            transform-box: fill-box;
+            animation: boomBlink 2.4s ease-in-out infinite;
+        }
+
+        .boom-eye .eye-glow,
+        .boom-eye .eye-shape {
+            animation: boomEyePulse 1.6s ease-in-out infinite;
+        }
+
+        /* Eyes open (scaleY from a slit to full) at start */
+        .boom-awaken.active .boom-eye {
+            animation: boomEyeOpen 0.8s ease-out, boomBlink 2.4s ease-in-out 0.8s infinite;
+        }
+
+        @keyframes boomEyeOpen {
+            0% { transform: scaleY(0.05); }
+            60% { transform: scaleY(1.08); }
+            100% { transform: scaleY(1); }
+        }
+
+        @keyframes boomBlink {
+            0%, 44%, 100% { transform: scaleY(1); }
+            47% { transform: scaleY(0.08); }
+            50% { transform: scaleY(1); }
+        }
+
+        @keyframes boomEyePulse {
+            0%, 100% { opacity: 0.85; }
+            50% { opacity: 1; }
+        }
+
+        .boom-awaken-text {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            letter-spacing: 0.35em;
+            font-size: 0.9rem;
+            color: #6effa8;
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.8), 0 0 24px rgba(46, 204, 113, 0.4);
+            animation: boomTextPulse 1.6s ease-in-out infinite;
+            padding-left: 0.35em;
+        }
+
+        @keyframes boomTextPulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
         .askboom-body {
             display: flex;
             flex-direction: column;
@@ -2924,6 +3009,36 @@
         </div>
     </div>
 
+    <div class="boom-awaken" id="boomAwaken">
+        <svg class="boom-eyes" viewBox="0 0 520 220" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <radialGradient id="eyeGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#baffd4"/>
+                    <stop offset="45%" stop-color="#2ecc71"/>
+                    <stop offset="100%" stop-color="#0d3b25"/>
+                </radialGradient>
+                <filter id="eyeBlur" x="-60%" y="-60%" width="220%" height="220%">
+                    <feGaussianBlur stdDeviation="6"/>
+                </filter>
+            </defs>
+            <!-- Left eye (football / pointed oval) -->
+            <g class="boom-eye boom-eye-left">
+                <path class="eye-glow" d="M40,110 Q135,40 230,110 Q135,180 40,110 Z" fill="url(#eyeGlow)" filter="url(#eyeBlur)"/>
+                <path class="eye-shape" d="M40,110 Q135,40 230,110 Q135,180 40,110 Z" fill="url(#eyeGlow)"/>
+                <ellipse class="eye-pupil" cx="135" cy="110" rx="16" ry="30" fill="#06210f"/>
+                <path class="eye-laces" d="M110,110 h50 M118,98 v24 M135,94 v32 M152,98 v24" stroke="#06210f" stroke-width="3" fill="none" opacity="0.5"/>
+            </g>
+            <!-- Right eye -->
+            <g class="boom-eye boom-eye-right">
+                <path class="eye-glow" d="M290,110 Q385,40 480,110 Q385,180 290,110 Z" fill="url(#eyeGlow)" filter="url(#eyeBlur)"/>
+                <path class="eye-shape" d="M290,110 Q385,40 480,110 Q385,180 290,110 Z" fill="url(#eyeGlow)"/>
+                <ellipse class="eye-pupil" cx="385" cy="110" rx="16" ry="30" fill="#06210f"/>
+                <path class="eye-laces" d="M360,110 h50 M368,98 v24 M385,94 v32 M402,98 v24" stroke="#06210f" stroke-width="3" fill="none" opacity="0.5"/>
+            </g>
+        </svg>
+        <div class="boom-awaken-text">B.O.O.M. IS AWAKENING</div>
+    </div>
+
     <div class="trade-modal" id="askBoomModal">
         <div class="trade-modal-content askboom-content">
             <div class="roast-modal-header">
@@ -4257,8 +4372,20 @@ ${allSummaries}`;
                 (allTeamsData || []).map(function(t){
                     return '<option value="' + t.rosterId + '"' + (String(t.rosterId) === String(askBoomTeamId) ? ' selected' : '') + '>' + t.name + '</option>';
                 }).join('');
-            document.getElementById('askBoomModal').classList.add('active');
-            updateAskBoomInputState();
+
+            // Play the "awakening eyes" intro, then reveal the chat
+            const awaken = document.getElementById('boomAwaken');
+            awaken.classList.remove('closing');
+            awaken.classList.add('active');
+            setTimeout(function() {
+                awaken.classList.add('closing');
+                setTimeout(function() {
+                    awaken.classList.remove('active');
+                    awaken.classList.remove('closing');
+                    document.getElementById('askBoomModal').classList.add('active');
+                    updateAskBoomInputState();
+                }, 400);
+            }, 1600);
         }
 
         function askBoomTeamChanged() {
