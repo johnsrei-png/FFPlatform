@@ -14,6 +14,11 @@
             box-sizing: border-box;
         }
 
+        html, body {
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
         :root {
             /* Paper ledger palette — warm off-white, ink, deep field green */
             --bg-primary: #f0ede6;      /* warm newsprint paper */
@@ -2169,9 +2174,12 @@
         }
 
         @media (max-width: 480px) {
-            .boomsday-unit { min-width: 44px; }
+            .boomsday { padding: 1rem 0.75rem; }
+            .boomsday-unit { min-width: 0; flex: 1; }
+            .boomsday-clock { gap: 0.25rem; }
             .bd-num { font-size: 1.5rem; }
             .boomsday-sep { font-size: 1.25rem; }
+            .bd-lab { font-size: 0.5rem; }
         }
 
         .search-box {
