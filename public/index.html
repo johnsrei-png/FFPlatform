@@ -3719,7 +3719,11 @@
                     totalSalary: totalSalary,
                     capSpace: capSpace,
                     wins: roster.settings?.wins || 0,
-                    losses: roster.settings?.losses || 0
+                    losses: roster.settings?.losses || 0,
+                    ties: roster.settings?.ties || 0,
+                    // Points for/against (Sleeper stores whole + decimal separately)
+                    pointsFor: (roster.settings?.fpts || 0) + ((roster.settings?.fpts_decimal || 0) / 100),
+                    pointsAgainst: (roster.settings?.fpts_against || 0) + ((roster.settings?.fpts_against_decimal || 0) / 100)
                 };
             });
 
@@ -4908,6 +4912,30 @@ ${allSummaries}`;
                 lines.push('- ' + t.name + (isMine ? ' <<< THIS IS THE USER\'S TEAM' : '') + ' [' + owner + '], $' + t.capSpace + ' cap space: ' + players);
             });
 
+            // STANDINGS / RECORD context — dormant in preseason, lights up once games
+            // are played. Lets B.O.O.M. tailor advice to contender vs. seller situations.
+            (function(){
+                var teams = (allTeamsData || []);
+                var gamesPlayed = teams.some(function(t){ return (t.wins||0)+(t.losses||0)+(t.ties||0) > 0; });
+                if (!gamesPlayed) return; // no meaningful records yet (2026 preseason)
+
+                var canon = function(n){ return (typeof ownerForTeam === 'function' ? ownerForTeam(n) : null) || n; };
+                var ranked = teams.slice().sort(function(a,b){
+                    var wa=(a.wins||0), wb=(b.wins||0);
+                    if (wb !== wa) return wb - wa;
+                    return (b.pointsFor||0) - (a.pointsFor||0); // tiebreak on points for
+                });
+                lines.push('\nCURRENT STANDINGS (this season — use to judge who should BUY (contender: consolidate, win now) vs. SELL (out of it: get younger/cheaper, dump salary). 6 of 10 teams make the playoffs):');
+                ranked.forEach(function(t, idx){
+                    var isMine = String(t.rosterId) === String(askBoomTeamId);
+                    var rec = (t.wins||0) + '-' + (t.losses||0) + ((t.ties||0) ? '-' + t.ties : '');
+                    var pf = Math.round(t.pointsFor||0), pa = Math.round(t.pointsAgainst||0);
+                    lines.push((idx+1) + '. ' + t.name + ' [' + canon(t.name) + ']' + (isMine ? ' <<< USER' : '') +
+                        ': ' + rec + ', ' + pf + ' PF / ' + pa + ' PA');
+                });
+                lines.push('Playoff line is 6th place. Advise BUY/SELL and lineup urgency accordingly — a team on the bubble or chasing should play differently than a lock or a team already out.');
+            })();
+
             // Schedule context for the user's team (opponents next few weeks + byes + matchup difficulty)
             if (scheduleData && scheduleData.schedule) {
                 const myTeam = (allTeamsData || []).find(function(t){ return String(t.rosterId) === String(askBoomTeamId); });
@@ -5087,13 +5115,26 @@ ${allSummaries}`;
                 convo += (t.role === 'user' ? '\nUSER: ' : '\nB.O.O.M.: ') + t.content;
             });
 
-            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.' + personaBlock + '\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
+            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.' + personaBlock + '\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\nADVICE STYLE — be a real advisor, not a yes-man:\n(1) DECISIVE PROPOSALS: When a trade or waiver move makes sense, end with a concrete, specific proposed move the user can actually act on — name the exact players (and picks) each side sends, and which owner to send it to — not vague direction. E.g. "Offer Mark your Player X ($12) for his Player Y ($18) — he overvalues Y but the projection gap is real."\n(2) CAP VALUE MATH: You have every salary and projected-points number. When comparing players or judging value, actually use it — compute rough points-per-dollar (projected season points ÷ salary) and lead with the math, flagging clear bargains and overpriced players. Cap space matters in a $200 keeper league; factor it in.\n(3) PUSH BACK: If the user proposes or leans toward a bad move — overpaying, selling low, starting the wrong guy, chasing a name — say so plainly and explain why, then offer the better play. Do not just validate what they want to hear. Disagreeing with the user, backed by the numbers, is exactly your job.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
+
+            // Model routing: strategy-heavy questions (trades, how-to-beat, roster
+            // construction, season-long planning) go to a stronger model; quick
+            // lookups (start/sit, single-player, who's on bye) stay on fast Haiku.
+            const MODEL_QUICK = 'claude-haiku-4-5-20251001';
+            const MODEL_SMART = 'claude-sonnet-5';
+            var lastUserQ = '';
+            for (var i = askBoomHistory.length - 1; i >= 0; i--) {
+                if (askBoomHistory[i].role === 'user') { lastUserQ = askBoomHistory[i].content; break; }
+            }
+            var hardHints = /trade|deal|send|offer|acquire|target|beat|catch|dethrone|rebuild|sell|buy|value|overpay|cap|keeper|strateg|construct|long.?term|rest of (the )?season|playoff|championship|win it|contend/i;
+            var useSmart = hardHints.test(lastUserQ) || lastUserQ.length > 220;
+            var chosenModel = useSmart ? MODEL_SMART : MODEL_QUICK;
 
             try {
                 const res = await fetch('/api/roast', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt, model: 'claude-haiku-4-5-20251001', maxTokens: 1024 })
+                    body: JSON.stringify({ prompt: prompt, model: chosenModel, maxTokens: 1024 })
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || ('Server returned ' + res.status));
