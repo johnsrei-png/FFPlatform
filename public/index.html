@@ -4687,7 +4687,7 @@
             try {
                 const context = (typeof buildLeagueContext === 'function') ? buildLeagueContext({ skipTradeHistory: true }) : '';
                 const personaBlock = (typeof buildOwnerPersonas === 'function') ? buildOwnerPersonas('') : '';
-                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest covering the state of the league — who\'s looking strong, who\'s a mess, notable rosters/cap situations, and some pointed trash talk aimed at specific owners using their personas. It is currently 2026 preseason (no games played yet), so focus on roster outlooks, cap/keeper situations, offseason moves, and bold predictions rather than matchup results. Use real player names, salaries, and specifics from the data. Be entertaining and a little savage, but grounded in the actual data. Keep the whole thing tight and COMPLETE — a headline plus exactly 3 short paragraphs (roughly 4-5 sentences each). Finish every thought; do not trail off. Do not exceed 3 paragraphs.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3 tight paragraphs of plain prose — no markdown headers or bullet lists>\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
+                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest covering the state of the league — who kept well, who is a mess, notable keeper cores and draft situations, and some pointed trash talk aimed at specific owners using their personas. IMPORTANT: read the LEAGUE PHASE note in the data and follow its framing exactly — if it is the pre-draft keeper window, treat rosters as keeper cores (not final), and frame open spots + leftover cap as draft spending power, never as weaknesses; focus on keeper quality/value and what teams should target at the draft. Use real player names, salaries, and the positional value tags. Be entertaining and a little savage, but grounded in the actual data. Keep the whole thing tight and COMPLETE — a headline plus exactly 3 short paragraphs (roughly 4-5 sentences each). Finish every thought; do not trail off. Do not exceed 3 paragraphs.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3 tight paragraphs of plain prose — no markdown headers or bullet lists>\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
 
                 // Try Sonnet first; if it comes back empty (token/timeout), fall back to Haiku.
                 async function genBriefing(modelId, tokens){
@@ -5157,7 +5157,19 @@ ${allSummaries}`;
             lines.push(LEAGUE_RULES);
             lines.push('\nROSTER FORMAT: 16 spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE-only, 1 DEF) + 7 bench. $200 salary cap. Salaries escalate yearly (keeper league). Players acquired via waiver-bid auction.');
 
-            lines.push('\nALL TEAMS (name, owner, cap space, players with salary and projected season points):');
+            // LEAGUE PHASE — pre-draft (keeper window) vs. post-draft (final rosters).
+            // The league draft is Aug 27, 2026. Before it, rosters are just KEPT players,
+            // not final, so open spots + leftover cap are draft ammunition, not weaknesses.
+            // Auto-switches to normal mode on/after the draft date.
+            var DRAFT_DATE = new Date('2026-08-27T00:00:00');
+            var preDraft = (new Date()) < DRAFT_DATE;
+            if (preDraft) {
+                lines.push('\n*** LEAGUE PHASE: PRE-DRAFT KEEPER WINDOW (draft is Aug 27, 2026) ***\nCRITICAL FRAMING: The rosters below are NOT final — they are only the players each team has chosen to KEEP under the $200 cap. Teams complete their rosters at the Aug 27 draft. This is a keep-as-many-as-you-want-under-the-cap dynasty league, so teams deliberately vary: some kept a lot (few open spots, little cap left), others kept few (many open spots, lots of cap to spend). Therefore: DO NOT treat open roster spots or leftover cap space as weaknesses or "thin rosters" — they are DRAFT SPENDING POWER. A team with few keepers and lots of cap is loaded to build at the draft, not in trouble. Judge teams right now on the QUALITY and VALUE of their keepers (use the positional value tags), not on depth, roster size, or cap used. Frame advice around who kept well, who has the most draft ammo, and what each team should target on Aug 27 — not season-long lineup depth.');
+            } else {
+                lines.push('\n*** LEAGUE PHASE: POST-DRAFT / IN-SEASON — rosters are final; cap space, depth, and roster construction now matter normally. ***');
+            }
+
+            lines.push('\nALL TEAMS (name, owner, ' + (preDraft ? 'kept players + cap/spots available for the draft' : 'cap space, players') + ' with salary and projected season points):');
             const valueData = (typeof computePositionalValue === 'function') ? computePositionalValue() : null;
             (allTeamsData || []).forEach(function(t) {
                 const owner = (typeof ownerForTeam === 'function' ? ownerForTeam(t.name) : null) || t.owner || '';
@@ -5175,7 +5187,14 @@ ${allSummaries}`;
                     }
                     return p.name + ' (' + p.position + ' $' + p.salary + projTxt + valTxt + ')';
                 }).join(', ');
-                lines.push('- ' + t.name + (isMine ? ' <<< THIS IS THE USER\'S TEAM' : '') + ' [' + owner + '], $' + t.capSpace + ' cap space: ' + players);
+                if (preDraft) {
+                    var keeperCount = (t.players || []).length;
+                    var openSpots = Math.max(0, 16 - keeperCount);
+                    lines.push('- ' + t.name + (isMine ? ' <<< THIS IS THE USER\'S TEAM' : '') + ' [' + owner + ']: ' +
+                        keeperCount + ' keepers, ' + openSpots + ' spots open to draft, $' + t.capSpace + ' cap to spend at the draft. Keepers: ' + players);
+                } else {
+                    lines.push('- ' + t.name + (isMine ? ' <<< THIS IS THE USER\'S TEAM' : '') + ' [' + owner + '], $' + t.capSpace + ' cap space: ' + players);
+                }
             });
 
             // How to read the value tags — critical so B.O.O.M. doesn't mistake "cheap"
