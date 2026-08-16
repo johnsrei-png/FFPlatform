@@ -3336,7 +3336,10 @@
 
         async function loadTransactions() {
             try {
-                const res = await fetch('/api/get-transactions');
+                // Cache-buster rotates every 5 min: fresh enough for a txn log,
+                // but repeat views within the window still hit the CDN cache.
+                const bucket = Math.floor(Date.now() / 300000);
+                const res = await fetch('/api/get-transactions?v=' + bucket);
                 transactionData = await res.json();
             } catch (e) {
                 transactionData = null;
