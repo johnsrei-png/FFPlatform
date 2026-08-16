@@ -3123,6 +3123,17 @@
 
         // ===== Projection scoring (uses THIS league's rules) =====
         let projectionData = null; // player_id -> { stats, pos }
+        let scheduleData = null;   // { season, weeks, schedule: { TEAM: { weekly, byes } } }
+        let currentNflWeek = null; // from playoff data / state
+
+        async function loadSchedule() {
+            try {
+                const res = await fetch('/api/get-schedule?season=2026');
+                scheduleData = await res.json();
+            } catch (e) {
+                scheduleData = null;
+            }
+        }
 
         // Convert a player's raw projected stats into fantasy points using our league scoring.
         function scoreProjection(stats) {
@@ -4393,6 +4404,7 @@ ${allSummaries}`;
         function openAskBoom() {
             if (!allTeamsData || allTeamsData.length === 0) { alert('Data still loading, give it a sec.'); return; }
             if (!projectionData) loadProjections();
+            if (!scheduleData) loadSchedule();
             if (!historyData) {
                 fetch('/api/get-history').then(function(r){return r.json();}).then(function(d){ historyData = d; }).catch(function(){});
             }
@@ -4473,6 +4485,30 @@ ${allSummaries}`;
                 lines.push('- ' + t.name + (isMine ? ' <<< THIS IS THE USER\'S TEAM' : '') + ' [' + owner + '], $' + t.capSpace + ' cap space: ' + players);
             });
 
+            // Schedule context for the user's team (opponents next few weeks + byes)
+            if (scheduleData && scheduleData.schedule) {
+                const myTeam = (allTeamsData || []).find(function(t){ return String(t.rosterId) === String(askBoomTeamId); });
+                if (myTeam) {
+                    const wk = currentNflWeek && currentNflWeek >= 1 ? currentNflWeek : 1;
+                    lines.push('\nSCHEDULE for YOUR players (NFL team, next opponents from week ' + wk + '; "@" = away, "vs" = home; BYE = off that week):');
+                    const seen = {};
+                    (myTeam.players || []).forEach(function(p) {
+                        const nfl = p.team;
+                        if (!nfl || nfl === 'FA' || seen[nfl]) return;
+                        seen[nfl] = true;
+                        const sched = scheduleData.schedule[nfl];
+                        if (!sched) return;
+                        const upcoming = [];
+                        for (let w = wk; w < wk + 4 && w <= (scheduleData.weeks || 18); w++) {
+                            if (sched.byes && sched.byes.indexOf(w) !== -1) upcoming.push('W' + w + ':BYE');
+                            else if (sched.weekly && sched.weekly[w]) upcoming.push('W' + w + ':' + sched.weekly[w]);
+                        }
+                        const byeTxt = (sched.byes && sched.byes.length) ? ' (bye W' + sched.byes.join(',') + ')' : '';
+                        lines.push('- ' + nfl + byeTxt + ': ' + upcoming.join(', '));
+                    });
+                }
+            }
+
             // Compact history summary
             if (historyData && typeof computeCareers === 'function') {
                 try {
@@ -4543,7 +4579,7 @@ ${allSummaries}`;
                 convo += (t.role === 'user' ? '\nUSER: ' : '\nB.O.O.M.: ') + t.content;
             });
 
-            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, and scoring rules. Reference real players, salaries, and projected points. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
+            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, AND upcoming matchups/byes. When giving start/sit or lineup advice, factor in who each player faces and flag any player on a BYE. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
 
             try {
                 const res = await fetch('/api/roast', {
@@ -4778,6 +4814,7 @@ ${allSummaries}`;
             try {
                 const res = await fetch('/api/get-playoff-data?leagueId=' + LEAGUE_ID);
                 playoffData = await res.json();
+                if (playoffData && playoffData.currentWeek) currentNflWeek = playoffData.currentWeek;
             } catch (e) { playoffData = null; return; }
             applyPlayoffOddsToCards();
         }
