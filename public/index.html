@@ -3559,6 +3559,82 @@
             return scoreProjection(projectionData[playerId].stats);
         }
 
+        // ===== Positional value (VORP-style) =====
+        // Ranks every rostered player at their position across the whole league, finds
+        // the replacement baseline (the last STARTER at each position given this league's
+        // exact lineup rules, including flex), and tiers each player by points above
+        // replacement. This is what B.O.O.M. uses to judge value — so a cheap-but-elite
+        // player reads as a bargain, not a weakness, and raw salary never masks quality.
+        // Returns { byPlayer: {pid: {pos, proj, posRank, vor, tier}}, baseline: {pos: pts} }
+        let _valueCache = null;
+        function computePositionalValue() {
+            if (_valueCache) return _valueCache;
+            const TEAMS = 10;
+            const pos = { QB: [], RB: [], WR: [], TE: [] };
+
+            // Gather every rostered player's projection by position
+            (allTeamsData || []).forEach(function(t){
+                (t.players || []).forEach(function(p){
+                    const P = (p.position || '').toUpperCase();
+                    if (!pos[P]) return; // ignore DEF/K/etc for VORP
+                    const proj = projectedSeasonPoints(p.id);
+                    if (proj === null || proj === undefined) return;
+                    pos[P].push({ pid: p.id, proj: proj });
+                });
+            });
+            Object.keys(pos).forEach(function(P){ pos[P].sort(function(a,b){ return b.proj - a.proj; }); });
+
+            // Fixed starter demand across the league
+            const baseStarters = { QB: 1*TEAMS, RB: 2*TEAMS, WR: 2*TEAMS, TE: 1*TEAMS };
+            // Count of players "claimed" as starters so far, per position
+            const claimed = { QB: baseStarters.QB, RB: baseStarters.RB, WR: baseStarters.WR, TE: baseStarters.TE };
+
+            // Allocate flex spots to the best available flex-eligible player, dynamically.
+            // Flex A (10): RB/WR/TE.  Flex B (10): WR/TE.
+            function bestAvailable(eligible){
+                let pick = null, pickPos = null;
+                eligible.forEach(function(P){
+                    const nextIdx = claimed[P];
+                    const cand = pos[P][nextIdx];
+                    if (cand && (!pick || cand.proj > pick.proj)) { pick = cand; pickPos = P; }
+                });
+                return pickPos;
+            }
+            for (let i=0;i<TEAMS;i++){ const P = bestAvailable(['RB','WR','TE']); if (P) claimed[P]++; }
+            for (let i=0;i<TEAMS;i++){ const P = bestAvailable(['WR','TE']); if (P) claimed[P]++; }
+
+            // Replacement baseline = projection of the LAST starter at each position
+            // (i.e. the player at index claimed[P]-1). Below that line = replaceable.
+            const baseline = {};
+            Object.keys(pos).forEach(function(P){
+                const idx = Math.min(claimed[P]-1, pos[P].length-1);
+                baseline[P] = (idx >= 0 && pos[P][idx]) ? pos[P][idx].proj : 0;
+            });
+
+            // Assign each player a VOR (points above replacement) and a tier.
+            const byPlayer = {};
+            Object.keys(pos).forEach(function(P){
+                pos[P].forEach(function(entry, rank){
+                    const vor = entry.proj - baseline[P];
+                    let tier;
+                    if (rank < claimed[P]) {
+                        // A starter-level player. Tier by how far above replacement.
+                        if (vor >= baseline[P] * 0.45) tier = 'elite';
+                        else if (vor >= baseline[P] * 0.20) tier = 'strong';
+                        else if (vor > 0) tier = 'solid starter';
+                        else tier = 'fringe starter';
+                    } else {
+                        tier = 'replaceable';
+                    }
+                    byPlayer[entry.pid] = { pos: P, proj: Math.round(entry.proj), posRank: rank+1, vor: Math.round(vor), tier: tier };
+                });
+            });
+
+            _valueCache = { byPlayer: byPlayer, baseline: baseline, starters: claimed };
+            return _valueCache;
+        }
+        function invalidateValueCache(){ _valueCache = null; }
+
         // Projected games (default 17 if not provided).
         function projectedGames(playerId) {
             if (!projectionData || !projectionData[playerId]) return 17;
@@ -3580,6 +3656,7 @@
             } catch (e) {
                 projectionData = null;
             }
+            invalidateValueCache();
             applyProjectionsToRows();
         }
 
@@ -4610,7 +4687,7 @@
             try {
                 const context = (typeof buildLeagueContext === 'function') ? buildLeagueContext({ skipTradeHistory: true }) : '';
                 const personaBlock = (typeof buildOwnerPersonas === 'function') ? buildOwnerPersonas('') : '';
-                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest covering the state of the league — who\'s looking strong, who\'s a mess, notable rosters/cap situations, and some pointed trash talk aimed at specific owners using their personas. It is currently 2026 preseason (no games played yet), so focus on roster outlooks, cap/keeper situations, offseason moves, and bold predictions rather than matchup results. Use real player names, salaries, and specifics from the data. Be entertaining and a little savage, but grounded in the actual data. Keep the whole thing tight — a headline plus 3 short paragraphs.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3 tight paragraphs of plain prose — no markdown headers or bullet lists>\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
+                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest covering the state of the league — who\'s looking strong, who\'s a mess, notable rosters/cap situations, and some pointed trash talk aimed at specific owners using their personas. It is currently 2026 preseason (no games played yet), so focus on roster outlooks, cap/keeper situations, offseason moves, and bold predictions rather than matchup results. Use real player names, salaries, and specifics from the data. Be entertaining and a little savage, but grounded in the actual data. Keep the whole thing tight and COMPLETE — a headline plus exactly 3 short paragraphs (roughly 4-5 sentences each). Finish every thought; do not trail off. Do not exceed 3 paragraphs.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3 tight paragraphs of plain prose — no markdown headers or bullet lists>\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
 
                 // Try Sonnet first; if it comes back empty (token/timeout), fall back to Haiku.
                 async function genBriefing(modelId, tokens){
@@ -4624,11 +4701,13 @@
                     return { text: (data.text || '').trim(), stopReason: data.stopReason || null };
                 }
 
-                var out = await genBriefing('claude-sonnet-5', 1100);
-                if (!out.text) {
-                    var fb = await genBriefing('claude-haiku-4-5-20251001', 1100);
-                    if (fb.text) out = fb;
-                    else out.error = fb.error || out.error;
+                var out = await genBriefing('claude-sonnet-5', 1600);
+                if (!out.text || out.stopReason === 'max_tokens') {
+                    // Empty, or truncated mid-thought — retry on Haiku with room to finish.
+                    var fb = await genBriefing('claude-haiku-4-5-20251001', 1600);
+                    if (fb.text && fb.stopReason !== 'max_tokens') out = fb;
+                    else if (fb.text && !out.text) out = fb; // better a truncated answer than none
+                    else if (fb.error) out.error = fb.error || out.error;
                 }
                 const raw = out.text;
                 if (!raw) throw new Error('empty response' + (out.stopReason ? ' (stop reason: ' + out.stopReason + ')' : '') + (out.error ? ' — ' + out.error : ''));
@@ -5079,6 +5158,7 @@ ${allSummaries}`;
             lines.push('\nROSTER FORMAT: 16 spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE-only, 1 DEF) + 7 bench. $200 salary cap. Salaries escalate yearly (keeper league). Players acquired via waiver-bid auction.');
 
             lines.push('\nALL TEAMS (name, owner, cap space, players with salary and projected season points):');
+            const valueData = (typeof computePositionalValue === 'function') ? computePositionalValue() : null;
             (allTeamsData || []).forEach(function(t) {
                 const owner = (typeof ownerForTeam === 'function' ? ownerForTeam(t.name) : null) || t.owner || '';
                 const isMine = String(t.rosterId) === String(askBoomTeamId);
@@ -5087,10 +5167,22 @@ ${allSummaries}`;
                     // Include projections for the user's team always; for others only for higher-salary players to save tokens
                     const showProj = proj !== null && proj !== undefined && (isMine || p.salary >= 10);
                     const projTxt = showProj ? ' ~' + Math.round(proj) + 'pts' : '';
-                    return p.name + ' (' + p.position + ' $' + p.salary + projTxt + ')';
+                    // Positional value tier (VORP) — the honest read of quality-for-position
+                    let valTxt = '';
+                    if (valueData && valueData.byPlayer[p.id] && (isMine || p.salary >= 10)) {
+                        const v = valueData.byPlayer[p.id];
+                        valTxt = ' [' + v.pos + v.posRank + ', ' + v.tier + (v.vor > 0 ? ', +' + v.vor + ' vor' : '') + ']';
+                    }
+                    return p.name + ' (' + p.position + ' $' + p.salary + projTxt + valTxt + ')';
                 }).join(', ');
                 lines.push('- ' + t.name + (isMine ? ' <<< THIS IS THE USER\'S TEAM' : '') + ' [' + owner + '], $' + t.capSpace + ' cap space: ' + players);
             });
+
+            // How to read the value tags — critical so B.O.O.M. doesn't mistake "cheap"
+            // for "bad". Value is measured AGAINST replacement level at each position.
+            if (valueData) {
+                lines.push('\nHOW TO READ VALUE: Each player is tagged [POSITION-RANK, tier, +VOR] where rank is their projected finish at their position across the league, and VOR is projected points ABOVE the last startable player at that position (this league starts 1QB/2RB/2WR/1TE + flex over 10 teams). Tiers: elite > strong > solid starter > fringe starter > replaceable. JUDGE VALUE BY THIS, NOT BY SALARY. A cheap player with a high rank and positive VOR is a BARGAIN and a strength (e.g. a $7 QB ranked QB6 is excellent value, not a weakness). Only call a cheap player a weakness if their tier is "fringe starter" or "replaceable". Salary matters for cap flexibility, but a low salary on a high-value player is the best thing you can have in a cap league.');
+            }
 
             // STANDINGS / RECORD context — dormant in preseason, lights up once games
             // are played. Lets B.O.O.M. tailor advice to contender vs. seller situations.
@@ -5296,7 +5388,7 @@ ${allSummaries}`;
                 convo += (t.role === 'user' ? '\nUSER: ' : '\nB.O.O.M.: ') + t.content;
             });
 
-            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.' + personaBlock + '\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\nADVICE STYLE — be a real advisor, not a yes-man:\n(1) DECISIVE PROPOSALS: When a trade or waiver move makes sense, end with a concrete, specific proposed move the user can actually act on — name the exact players (and picks) each side sends, and which owner to send it to — not vague direction. E.g. "Offer Mark your Player X ($12) for his Player Y ($18) — he overvalues Y but the projection gap is real."\n(2) CAP VALUE MATH: You have every salary and projected-points number. When comparing players or judging value, actually use it — compute rough points-per-dollar (projected season points ÷ salary) and lead with the math, flagging clear bargains and overpriced players. Cap space matters in a $200 keeper league; factor it in.\n(3) PUSH BACK: If the user proposes or leans toward a bad move — overpaying, selling low, starting the wrong guy, chasing a name — say so plainly and explain why, then offer the better play. Do not just validate what they want to hear. Disagreeing with the user, backed by the numbers, is exactly your job.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
+            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.' + personaBlock + '\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\nADVICE STYLE — be a real advisor, not a yes-man:\n(1) DECISIVE PROPOSALS: When a trade or waiver move makes sense, end with a concrete, specific proposed move the user can actually act on — name the exact players (and picks) each side sends, and which owner to send it to — not vague direction. E.g. "Offer Mark your Player X ($12) for his Player Y ($18) — he overvalues Y but the projection gap is real."\n(2) CAP VALUE MATH: Judge player value primarily by the positional value tags (POSITION-RANK, tier, VOR) described below — value is relative to replacement at each position, so never mistake a cheap player for a bad one. Layer salary on top for cap flexibility: the ideal is high value at low salary. Flag genuine bargains (high rank, low salary) and genuine overpays (high salary, fringe/replaceable tier). Do the points-per-dollar sanity check where useful, but positional value tier wins over raw points.\n(3) PUSH BACK: If the user proposes or leans toward a bad move — overpaying, selling low, starting the wrong guy, chasing a name — say so plainly and explain why, then offer the better play. Do not just validate what they want to hear. Disagreeing with the user, backed by the numbers, is exactly your job.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
 
             // Model routing: strategy-heavy questions (trades, how-to-beat, roster
             // construction, season-long planning) go to a stronger model; quick
