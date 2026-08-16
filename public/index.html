@@ -3085,6 +3085,7 @@
                 <span style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                     <button class="roast-all-btn askboom-btn" onclick="openAskBoom()">Summon <span class="askboom-btn-boom">B.O.O.M.</span></button>
                     <button class="roast-all-btn" onclick="openTransactionLog()">Transaction Log</button>
+                    <button class="roast-all-btn" onclick="openMatchups()">Matchups</button>
                     <button class="roast-all-btn" onclick="openTradeSimulator()">Trade Simulator</button>
                     <button class="roast-all-btn" onclick="roastAllTeams()">Power Rankings</button>
                 </span>
@@ -3360,6 +3361,22 @@
         </div>
     </div>
 
+    <div class="trade-modal" id="matchupsModal">
+        <div class="trade-modal-content">
+            <div class="roast-modal-header">
+                <h3>Weekly Matchups</h3>
+                <button class="roast-modal-close" onclick="closeMatchups()">×</button>
+            </div>
+            <div class="trade-modal-body">
+                <div class="txn-filters">
+                    <label class="header-label" style="align-self:center;">Week</label>
+                    <select id="matchupWeekSelect" class="trade-team-select" style="max-width:120px;" onchange="onMatchupWeekChange()"></select>
+                </div>
+                <div class="txn-list" id="matchupsList"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="trade-modal" id="askBoomModal">
         <div class="trade-modal-content askboom-content">
             <div class="roast-modal-header">
@@ -3460,6 +3477,98 @@
             document.getElementById('txnLogModal').classList.remove('active');
         }
 
+        // ===== Weekly Matchups display =====
+        async function openMatchups() {
+            document.getElementById('matchupsModal').classList.add('active');
+            const list = document.getElementById('matchupsList');
+
+            if (!seasonStarted()) {
+                document.getElementById('matchupWeekSelect').innerHTML = '';
+                list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">Head-to-head matchups appear once the season kicks off. Check back in Week 1.</div>';
+                return;
+            }
+
+            // Populate week selector (1..18)
+            const sel = document.getElementById('matchupWeekSelect');
+            if (!sel.options.length) {
+                let opts = '';
+                for (let w = 1; w <= 18; w++) opts += '<option value="' + w + '">Week ' + w + '</option>';
+                sel.innerHTML = opts;
+                sel.value = String(activeLeagueWeek());
+            }
+            list.innerHTML = '<div class="roast-loading" style="padding:2rem;text-align:center;">Loading matchups…</div>';
+            await loadMatchups(parseInt(sel.value, 10));
+            renderMatchups();
+        }
+
+        function closeMatchups() {
+            document.getElementById('matchupsModal').classList.remove('active');
+        }
+
+        async function onMatchupWeekChange() {
+            const wk = parseInt(document.getElementById('matchupWeekSelect').value, 10);
+            const list = document.getElementById('matchupsList');
+            list.innerHTML = '<div class="roast-loading" style="padding:2rem;text-align:center;">Loading Week ' + wk + '…</div>';
+            await loadMatchups(wk);
+            renderMatchups();
+        }
+
+        function renderMatchups() {
+            const list = document.getElementById('matchupsList');
+            if (!matchupData || !Array.isArray(matchupData.matchups) || !matchupData.matchups.length) {
+                list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">No matchups posted for this week yet.</div>';
+                return;
+            }
+            const canon = function(n){ return (typeof ownerForTeam === 'function' ? ownerForTeam(n) : null) || n; };
+            const projFor = function(rosterId){
+                const t = (allTeamsData || []).find(function(x){ return String(x.rosterId) === String(rosterId); });
+                if (!t) return null;
+                let tot = 0, any = false;
+                (t.players || []).forEach(function(p){
+                    const pr = (typeof projectedPerGame === 'function') ? projectedPerGame(p.id) : null;
+                    if (pr) { tot += pr; any = true; }
+                });
+                return any ? Math.round(tot) : null;
+            };
+
+            let html = '';
+            matchupData.matchups.forEach(function(m){
+                const sides = m.sides || [];
+                if (sides.length < 2) return;
+                const a = sides[0], b = sides[1];
+                const aProj = projFor(a.rosterId), bProj = projFor(b.rosterId);
+                const aScore = (a.points || 0), bScore = (b.points || 0);
+                const played = (aScore + bScore) > 0;
+                html += '<div class="txn-item">' +
+                    '<div class="txn-detail" style="display:flex;justify-content:space-between;gap:1rem;align-items:center;">' +
+                        '<div><strong>' + a.team + '</strong> <span style="color:var(--text-secondary);">[' + canon(a.team) + ']</span>' +
+                            (played ? ' — ' + aScore + ' pts' : (aProj !== null ? ' — proj ~' + aProj : '')) + '</div>' +
+                        '<div style="color:var(--text-secondary);">vs</div>' +
+                        '<div style="text-align:right;"><strong>' + b.team + '</strong> <span style="color:var(--text-secondary);">[' + canon(b.team) + ']</span>' +
+                            (played ? ' — ' + bScore + ' pts' : (bProj !== null ? ' — proj ~' + bProj : '')) + '</div>' +
+                    '</div>' +
+                    '<div style="margin-top:0.5rem;text-align:center;">' +
+                        '<button class="btn-small" onclick="askBoomAboutMatchup(\'' + encodeURIComponent(a.team) + '\',\'' + encodeURIComponent(b.team) + '\',' + (matchupData.week || activeLeagueWeek()) + ')">B.O.O.M.\'s take</button>' +
+                    '</div>' +
+                '</div>';
+            });
+            list.innerHTML = html || '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">No matchups posted for this week yet.</div>';
+        }
+
+        // Jump into the chat pre-loaded with a matchup question.
+        function askBoomAboutMatchup(teamAEnc, teamBEnc, week) {
+            const teamA = decodeURIComponent(teamAEnc), teamB = decodeURIComponent(teamBEnc);
+            closeMatchups();
+            // Prefer the user's own team as the framing seat if they're in this matchup.
+            const myTeam = (allTeamsData || []).find(function(t){ return String(t.rosterId) === String(askBoomTeamId); });
+            openAskBoom();
+            const input = document.getElementById('askBoomInput');
+            if (input) {
+                input.value = 'Break down this week\'s matchup: ' + teamA + ' vs ' + teamB + '. Who wins, by how much, the key players, and give the loser some grief.';
+                input.focus();
+            }
+        }
+
         function renderTxnLog() {
             const list = document.getElementById('txnList');
             if (!transactionData || !Array.isArray(transactionData.transactions)) {
@@ -3526,6 +3635,33 @@
             } catch (e) {
                 scheduleData = null;
             }
+        }
+
+        // ===== Fantasy head-to-head matchups (dormant until season starts) =====
+        let matchupData = null;      // { week, matchups: [{ matchupId, sides: [{team, points, starters}] }] }
+        let matchupWeek = null;      // the week currently loaded
+
+        function activeLeagueWeek() {
+            // Use the current NFL week if we have it and the season is underway; else week 1.
+            return (currentNflWeek && currentNflWeek >= 1) ? currentNflWeek : 1;
+        }
+
+        async function loadMatchups(week) {
+            const wk = week || activeLeagueWeek();
+            try {
+                const res = await fetch('/api/get-matchups?week=' + wk + '&t=' + Math.floor(Date.now() / 120000));
+                const data = await res.json();
+                matchupData = (data && Array.isArray(data.matchups)) ? data : null;
+                matchupWeek = wk;
+            } catch (e) {
+                matchupData = null;
+            }
+            return matchupData;
+        }
+
+        // Is the season actually underway (any completed games)? Mirrors the standings gate.
+        function seasonStarted() {
+            return (allTeamsData || []).some(function(t){ return (t.wins||0)+(t.losses||0)+(t.ties||0) > 0; });
         }
 
         // Convert a player's raw projected stats into fantasy points using our league scoring.
@@ -5093,6 +5229,7 @@ ${allSummaries}`;
             if (!scheduleData) loadSchedule();
             if (!defenseRatings) loadDefenseRatings();
             if (!transactionData) loadTransactions();
+            if (!matchupData && seasonStarted()) loadMatchups();
             if (!historyData) {
                 fetch('/api/get-history').then(function(r){return r.json();}).then(function(d){ historyData = d; }).catch(function(){});
             }
@@ -5229,6 +5366,41 @@ ${allSummaries}`;
                 });
                 lines.push('Playoff line is 6th place. Advise BUY/SELL and lineup urgency accordingly — a team on the bubble or chasing should play differently than a lock or a team already out.');
             })();
+
+            // THIS WEEK'S HEAD-TO-HEAD MATCHUP for the viewer's team — dormant until the
+            // season is underway and matchups exist. Gives B.O.O.M. the specific opponent
+            // so it can break down the week: projected winner, key players, trash talk.
+            if (matchupData && Array.isArray(matchupData.matchups) && matchupData.matchups.length && askBoomTeamId) {
+                var canonM = function(n){ return (typeof ownerForTeam === 'function' ? ownerForTeam(n) : null) || n; };
+                var mine = null, opp = null;
+                matchupData.matchups.forEach(function(m){
+                    var hasMe = (m.sides || []).some(function(s){ return String(s.rosterId) === String(askBoomTeamId); });
+                    if (hasMe) {
+                        (m.sides || []).forEach(function(s){
+                            if (String(s.rosterId) === String(askBoomTeamId)) mine = s; else opp = s;
+                        });
+                    }
+                });
+                if (mine && opp) {
+                    // Sum projected season points of each side's current roster as a rough proxy
+                    // (per-week projections would be better, but this gives relative strength).
+                    var projFor = function(teamObj){
+                        var t = (allTeamsData || []).find(function(x){ return String(x.rosterId) === String(teamObj.rosterId); });
+                        if (!t) return null;
+                        var tot = 0, any = false;
+                        (t.players || []).forEach(function(p){
+                            var pr = (typeof projectedPerGame === 'function') ? projectedPerGame(p.id) : null;
+                            if (pr) { tot += pr; any = true; }
+                        });
+                        return any ? Math.round(tot) : null;
+                    };
+                    var myProj = projFor(mine), oppProj = projFor(opp);
+                    lines.push('\nTHIS WEEK (Week ' + (matchupData.week || activeLeagueWeek()) + ') HEAD-TO-HEAD: ' +
+                        mine.team + ' [' + canonM(mine.team) + ', THE USER] vs ' + opp.team + ' [' + canonM(opp.team) + ']. ' +
+                        (myProj !== null && oppProj !== null ? 'Rough per-week projected strength: ' + mine.team + ' ~' + myProj + ' vs ' + opp.team + ' ~' + oppProj + '. ' : '') +
+                        'When the user asks about this week or their matchup, break it down: who is projected to win and why, the key players on each side, and lean on ' + canonM(opp.team) + '\'s persona for trash talk. Use the value tags and rosters above for the specifics.');
+                }
+            }
 
             // Schedule context for the user's team (opponents next few weeks + byes + matchup difficulty)
             if (scheduleData && scheduleData.schedule) {
