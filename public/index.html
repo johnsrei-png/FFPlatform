@@ -2239,6 +2239,99 @@
             .bd-lab { font-size: 0.5rem; }
         }
 
+        /* B.O.O.M. Briefing — replaces the old stat cards in prime header space */
+        .boom-briefing {
+            margin-bottom: 2rem;
+            background: var(--ink);
+            border: 1px solid rgba(46, 204, 113, 0.35);
+            border-radius: 8px;
+            padding: 1.25rem 1.5rem;
+            box-shadow: 0 0 24px rgba(46, 204, 113, 0.15);
+        }
+        .boom-briefing-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+        .boom-briefing-main { flex: 1; min-width: 0; }
+        .boom-briefing-label {
+            font-family: 'Orbitron', var(--font-display);
+            font-weight: 900;
+            font-size: 0.8rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: #6effa8;
+            text-shadow: 0 0 8px rgba(46, 204, 113, 0.7);
+            margin-bottom: 0.5rem;
+        }
+        .boom-briefing-headline {
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 1.15rem;
+            color: #eafff2;
+            line-height: 1.35;
+        }
+        .boom-briefing-toggle {
+            flex-shrink: 0;
+            background: rgba(46, 204, 113, 0.12);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            color: #6effa8;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            padding: 0.4rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.15s, box-shadow 0.15s;
+        }
+        .boom-briefing-toggle:hover {
+            background: rgba(46, 204, 113, 0.22);
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.3);
+        }
+        .boom-briefing-full {
+            display: none;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(46, 204, 113, 0.2);
+            color: #cfe8da;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+        .boom-briefing.open .boom-briefing-full { display: block; }
+        .boom-briefing-meta {
+            margin-top: 0.875rem;
+            font-size: 0.6875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #a89f8d;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .boom-briefing-regen {
+            background: rgba(46, 204, 113, 0.12);
+            border: 1px solid rgba(46, 204, 113, 0.4);
+            color: #6effa8;
+            font-family: var(--font-body);
+            font-weight: 600;
+            font-size: 0.7rem;
+            padding: 0.3rem 0.7rem;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .boom-briefing-regen:hover { background: rgba(46, 204, 113, 0.22); }
+        .boom-briefing-regen:disabled { opacity: 0.5; cursor: not-allowed; }
+        @media (max-width: 480px) {
+            .boom-briefing { padding: 1rem 0.9rem; }
+            .boom-briefing-headline { font-size: 1rem; }
+            .boom-briefing-top { flex-direction: column; }
+        }
+
         .search-box {
             position: relative;
             width: 100%;
@@ -2947,23 +3040,16 @@
         </div>
 
         <div id="dashboard" class="dashboard">
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-label">Total Teams</div>
-                    <div class="stat-value" id="totalTeams">0</div>
+            <div id="boomBriefing" class="boom-briefing">
+                <div class="boom-briefing-top">
+                    <div class="boom-briefing-main">
+                        <div class="boom-briefing-label">B.O.O.M. Briefing</div>
+                        <div class="boom-briefing-headline" id="boomBriefingHeadline">Loading the latest from B.O.O.M.…</div>
+                    </div>
+                    <button class="boom-briefing-toggle" id="boomBriefingToggle" onclick="toggleBriefing()" style="display:none;">Read</button>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-label">Avg Cap Space</div>
-                    <div class="stat-value" id="avgCapSpace">$0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Total Players</div>
-                    <div class="stat-value" id="totalPlayers">0</div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">League Cap</div>
-                    <div class="stat-value">$200</div>
-                </div>
+                <div class="boom-briefing-full" id="boomBriefingFull"></div>
+                <div class="boom-briefing-meta" id="boomBriefingMeta"></div>
             </div>
 
             <div class="search-panel">
@@ -3756,12 +3842,7 @@
 
             // Load the BoomsDay countdown
             setTimeout(loadBoomsday, 0);
-
-            document.getElementById('totalTeams').textContent = teams.length;
-            const avgCapSpace = Math.round(teams.reduce((sum, team) => sum + team.capSpace, 0) / teams.length);
-            document.getElementById('avgCapSpace').textContent = `$${avgCapSpace}`;
-            const totalPlayers = teams.reduce((sum, team) => sum + team.players.length, 0);
-            document.getElementById('totalPlayers').textContent = totalPlayers;
+            setTimeout(loadBriefing, 0);
 
             // Display recent transactions
             displayRecentTransactions(teams);
@@ -4474,6 +4555,93 @@
             boomsdayTarget = null;
             startBoomsdayClock();
             closeBoomsdayModal();
+        }
+
+        // ===== B.O.O.M. Briefing (cached league digest in Supabase app_settings) =====
+        let briefingBusy = false;
+
+        async function loadBriefing() {
+            const headlineEl = document.getElementById('boomBriefingHeadline');
+            const fullEl = document.getElementById('boomBriefingFull');
+            const toggleEl = document.getElementById('boomBriefingToggle');
+            const metaEl = document.getElementById('boomBriefingMeta');
+            if (!headlineEl) return;
+
+            let parsed = null;
+            try {
+                const res = await fetch('/api/app-settings?key=boom_briefing');
+                const data = await res.json();
+                if (data && data.value) parsed = JSON.parse(data.value);
+            } catch (e) { /* briefing is optional */ }
+
+            if (parsed && parsed.headline) {
+                headlineEl.textContent = parsed.headline;
+                fullEl.textContent = parsed.full || '';
+                toggleEl.style.display = (parsed.full ? '' : 'none');
+                var stamp = parsed.generated ? new Date(parsed.generated).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}) : '';
+                metaEl.innerHTML = (stamp ? 'Generated ' + stamp : '') +
+                    (commissionerMode ? ' <button class="boom-briefing-regen" id="briefingRegenBtn" onclick="regenerateBriefing()">Regenerate</button>' : '');
+            } else {
+                headlineEl.textContent = commissionerMode
+                    ? 'No briefing yet — hit Regenerate to have B.O.O.M. write one.'
+                    : 'B.O.O.M. is between briefings. Check back soon.';
+                toggleEl.style.display = 'none';
+                fullEl.textContent = '';
+                metaEl.innerHTML = commissionerMode
+                    ? '<button class="boom-briefing-regen" id="briefingRegenBtn" onclick="regenerateBriefing()">Regenerate</button>'
+                    : '';
+            }
+        }
+
+        function toggleBriefing() {
+            const panel = document.getElementById('boomBriefing');
+            const toggle = document.getElementById('boomBriefingToggle');
+            const open = panel.classList.toggle('open');
+            toggle.textContent = open ? 'Hide' : 'Read';
+        }
+
+        async function regenerateBriefing() {
+            if (!commissionerMode) return;
+            if (briefingBusy) return;
+            briefingBusy = true;
+            const btn = document.getElementById('briefingRegenBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
+
+            try {
+                const context = (typeof buildLeagueContext === 'function') ? buildLeagueContext() : '';
+                const personaBlock = (typeof buildOwnerPersonas === 'function') ? buildOwnerPersonas('') : '';
+                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest covering the state of the league — who\'s looking strong, who\'s a mess, notable rosters/cap situations, and some pointed trash talk aimed at specific owners using their personas. It is currently 2026 preseason (no games played yet), so focus on roster outlooks, cap/keeper situations, offseason moves, and bold predictions rather than matchup results. Use real player names, salaries, and specifics from the data. Be entertaining and a little savage, but grounded in the actual data.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3-5 tight paragraphs of plain prose — no markdown headers or bullet lists>\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
+
+                const res = await fetch('/api/roast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, model: 'claude-sonnet-5', maxTokens: 1400 })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error || ('Server returned ' + res.status));
+                const raw = (data.text || '').trim();
+                if (!raw) throw new Error('B.O.O.M. returned an empty briefing. Try again.');
+
+                // Parse HEADLINE / BRIEFING out of the response
+                var headline = '', full = '';
+                var hMatch = raw.match(/HEADLINE:\s*([\s\S]*?)(?:\n\s*BRIEFING:|$)/i);
+                var bMatch = raw.match(/BRIEFING:\s*([\s\S]*)$/i);
+                headline = hMatch ? hMatch[1].trim() : raw.split('\n')[0].trim();
+                full = bMatch ? bMatch[1].trim() : raw;
+
+                const payload = { headline: headline, full: full, generated: new Date().toISOString() };
+                await fetch('/api/app-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'boom_briefing', value: JSON.stringify(payload) })
+                });
+                await loadBriefing();
+            } catch (e) {
+                alert('Could not generate briefing: ' + (e.message || 'error'));
+                if (btn) { btn.disabled = false; btn.textContent = 'Regenerate'; }
+            } finally {
+                briefingBusy = false;
+            }
         }
 
         function openEscalationModal() {
