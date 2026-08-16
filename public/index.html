@@ -4608,19 +4608,30 @@
             if (btn) { btn.disabled = true; btn.textContent = 'Generating…'; }
 
             try {
-                const context = (typeof buildLeagueContext === 'function') ? buildLeagueContext() : '';
+                const context = (typeof buildLeagueContext === 'function') ? buildLeagueContext({ skipTradeHistory: true }) : '';
                 const personaBlock = (typeof buildOwnerPersonas === 'function') ? buildOwnerPersonas('') : '';
-                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest covering the state of the league — who\'s looking strong, who\'s a mess, notable rosters/cap situations, and some pointed trash talk aimed at specific owners using their personas. It is currently 2026 preseason (no games played yet), so focus on roster outlooks, cap/keeper situations, offseason moves, and bold predictions rather than matchup results. Use real player names, salaries, and specifics from the data. Be entertaining and a little savage, but grounded in the actual data.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3-5 tight paragraphs of plain prose — no markdown headers or bullet lists>\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
+                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest covering the state of the league — who\'s looking strong, who\'s a mess, notable rosters/cap situations, and some pointed trash talk aimed at specific owners using their personas. It is currently 2026 preseason (no games played yet), so focus on roster outlooks, cap/keeper situations, offseason moves, and bold predictions rather than matchup results. Use real player names, salaries, and specifics from the data. Be entertaining and a little savage, but grounded in the actual data. Keep the whole thing tight — a headline plus 3 short paragraphs.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3 tight paragraphs of plain prose — no markdown headers or bullet lists>\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
 
-                const res = await fetch('/api/roast', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: prompt, model: 'claude-sonnet-5', maxTokens: 1400 })
-                });
-                const data = await res.json();
-                if (!res.ok) throw new Error(data.error || ('Server returned ' + res.status));
-                const raw = (data.text || '').trim();
-                if (!raw) throw new Error('B.O.O.M. returned an empty briefing. Try again.');
+                // Try Sonnet first; if it comes back empty (token/timeout), fall back to Haiku.
+                async function genBriefing(modelId, tokens){
+                    const res = await fetch('/api/roast', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ prompt: prompt, model: modelId, maxTokens: tokens })
+                    });
+                    const data = await res.json();
+                    if (!res.ok) return { text: '', error: (data.error || ('Server returned ' + res.status)) };
+                    return { text: (data.text || '').trim(), stopReason: data.stopReason || null };
+                }
+
+                var out = await genBriefing('claude-sonnet-5', 1100);
+                if (!out.text) {
+                    var fb = await genBriefing('claude-haiku-4-5-20251001', 1100);
+                    if (fb.text) out = fb;
+                    else out.error = fb.error || out.error;
+                }
+                const raw = out.text;
+                if (!raw) throw new Error('empty response' + (out.stopReason ? ' (stop reason: ' + out.stopReason + ')' : '') + (out.error ? ' — ' + out.error : ''));
 
                 // Parse HEADLINE / BRIEFING out of the response
                 var headline = '', full = '';
@@ -5061,7 +5072,8 @@ ${allSummaries}`;
         }
 
         // Build a compact, token-efficient league context for the model.
-        function buildLeagueContext() {
+        function buildLeagueContext(opts) {
+            opts = opts || {};
             const lines = [];
             lines.push(LEAGUE_RULES);
             lines.push('\nROSTER FORMAT: 16 spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE-only, 1 DEF) + 7 bench. $200 salary cap. Salaries escalate yearly (keeper league). Players acquired via waiver-bid auction.');
@@ -5175,8 +5187,9 @@ ${allSummaries}`;
 
             // Detailed trade history — the actual players/picks each side got, so
             // B.O.O.M. can discuss specific past trades (best/worst deals, who fleeced
-            // who, trade tendencies), not just aggregate counts.
-            if (transactionData && Array.isArray(transactionData.transactions) && transactionData.transactions.length) {
+            // who, trade tendencies), not just aggregate counts. Skipped for lighter
+            // contexts (e.g. the briefing) to keep the prompt small and fast.
+            if (!opts.skipTradeHistory && transactionData && Array.isArray(transactionData.transactions) && transactionData.transactions.length) {
                 var canon = function(n){ return (typeof ownerForTeam === 'function' ? ownerForTeam(n) : null) || n; };
 
                 // Format one trade as "SEASON Wk: OwnerA got X, Y  |  OwnerB got Z"
