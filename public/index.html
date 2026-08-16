@@ -1175,6 +1175,63 @@
             padding: 1.25rem;
         }
 
+        .txn-filters {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .txn-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .txn-item {
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--text-secondary);
+            border-radius: 4px;
+            padding: 0.625rem 0.875rem;
+            background: var(--bg-sunken);
+        }
+
+        .txn-item.txn-trade { border-left-color: var(--accent-success); }
+        .txn-item.txn-waiver { border-left-color: var(--accent-warning); }
+        .txn-item.txn-free_agent { border-left-color: var(--text-secondary); }
+
+        .txn-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.25rem;
+            gap: 0.5rem;
+        }
+
+        .txn-type {
+            font-family: var(--font-display);
+            font-size: 0.6875rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            color: var(--accent-primary);
+        }
+
+        .txn-trade .txn-type { color: var(--accent-success); }
+        .txn-waiver .txn-type { color: var(--accent-warning); }
+
+        .txn-meta {
+            font-size: 0.625rem;
+            color: var(--text-muted);
+            font-family: var(--font-mono);
+            white-space: nowrap;
+        }
+
+        .txn-detail {
+            font-size: 0.8125rem;
+            color: var(--text-primary);
+            line-height: 1.45;
+        }
+
         .askboom-team-row {
             display: flex;
             align-items: center;
@@ -2941,6 +2998,7 @@
                 <span>Team Salary Caps</span>
                 <span style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
                     <button class="roast-all-btn askboom-btn" onclick="openAskBoom()">Summon <span class="askboom-btn-boom">B.O.O.M.</span></button>
+                    <button class="roast-all-btn" onclick="openTransactionLog()">Transaction Log</button>
                     <button class="roast-all-btn" onclick="openTradeSimulator()">Trade Simulator</button>
                     <button class="roast-all-btn" onclick="roastAllTeams()">Power Rankings</button>
                 </span>
@@ -3193,6 +3251,29 @@
         <div class="boom-awaken-text">B.O.O.M. IS AWAKENING</div>
     </div>
 
+    <div class="trade-modal" id="txnLogModal">
+        <div class="trade-modal-content">
+            <div class="roast-modal-header">
+                <h3>Transaction Log</h3>
+                <button class="roast-modal-close" onclick="closeTransactionLog()">×</button>
+            </div>
+            <div class="trade-modal-body">
+                <div class="txn-filters" id="txnFilters">
+                    <select id="txnSeasonFilter" class="trade-team-select" style="max-width:140px;" onchange="renderTxnLog()">
+                        <option value="">All seasons</option>
+                    </select>
+                    <select id="txnTypeFilter" class="trade-team-select" style="max-width:160px;" onchange="renderTxnLog()">
+                        <option value="">All types</option>
+                        <option value="trade">Trades</option>
+                        <option value="waiver">Waivers</option>
+                        <option value="free_agent">Free agents</option>
+                    </select>
+                </div>
+                <div class="txn-list" id="txnList"></div>
+            </div>
+        </div>
+    </div>
+
     <div class="trade-modal" id="askBoomModal">
         <div class="trade-modal-content askboom-content">
             <div class="roast-modal-header">
@@ -3250,6 +3331,94 @@
         let scheduleData = null;   // { season, weeks, schedule: { TEAM: { weekly, byes } } }
         let currentNflWeek = null; // from playoff data / state
         let defenseRatings = null; // { season, ranks: { TEAM: {qb,rb,wr,te,overall} }, pointsAllowed }
+        let transactionData = null; // { seasons, transactionCount, ownerStats, transactions }
+        let playersLookup = {};     // player_id -> player object (for name resolution)
+
+        async function loadTransactions() {
+            try {
+                const res = await fetch('/api/get-transactions');
+                transactionData = await res.json();
+            } catch (e) {
+                transactionData = null;
+            }
+        }
+
+        function playerName(pid) {
+            const p = playersLookup[pid];
+            if (!p) return 'Player ' + pid;
+            const nm = ((p.first_name || '') + ' ' + (p.last_name || '')).trim();
+            return nm || (p.position === 'DEF' ? (pid + ' DEF') : ('Player ' + pid));
+        }
+
+        async function openTransactionLog() {
+            document.getElementById('txnLogModal').classList.add('active');
+            const list = document.getElementById('txnList');
+            if (!transactionData) {
+                list.innerHTML = '<div class="roast-loading" style="padding:2rem;text-align:center;">Loading transactions…</div>';
+                await loadTransactions();
+            }
+            // Populate season filter
+            const seasonSel = document.getElementById('txnSeasonFilter');
+            if (transactionData && transactionData.seasons && seasonSel.options.length <= 1) {
+                seasonSel.innerHTML = '<option value="">All seasons</option>' +
+                    transactionData.seasons.map(function(s){ return '<option value="' + s + '">' + s + '</option>'; }).join('');
+            }
+            renderTxnLog();
+        }
+
+        function closeTransactionLog() {
+            document.getElementById('txnLogModal').classList.remove('active');
+        }
+
+        function renderTxnLog() {
+            const list = document.getElementById('txnList');
+            if (!transactionData || !Array.isArray(transactionData.transactions)) {
+                list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">No transactions found.</div>';
+                return;
+            }
+            const seasonF = document.getElementById('txnSeasonFilter').value;
+            const typeF = document.getElementById('txnTypeFilter').value;
+
+            const filtered = transactionData.transactions.filter(function(t){
+                if (seasonF && String(t.season) !== seasonF) return false;
+                if (typeF && t.type !== typeF) return false;
+                return true;
+            });
+
+            if (!filtered.length) {
+                list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">No transactions match that filter.</div>';
+                return;
+            }
+
+            const typeLabel = { trade: 'TRADE', waiver: 'WAIVER', free_agent: 'FREE AGENT' };
+            let html = '';
+            filtered.slice(0, 300).forEach(function(t){
+                const dateTxt = t.created ? new Date(t.created).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}) : '';
+                let detail = '';
+
+                if (t.type === 'trade') {
+                    // Group adds by owner
+                    const byOwner = {};
+                    (t.adds || []).forEach(function(a){ (byOwner[a.owner] = byOwner[a.owner] || []).push(playerName(a.pid)); });
+                    (t.picks || []).forEach(function(pk){ (byOwner[pk.to] = byOwner[pk.to] || []).push(pk.season + ' R' + pk.round + ' pick'); });
+                    detail = Object.keys(byOwner).map(function(o){
+                        return '<strong>' + o + '</strong> gets ' + byOwner[o].join(', ');
+                    }).join('<br>');
+                    if (!detail) detail = (t.owners || []).join(' ↔ ');
+                } else {
+                    const adds = (t.adds || []).map(function(a){ return '+' + playerName(a.pid); });
+                    const drops = (t.drops || []).map(function(d){ return '−' + playerName(d.pid); });
+                    const who = (t.owners && t.owners[0]) ? '<strong>' + t.owners[0] + '</strong> ' : '';
+                    detail = who + [adds.join(', '), drops.join(', ')].filter(Boolean).join(' · ');
+                }
+
+                html += '<div class="txn-item txn-' + t.type + '">' +
+                    '<div class="txn-head"><span class="txn-type">' + (typeLabel[t.type] || t.type) + '</span>' +
+                    '<span class="txn-meta">' + (t.season || '') + ' · W' + t.week + ' · ' + dateTxt + '</span></div>' +
+                    '<div class="txn-detail">' + detail + '</div></div>';
+            });
+            list.innerHTML = html;
+        }
 
         async function loadDefenseRatings() {
             try {
@@ -3557,6 +3726,7 @@
 
             // Store teams globally for pick management
             allTeamsData = teams;
+            playersLookup = data.players || {};
 
             // Load league history in the background so team cards can show titles/records.
             // If it's already loaded, re-render cards immediately with the data.
@@ -4653,6 +4823,7 @@ ${allSummaries}`;
             if (!projectionData) loadProjections();
             if (!scheduleData) loadSchedule();
             if (!defenseRatings) loadDefenseRatings();
+            if (!transactionData) loadTransactions();
             if (!historyData) {
                 fetch('/api/get-history').then(function(r){return r.json();}).then(function(d){ historyData = d; }).catch(function(){});
             }
@@ -4788,6 +4959,20 @@ ${allSummaries}`;
                     lines.push('Career records: ' + careerLine + '.');
                 } catch(e) {}
             }
+
+            // Transaction behavior — who's active, who trades, who spends on waivers
+            if (transactionData && Array.isArray(transactionData.ownerStats) && transactionData.ownerStats.length) {
+                lines.push('\nTRANSACTION BEHAVIOR (across ' + (transactionData.seasons ? transactionData.seasons.join(', ') : 'recent seasons') + ' — use to judge who is active, who trades often, who chases waivers; helps target trade partners):');
+                transactionData.ownerStats
+                    .slice()
+                    .sort(function(a,b){ return (b.trades+b.waivers+b.freeAgents) - (a.trades+a.waivers+a.freeAgents); })
+                    .forEach(function(s){
+                        var parts = [s.trades + ' trades', s.waivers + ' waivers', s.freeAgents + ' FA moves'];
+                        if (s.faabSpent) parts.push('$' + s.faabSpent + ' FAAB spent');
+                        lines.push('- ' + s.owner + ': ' + parts.join(', '));
+                    });
+            }
+
             return lines.join('\n');
         }
 
@@ -4844,7 +5029,7 @@ ${allSummaries}`;
                 convo += (t.role === 'user' ? '\nUSER: ' : '\nB.O.O.M.: ') + t.content;
             });
 
-            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
+            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
 
             try {
                 const res = await fetch('/api/roast', {
