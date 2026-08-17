@@ -2002,17 +2002,16 @@
             padding-bottom: 0.6rem;
             border-bottom: 1px solid rgba(46,204,113,0.15);
         }
-        .vmp-rows { display: flex; flex-direction: column; gap: 0.15rem; }
-        .vmp-row { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.72rem; line-height: 1.35; }
-        .vmp-label { color: #a9c4b6; }
-        .vmp-value { color: #e6f2ea; font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+        .vmp-rows { display: flex; flex-direction: column; gap: 0.25rem; }
+        .vmp-row { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.72rem; line-height: 1.35; align-items: baseline; }
+        .vmp-label { color: #a9c4b6; flex-shrink: 0; max-width: 48%; }
+        .vmp-value { color: #e6f2ea; font-family: var(--font-mono); text-align: right; white-space: normal; word-break: break-word; flex: 1; }
         .vmp-row-key .vmp-label { color: #eafff2; font-weight: 700; }
         .vmp-row-key .vmp-value { color: #6effa8; font-weight: 700; }
         .vmp-divider { height: 1px; background: rgba(46,204,113,0.18); margin: 0.4rem 0; }
         .vmp-note { margin-top: 0.6rem; font-size: 0.625rem; color: #829a8c; line-height: 1.4; font-style: italic; }
         @media (max-width: 480px) {
             .vmp-row { font-size: 0.68rem; }
-            .vmp-value { white-space: normal; }
         }
 
         .loading {
@@ -3853,32 +3852,22 @@
 
             // --- Surplus value setup ---
             // Convert VOR points into dollars so we can flag bargains vs. overpays.
-            // NON-LINEAR: real auction prices scale faster than linearly at the top —
-            // elite players command a scarcity premium far above their raw VOR. So instead
-            // of a flat $/VOR rate (which underprices studs and overprices mid-tier guys),
-            // we weight each player by VOR^CURVE and distribute the league's REAL dollar
-            // pool along that curve. Total dollars stay anchored to actual spending; the
-            // shape shifts money UP to the studs and DOWN from the middle.
+            // LINEAR pricing: the league spends a fixed pool on above-replacement value,
+            // giving a $/VOR rate. Fair value = VOR × rate. This is honest and fully
+            // explainable; it does NOT try to premium studs (in a conserved-dollar system
+            // that just robs the middle class), and it fails interpretably when a
+            // projection is off rather than hiding it behind a curve.
             var salaryById = {};
             (allTeamsData || []).forEach(function(t){
                 (t.players || []).forEach(function(p){ salaryById[p.id] = (typeof p.salary === 'number') ? p.salary : 0; });
             });
-            var VALUE_CURVE = 1.5; // >1 = premium on studs. 1.0 would be the old linear model.
-            var totalWeight = 0, totalSalaryOnValue = 0, totalPosVor = 0;
+            var totalPosVor = 0, totalSalaryOnValue = 0;
             Object.keys(pos).forEach(function(P){
                 pos[P].forEach(function(entry){
                     var vor = entry.proj - baseline[P];
-                    if (vor > 0) {
-                        totalWeight += Math.pow(vor, VALUE_CURVE);
-                        totalSalaryOnValue += (salaryById[entry.pid] || 0);
-                        totalPosVor += vor;
-                    }
+                    if (vor > 0) { totalPosVor += vor; totalSalaryOnValue += (salaryById[entry.pid] || 0); }
                 });
             });
-            // Dollars available to price the value pool (what the league actually spends on
-            // above-replacement players). Fair value = player's weight share of this pool.
-            var valueDollarPool = totalSalaryOnValue > 0 ? totalSalaryOnValue : (totalPosVor * 0.5);
-            // Keep a linear rate around too, for display/reference.
             var dollarsPerVor = totalPosVor > 0 ? (totalSalaryOnValue / totalPosVor) : 0.5;
 
             // Assign each player a VOR, per-game VOR, tier, and surplus value.
@@ -3898,21 +3887,29 @@
                     } else {
                         tier = 'replaceable';
                     }
-                    // Tier-gap flag: big drop-off to the NEXT player at this position.
                     var next = pos[P][rank+1];
                     var dropToNext = next ? (entry.proj - next.proj) : 0;
 
-                    // Fair value via the premium curve: share of the dollar pool by weight.
+                    // Fair value = VOR × the league $/VOR rate.
                     var salary = salaryById[entry.pid] || 0;
-                    var weight = vor > 0 ? Math.pow(vor, VALUE_CURVE) : 0;
-                    var fairDollars = (totalWeight > 0 && weight > 0) ? (weight / totalWeight) * valueDollarPool : 0;
+                    var fairDollars = Math.max(0, vor) * dollarsPerVor;
                     var surplus = Math.round(fairDollars - salary);
+
+                    // Overpay flagging humility: on EXPENSIVE players, the model can't tell a
+                    // true overpay from a projection that underrates the guy. So widen the
+                    // overpay threshold as salary climbs — don't cry "overpay" as loudly on
+                    // pricey players who might just be underprojected. (Bargain side unchanged.)
+                    var overpayThreshold = -8;
+                    if (salary >= 50) overpayThreshold = -22;
+                    else if (salary >= 35) overpayThreshold = -16;
+                    else if (salary >= 20) overpayThreshold = -12;
 
                     byPlayer[entry.pid] = {
                         pos: P, proj: Math.round(entry.proj), posRank: rank+1,
                         vor: Math.round(vor), vorPerGame: Math.round(vorPerGame * 10) / 10,
                         games: games, tier: tier, salary: salary,
                         fairDollars: Math.round(fairDollars), surplus: surplus,
+                        overpayThreshold: overpayThreshold,
                         dropToNext: Math.round(dropToNext)
                     };
                 });
@@ -3935,6 +3932,16 @@
         }
         function invalidateValueCache(){ _valueCache = null; }
 
+        // Verdict category for a player's value, honoring the salary-aware overpay
+        // threshold (expensive players need a bigger gap before we call "overpay").
+        function valueVerdict(v) {
+            if (!v || typeof v.surplus !== 'number') return 'fair';
+            var overpayAt = (typeof v.overpayThreshold === 'number') ? v.overpayThreshold : -8;
+            if (v.surplus >= 8) return 'bargain';
+            if (v.surplus <= overpayAt) return 'overpay';
+            return 'fair';
+        }
+
         // Click a value badge -> show a popover breaking down the exact math.
         function showValueMath(evt, pid) {
             evt.stopPropagation();
@@ -3956,15 +3963,16 @@
             rows += mathRow('Projected games', v.games + ' games');
             rows += mathRow('VOR per game', (v.vorPerGame >= 0 ? '+' : '') + v.vorPerGame + ' pts/gm');
             rows += mathDivider();
-            // Surplus / dollar value (priced on a non-linear curve — studs get a premium)
+            // Surplus / dollar value (linear pricing)
             const fair = v.fairDollars;
-            rows += mathRow('Baseline $/VOR (linear ref)', '$' + dpv.toFixed(2) + ' per VOR point');
-            rows += mathRow('Fair value (premium curve)', '$' + fair + ' — studs priced above linear, depth below');
+            rows += mathRow('League rate', '$' + dpv.toFixed(2) + ' per VOR pt');
+            rows += mathRow('Fair value = VOR × rate', Math.max(0, v.vor) + ' × $' + dpv.toFixed(2) + ' = $' + fair);
             rows += mathRow('Actual salary', '$' + v.salary);
             let verdict = '';
-            if (v.surplus >= 8) verdict = 'BARGAIN — worth about $' + v.surplus + ' more than he costs';
-            else if (v.surplus <= -8) verdict = 'OVERPAY — costs about $' + Math.abs(v.surplus) + ' more than he produces';
-            else verdict = 'Fairly priced (within $8 of fair value)';
+            var vv = valueVerdict(v);
+            if (vv === 'bargain') verdict = 'BARGAIN — worth about $' + v.surplus + ' more than he costs';
+            else if (vv === 'overpay') verdict = 'OVERPAY — costs about $' + Math.abs(v.surplus) + ' more than he produces';
+            else verdict = 'Fairly priced given his cost';
             rows += mathRow('Surplus = fair − salary', '$' + fair + ' − $' + v.salary + ' = ' + (v.surplus >= 0 ? '+$' : '-$') + Math.abs(v.surplus), true);
             if (v.tierCliff) {
                 rows += mathDivider();
@@ -3976,7 +3984,7 @@
             pop.innerHTML =
                 '<div class="vmp-header"><span class="vmp-name">' + name + '</span>' +
                 '<button class="vmp-close" onclick="hideValueMath()">×</button></div>' +
-                '<div class="vmp-verdict ' + (v.surplus >= 8 ? 'vmp-good' : (v.surplus <= -8 ? 'vmp-bad' : 'vmp-neutral')) + '">' + verdict + '</div>' +
+                '<div class="vmp-verdict ' + (vv === 'bargain' ? 'vmp-good' : (vv === 'overpay' ? 'vmp-bad' : 'vmp-neutral')) + '">' + verdict + '</div>' +
                 '<div class="vmp-explain">' + explanation + '</div>' +
                 '<div class="vmp-rows">' + rows + '</div>' +
                 '<div class="vmp-note">Value is measured vs. replacement level at each position and priced against the league\'s actual cap spending. Only as accurate as the underlying projections.</div>';
@@ -4017,15 +4025,14 @@
                 parts.push('He\'s replaceable — ' + v.pos + v.posRank + ', below the last startable ' + v.pos + '. Production you could find on the waiver wire for the minimum.');
             }
 
-            // 2) Price verdict (surplus)
-            if (v.surplus >= 20) {
+            // 2) Price verdict (surplus) — honor the salary-aware overpay threshold
+            var vv2 = valueVerdict(v);
+            if (vv2 === 'bargain' && v.surplus >= 20) {
                 parts.push('And at just $' + v.salary + ', he\'s a massive bargain — producing roughly $' + v.surplus + ' more value than he costs. This is exactly the kind of cheap, high-value contract that wins cap leagues.');
-            } else if (v.surplus >= 8) {
+            } else if (vv2 === 'bargain') {
                 parts.push('At $' + v.salary + ' he\'s good value — about $' + v.surplus + ' of surplus over his price, so he\'s helping your cap, not straining it.');
-            } else if (v.surplus <= -20) {
-                parts.push('But at $' + v.salary + ' he\'s a serious overpay — costing around $' + Math.abs(v.surplus) + ' more than his production is worth. That\'s dead cap you\'d love to move.');
-            } else if (v.surplus <= -8) {
-                parts.push('At $' + v.salary + ' he\'s a mild overpay — roughly $' + Math.abs(v.surplus) + ' more than his value. Not a disaster, but you\'re paying a slight premium.');
+            } else if (vv2 === 'overpay') {
+                parts.push('At $' + v.salary + ' he grades as an overpay — his projection has him about $' + Math.abs(v.surplus) + ' short of his price' + (v.salary >= 35 ? ', though on a pricey player like this that can also mean the projection is underrating him — worth a gut check.' : '.'));
             } else {
                 parts.push('At $' + v.salary + ' he\'s priced about right — his salary and his production line up, so no bargain but no waste either.');
             }
@@ -4104,8 +4111,9 @@
                     var badge = '<span class="val-badge ' + tierClass + '">' + v.pos + v.posRank +
                         (v.vor > 0 ? ' · +' + v.vor + ' VOR' : '') + '</span>';
                     var flag = '';
-                    if (v.surplus >= 8) flag = '<span class="val-flag val-bargain">BARGAIN +$' + v.surplus + '</span>';
-                    else if (v.surplus <= -8) flag = '<span class="val-flag val-overpay">OVERPAY $' + v.surplus + '</span>';
+                    var vvb = valueVerdict(v);
+                    if (vvb === 'bargain') flag = '<span class="val-flag val-bargain">BARGAIN +$' + v.surplus + '</span>';
+                    else if (vvb === 'overpay') flag = '<span class="val-flag val-overpay">OVERPAY $' + v.surplus + '</span>';
                     var cliff = v.tierCliff ? '<span class="val-flag val-cliff">TIER CLIFF</span>' : '';
                     html += '<span class="val-line val-clickable" data-val-player="' + pid + '" onclick="showValueMath(event, \'' + pid + '\')" title="Tap for the math">' + badge + flag + cliff + '</span>';
                 }
@@ -5247,8 +5255,9 @@
                     teamVorTotal += (v.vor > 0 ? v.vor : 0);
                     const vp = [v.pos + v.posRank, v.tier];
                     if (v.vor > 0) vp.push('+' + v.vor + ' VOR');
-                    if (v.surplus >= 8) vp.push('BARGAIN +$' + v.surplus);
-                    else if (v.surplus <= -8) vp.push('OVERPAY $' + v.surplus);
+                    var vvts = valueVerdict(v);
+                    if (vvts === 'bargain') vp.push('BARGAIN +$' + v.surplus);
+                    else if (vvts === 'overpay') vp.push('OVERPAY $' + v.surplus);
                     if (v.tierCliff) vp.push('tier cliff');
                     valTxt = ' [' + vp.join(', ') + ']';
                 }
@@ -5663,8 +5672,9 @@ ${allSummaries}`;
                         const v = valueData.byPlayer[p.id];
                         var vparts = [v.pos + v.posRank, v.tier];
                         if (v.vor > 0) vparts.push('+' + v.vor + ' vor');
-                        if (typeof v.surplus === 'number' && v.surplus >= 8) vparts.push('BARGAIN +$' + v.surplus);
-                        else if (typeof v.surplus === 'number' && v.surplus <= -8) vparts.push('OVERPAY $' + v.surplus);
+                        var vvc = valueVerdict(v);
+                        if (vvc === 'bargain') vparts.push('BARGAIN +$' + v.surplus);
+                        else if (vvc === 'overpay') vparts.push('OVERPAY $' + v.surplus);
                         if (v.tierCliff) vparts.push('tier cliff after him');
                         valTxt = ' [' + vparts.join(', ') + ']';
                     }
@@ -6695,8 +6705,9 @@ ${allSummaries}`;
             const v = val.byPlayer[pid];
             const parts = [v.pos + v.posRank, v.tier];
             if (v.vor > 0) parts.push('+' + v.vor + ' VOR');
-            if (v.surplus >= 8) parts.push('BARGAIN +$' + v.surplus);
-            else if (v.surplus <= -8) parts.push('OVERPAY $' + v.surplus);
+            const vvtr = valueVerdict(v);
+            if (vvtr === 'bargain') parts.push('BARGAIN +$' + v.surplus);
+            else if (vvtr === 'overpay') parts.push('OVERPAY $' + v.surplus);
             if (v.tierCliff) parts.push('tier cliff after him');
             return ' [' + parts.join(', ') + ']';
         }
