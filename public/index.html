@@ -1911,6 +1911,7 @@
             gap: 0.375rem;
             align-items: baseline;
             margin-top: 0.1875rem;
+            flex-wrap: wrap;
         }
 
         .player-proj:empty {
@@ -1929,6 +1930,41 @@
             color: var(--text-muted);
             font-family: var(--font-mono);
         }
+
+        /* Value badges (VOR tier + bargain/overpay/cliff) */
+        .val-line {
+            display: flex;
+            flex-basis: 100%;
+            gap: 0.3rem;
+            margin-top: 0.15rem;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .val-badge {
+            font-family: var(--font-mono);
+            font-size: 0.5625rem;
+            font-weight: 700;
+            padding: 0.05rem 0.35rem;
+            border-radius: 4px;
+            letter-spacing: 0.02em;
+            border: 1px solid transparent;
+        }
+        .val-elite   { color: #6effa8; background: rgba(46,204,113,0.16); border-color: rgba(46,204,113,0.5); }
+        .val-strong  { color: #9be8b8; background: rgba(46,204,113,0.10); border-color: rgba(46,204,113,0.3); }
+        .val-solid-starter  { color: #cfe8da; background: rgba(255,255,255,0.05); }
+        .val-fringe-starter { color: #a89f8d; background: rgba(255,255,255,0.04); }
+        .val-replaceable    { color: #8a8175; background: rgba(255,255,255,0.03); }
+        .val-flag {
+            font-family: var(--font-mono);
+            font-size: 0.5312rem;
+            font-weight: 800;
+            padding: 0.05rem 0.35rem;
+            border-radius: 4px;
+            letter-spacing: 0.03em;
+        }
+        .val-bargain { color: #052e16; background: #4ade80; }
+        .val-overpay { color: #fff1f1; background: #b91c1c; }
+        .val-cliff   { color: #1a1205; background: #f5c451; }
 
         .loading {
             text-align: center;
@@ -3764,14 +3800,34 @@
                 baseline[P] = (idx >= 0 && pos[P][idx]) ? pos[P][idx].proj : 0;
             });
 
-            // Assign each player a VOR (points above replacement) and a tier.
+            // --- Surplus value setup ---
+            // Convert VOR points into dollars so we can flag bargains vs. overpays.
+            // Rate = total salary spent on positive-VOR players / total positive VOR.
+            // Then a player's "fair $" = VOR * rate, and surplus = fair$ - actual salary.
+            var salaryById = {};
+            (allTeamsData || []).forEach(function(t){
+                (t.players || []).forEach(function(p){ salaryById[p.id] = (typeof p.salary === 'number') ? p.salary : 0; });
+            });
+            var totalPosVor = 0, totalSalaryOnValue = 0;
+            Object.keys(pos).forEach(function(P){
+                pos[P].forEach(function(entry){
+                    var vor = entry.proj - baseline[P];
+                    if (vor > 0) { totalPosVor += vor; totalSalaryOnValue += (salaryById[entry.pid] || 0); }
+                });
+            });
+            // $ per VOR point (fallback to a small positive rate if data is thin).
+            var dollarsPerVor = totalPosVor > 0 ? (totalSalaryOnValue / totalPosVor) : 0.5;
+
+            // Assign each player a VOR, per-game VOR, tier, and surplus value.
             const byPlayer = {};
             Object.keys(pos).forEach(function(P){
+                const startersHere = claimed[P];
                 pos[P].forEach(function(entry, rank){
                     const vor = entry.proj - baseline[P];
+                    const games = (typeof projectedGames === 'function') ? projectedGames(entry.pid) : 17;
+                    const vorPerGame = games > 0 ? vor / games : vor;
                     let tier;
-                    if (rank < claimed[P]) {
-                        // A starter-level player. Tier by how far above replacement.
+                    if (rank < startersHere) {
                         if (vor >= baseline[P] * 0.45) tier = 'elite';
                         else if (vor >= baseline[P] * 0.20) tier = 'strong';
                         else if (vor > 0) tier = 'solid starter';
@@ -3779,11 +3835,38 @@
                     } else {
                         tier = 'replaceable';
                     }
-                    byPlayer[entry.pid] = { pos: P, proj: Math.round(entry.proj), posRank: rank+1, vor: Math.round(vor), tier: tier };
+                    // Tier-gap flag: big drop-off to the NEXT player at this position.
+                    var next = pos[P][rank+1];
+                    var dropToNext = next ? (entry.proj - next.proj) : 0;
+
+                    // Surplus value: positive = bargain, negative = overpay.
+                    var salary = salaryById[entry.pid] || 0;
+                    var fairDollars = Math.max(0, vor) * dollarsPerVor;
+                    var surplus = Math.round(fairDollars - salary);
+
+                    byPlayer[entry.pid] = {
+                        pos: P, proj: Math.round(entry.proj), posRank: rank+1,
+                        vor: Math.round(vor), vorPerGame: Math.round(vorPerGame * 10) / 10,
+                        games: games, tier: tier, salary: salary,
+                        fairDollars: Math.round(fairDollars), surplus: surplus,
+                        dropToNext: Math.round(dropToNext)
+                    };
                 });
             });
 
-            _valueCache = { byPlayer: byPlayer, baseline: baseline, starters: claimed };
+            // Mark tier cliffs: within each position, flag the players sitting just above
+            // an unusually large drop (a "tier break") so B.O.O.M. can time draft/trades.
+            Object.keys(pos).forEach(function(P){
+                var drops = pos[P].map(function(e, i){ var n = pos[P][i+1]; return n ? e.proj - n.proj : 0; });
+                var avgDrop = drops.reduce(function(a,b){return a+b;},0) / (drops.length || 1);
+                pos[P].forEach(function(entry, rank){
+                    var d = byPlayer[entry.pid] && byPlayer[entry.pid].dropToNext;
+                    // A "cliff" is a drop-off notably larger than the position's average.
+                    if (byPlayer[entry.pid]) byPlayer[entry.pid].tierCliff = (d && d > avgDrop * 2 && d >= 15) ? true : false;
+                });
+            });
+
+            _valueCache = { byPlayer: byPlayer, baseline: baseline, starters: claimed, dollarsPerVor: dollarsPerVor };
             return _valueCache;
         }
         function invalidateValueCache(){ _valueCache = null; }
@@ -3815,13 +3898,27 @@
 
         function applyProjectionsToRows() {
             if (!projectionData) return;
+            const val = (typeof computePositionalValue === 'function') ? computePositionalValue() : null;
             document.querySelectorAll('.player-proj').forEach(function(el) {
                 const pid = el.getAttribute('data-proj-player');
                 const total = projectedSeasonPoints(pid);
                 if (total === null) { el.innerHTML = ''; return; }
                 const perGame = projectedPerGame(pid);
-                el.innerHTML = '<span class="proj-total">' + Math.round(total) + ' pts</span>' +
+                var html = '<span class="proj-total">' + Math.round(total) + ' pts</span>' +
                     '<span class="proj-pergame">' + perGame.toFixed(1) + '/gm</span>';
+                // Value badge (tier + VOR + bargain/overpay/cliff)
+                if (val && val.byPlayer[pid]) {
+                    var v = val.byPlayer[pid];
+                    var tierClass = 'val-' + v.tier.replace(/\s+/g, '-');
+                    var badge = '<span class="val-badge ' + tierClass + '">' + v.pos + v.posRank +
+                        (v.vor > 0 ? ' · +' + v.vor + ' VOR' : '') + '</span>';
+                    var flag = '';
+                    if (v.surplus >= 8) flag = '<span class="val-flag val-bargain">BARGAIN +$' + v.surplus + '</span>';
+                    else if (v.surplus <= -8) flag = '<span class="val-flag val-overpay">OVERPAY $' + v.surplus + '</span>';
+                    var cliff = v.tierCliff ? '<span class="val-flag val-cliff">TIER CLIFF</span>' : '';
+                    html += '<span class="val-line">' + badge + flag + cliff + '</span>';
+                }
+                el.innerHTML = html;
             });
         }
 
@@ -5340,7 +5437,12 @@ ${allSummaries}`;
                     let valTxt = '';
                     if (valueData && valueData.byPlayer[p.id] && (isMine || p.salary >= 10)) {
                         const v = valueData.byPlayer[p.id];
-                        valTxt = ' [' + v.pos + v.posRank + ', ' + v.tier + (v.vor > 0 ? ', +' + v.vor + ' vor' : '') + ']';
+                        var vparts = [v.pos + v.posRank, v.tier];
+                        if (v.vor > 0) vparts.push('+' + v.vor + ' vor');
+                        if (typeof v.surplus === 'number' && v.surplus >= 8) vparts.push('BARGAIN +$' + v.surplus);
+                        else if (typeof v.surplus === 'number' && v.surplus <= -8) vparts.push('OVERPAY $' + v.surplus);
+                        if (v.tierCliff) vparts.push('tier cliff after him');
+                        valTxt = ' [' + vparts.join(', ') + ']';
                     }
                     return p.name + ' (' + p.position + ' $' + p.salary + projTxt + valTxt + ')';
                 }).join(', ');
@@ -5357,7 +5459,7 @@ ${allSummaries}`;
             // How to read the value tags — critical so B.O.O.M. doesn't mistake "cheap"
             // for "bad". Value is measured AGAINST replacement level at each position.
             if (valueData) {
-                lines.push('\nHOW TO READ VALUE: Each player is tagged [POSITION-RANK, tier, +VOR] where rank is their projected finish at their position across the league, and VOR is projected points ABOVE the last startable player at that position (this league starts 1QB/2RB/2WR/1TE + flex over 10 teams). Tiers: elite > strong > solid starter > fringe starter > replaceable. JUDGE VALUE BY THIS, NOT BY SALARY. A cheap player with a high rank and positive VOR is a BARGAIN and a strength (e.g. a $7 QB ranked QB6 is excellent value, not a weakness). Only call a cheap player a weakness if their tier is "fringe starter" or "replaceable". Salary matters for cap flexibility, but a low salary on a high-value player is the best thing you can have in a cap league.');
+                lines.push('\nHOW TO READ VALUE: Each player is tagged [POSITION-RANK, tier, +VOR, value flag, cliff]. VOR = projected points ABOVE the last startable player at that position (this league starts 1QB/2RB/2WR/1TE + flex over 10 teams). Tiers: elite > strong > solid starter > fringe starter > replaceable. "BARGAIN +$N" means the player is producing about $N MORE value than his salary (a steal); "OVERPAY $-N" means he costs about $N more than his production is worth. "tier cliff after him" means there is a big drop-off to the next player at his position — so he is scarcer/more valuable than VOR alone suggests, and losing him is hard to replace. JUDGE VALUE BY THESE TAGS, NOT BY RAW SALARY: a cheap player with a high rank, positive VOR, and a BARGAIN flag is a strength, never a weakness. Lead with bargains and overpays when discussing value or trades, and use tier cliffs to advise draft/trade timing (grab the last player before a cliff; don\'t reach after one).');
             }
 
             // STANDINGS / RECORD context — dormant in preseason, lights up once games
