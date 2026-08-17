@@ -3858,15 +3858,25 @@
             Object.keys(pos).forEach(function(P){
                 const list = pos[P];
                 if (!list.length) { baseline[P] = 0; return; }
-                if (haveFA && typeof availableAtPosition === 'function') {
-                    // Real replacement = best available free agent's projection at this position.
-                    const fa = availableAtPosition(P);
-                    if (fa.length) { baseline[P] = fa[0].proj; return; }
-                }
-                // Fallback: fraction of the last starter's projection.
+                // Fraction-of-last-starter is the robust default.
                 const lastStarterIdx = Math.min(starterLine[P] - 1, list.length - 1);
                 const lastStarterProj = list[lastStarterIdx] ? list[lastStarterIdx].proj : 0;
-                baseline[P] = lastStarterProj * REPLACEMENT_FRACTION;
+                const fractionBaseline = lastStarterProj * REPLACEMENT_FRACTION;
+
+                if (haveFA && typeof availableAtPosition === 'function') {
+                    const fa = availableAtPosition(P);
+                    // Real replacement = best available free agent — BUT only trust it if it's
+                    // actually replacement-level (i.e. BELOW the last starter). Pre-draft,
+                    // Sleeper rosters are often empty, so studs wrongly show as "available"
+                    // and the best "free agent" can outrank real starters — which is
+                    // impossible for a true replacement. In that case the FA data is
+                    // unreliable, so we ignore it and use the fraction fallback.
+                    if (fa.length && fa[0].proj < lastStarterProj) {
+                        baseline[P] = fa[0].proj;
+                        return;
+                    }
+                }
+                baseline[P] = fractionBaseline;
             });
 
             // --- Surplus value setup ---
@@ -5762,19 +5772,38 @@ ${allSummaries}`;
             }
 
             // BEST AVAILABLE (waiver/free-agent pickup targets) — the top unrostered
-            // players at each position by projected points, so B.O.O.M. can recommend real
-            // pickups. Only present when we have free-agent data.
+            // players at each position by projected points. Only shown when the free-agent
+            // data looks RELIABLE: pre-draft, Sleeper rosters are often empty so studs wrongly
+            // appear "available". We detect that (a free agent outranking real starters) and
+            // suppress the block rather than suggest picking up someone's stud.
             if (typeof availableData === 'object' && availableData && Array.isArray(availableData.available) && availableData.available.length && typeof availableAtPosition === 'function') {
-                var faLines = [];
-                ['QB','RB','WR','TE'].forEach(function(P){
-                    var top = availableAtPosition(P).slice(0, 5);
-                    if (!top.length) return;
-                    var names = top.map(function(x){ return x.name + ' (~' + Math.round(x.proj) + ' pts)'; }).join(', ');
-                    faLines.push(P + ': ' + names);
-                });
-                if (faLines.length) {
-                    lines.push('\nBEST AVAILABLE (FREE AGENTS / WAIVER WIRE — these players are NOT on any roster and can be picked up; top options by projected points per position). Use these to recommend real pickups and upgrades over weak rostered players:');
-                    faLines.forEach(function(l){ lines.push('- ' + l); });
+                // Reliability check: the best available player at each position should be
+                // BELOW that position's top rostered starter. If any position's "best FA"
+                // outranks the field, the roster data is stale/empty — skip the whole block.
+                var faReliable = true;
+                // Use the computed baseline as the sanity yardstick: a legit free agent should
+                // be at or below replacement. If the best FA is well ABOVE replacement, it's
+                // a misclassified rostered stud → unreliable.
+                var vd = (typeof computePositionalValue === 'function') ? computePositionalValue() : null;
+                if (vd && vd.baseline) {
+                    ['QB','RB','WR','TE'].forEach(function(P){
+                        var topFA = availableAtPosition(P)[0];
+                        if (topFA && vd.baseline[P] && topFA.proj > vd.baseline[P] * 1.25) faReliable = false;
+                    });
+                } else { faReliable = false; }
+
+                if (faReliable) {
+                    var faLines = [];
+                    ['QB','RB','WR','TE'].forEach(function(P){
+                        var top = availableAtPosition(P).slice(0, 5);
+                        if (!top.length) return;
+                        var names = top.map(function(x){ return x.name + ' (~' + Math.round(x.proj) + ' pts)'; }).join(', ');
+                        faLines.push(P + ': ' + names);
+                    });
+                    if (faLines.length) {
+                        lines.push('\nBEST AVAILABLE (FREE AGENTS / WAIVER WIRE — not on any roster, can be picked up; top options by projected points per position). Use these to recommend real pickups and upgrades over weak rostered players:');
+                        faLines.forEach(function(l){ lines.push('- ' + l); });
+                    }
                 }
             }
 
