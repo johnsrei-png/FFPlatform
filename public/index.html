@@ -1994,6 +1994,14 @@
         .vmp-good { background: rgba(74,222,128,0.18); color: #6effa8; }
         .vmp-bad { background: rgba(185,28,28,0.22); color: #ff9b9b; }
         .vmp-neutral { background: rgba(255,255,255,0.06); color: #cfe8da; }
+        .vmp-explain {
+            font-size: 0.72rem;
+            line-height: 1.5;
+            color: #cfe0d6;
+            margin-bottom: 0.65rem;
+            padding-bottom: 0.6rem;
+            border-bottom: 1px solid rgba(46,204,113,0.15);
+        }
         .vmp-rows { display: flex; flex-direction: column; gap: 0.15rem; }
         .vmp-row { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.72rem; line-height: 1.35; }
         .vmp-label { color: #a9c4b6; }
@@ -3950,10 +3958,13 @@
                 rows += mathRow('Tier cliff', 'Big drop-off (' + v.dropToNext + ' pts) to the next ' + v.pos + ' — he is scarcer than VOR alone implies');
             }
 
+            const explanation = valueExplanation(v);
+
             pop.innerHTML =
                 '<div class="vmp-header"><span class="vmp-name">' + name + '</span>' +
                 '<button class="vmp-close" onclick="hideValueMath()">×</button></div>' +
                 '<div class="vmp-verdict ' + (v.surplus >= 8 ? 'vmp-good' : (v.surplus <= -8 ? 'vmp-bad' : 'vmp-neutral')) + '">' + verdict + '</div>' +
+                '<div class="vmp-explain">' + explanation + '</div>' +
                 '<div class="vmp-rows">' + rows + '</div>' +
                 '<div class="vmp-note">Value is measured vs. replacement level at each position and priced against the league\'s actual cap spending. Only as accurate as the underlying projections.</div>';
 
@@ -3975,6 +3986,45 @@
             pop.style.left = left + 'px';
             pop.style.top = top + 'px';
         }
+        // Plain-English "why this value" summary, built from the same computed numbers.
+        function valueExplanation(v) {
+            const posName = { QB:'quarterback', RB:'running back', WR:'receiver', TE:'tight end' }[v.pos] || v.pos;
+            const parts = [];
+
+            // 1) On-field quality (tier + rank + VOR)
+            if (v.tier === 'elite') {
+                parts.push('He\'s an elite ' + posName + ' — ' + v.pos + v.posRank + ' in the league, projected ' + v.vor + ' points above a replacement-level starter. This is a top-of-position anchor.');
+            } else if (v.tier === 'strong') {
+                parts.push('He\'s a strong starter — ' + v.pos + v.posRank + ', about ' + v.vor + ' points above replacement. Well above the guy you\'d stream off waivers.');
+            } else if (v.tier === 'solid starter') {
+                parts.push('He\'s a solid, playable starter — ' + v.pos + v.posRank + ', a bit above replacement level. Gets the job done without moving the needle.');
+            } else if (v.tier === 'fringe starter') {
+                parts.push('He\'s a fringe starter — ' + v.pos + v.posRank + ', right around replacement level. Startable in a pinch, but easily replaced.');
+            } else {
+                parts.push('He\'s replaceable — ' + v.pos + v.posRank + ', below the last startable ' + v.pos + '. Production you could find on the waiver wire for the minimum.');
+            }
+
+            // 2) Price verdict (surplus)
+            if (v.surplus >= 20) {
+                parts.push('And at just $' + v.salary + ', he\'s a massive bargain — producing roughly $' + v.surplus + ' more value than he costs. This is exactly the kind of cheap, high-value contract that wins cap leagues.');
+            } else if (v.surplus >= 8) {
+                parts.push('At $' + v.salary + ' he\'s good value — about $' + v.surplus + ' of surplus over his price, so he\'s helping your cap, not straining it.');
+            } else if (v.surplus <= -20) {
+                parts.push('But at $' + v.salary + ' he\'s a serious overpay — costing around $' + Math.abs(v.surplus) + ' more than his production is worth. That\'s dead cap you\'d love to move.');
+            } else if (v.surplus <= -8) {
+                parts.push('At $' + v.salary + ' he\'s a mild overpay — roughly $' + Math.abs(v.surplus) + ' more than his value. Not a disaster, but you\'re paying a slight premium.');
+            } else {
+                parts.push('At $' + v.salary + ' he\'s priced about right — his salary and his production line up, so no bargain but no waste either.');
+            }
+
+            // 3) Scarcity note
+            if (v.tierCliff) {
+                parts.push('One more thing: there\'s a steep drop-off to the next ' + posName + ' after him, so he\'s scarcer than the raw value suggests — losing him would be hard to replace.');
+            }
+
+            return parts.join(' ');
+        }
+
         function mathRow(label, value, emphasize) {
             return '<div class="vmp-row' + (emphasize ? ' vmp-row-key' : '') + '"><span class="vmp-label">' + label + '</span><span class="vmp-value">' + value + '</span></div>';
         }
@@ -5378,24 +5428,29 @@ Start at 1 for the BEST team and count up to ${allTeamsData.length} for the WORS
 ${allSummaries}`;
 
             try {
-                const response = await fetch("/api/roast", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        prompt,
-                        model: "claude-sonnet-5",
-                        maxTokens: 1600
-                    })
-                });
-
-                const data = await response.json();
-                if (!response.ok) {
-                    throw new Error(data.error || 'Roast failed');
+                async function callRankings(modelId, tokens){
+                    const r = await fetch("/api/roast", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ prompt, model: modelId, maxTokens: tokens })
+                    });
+                    const d = await r.json();
+                    if (!r.ok) return { text: '', error: (d.error || ('Server returned ' + r.status)) };
+                    return { text: (d.text || '').trim(), stopReason: d.stopReason || null };
                 }
-                const text = (data.text || '').trim();
+
+                // Ranking 10+ teams needs room; 2600 tokens keeps it from truncating.
+                // If Sonnet comes back empty or truncated, fall back to fast Haiku.
+                let out = await callRankings("claude-sonnet-5", 2600);
+                if (!out.text || out.stopReason === 'max_tokens') {
+                    const fb = await callRankings("claude-haiku-4-5-20251001", 2600);
+                    if (fb.text) out = fb;
+                    else if (fb.error) out.error = fb.error || out.error;
+                }
+                const text = out.text;
 
                 if (!text) {
-                    body.innerHTML = '<div style="color: var(--accent-danger);">The analysis came back empty. Try again.</div>';
+                    body.innerHTML = '<div style="color: var(--accent-danger);">The analysis came back empty' + (out.stopReason ? ' (' + out.stopReason + ')' : '') + (out.error ? ': ' + out.error : '') + '. Try again.</div>';
                     return;
                 }
 
