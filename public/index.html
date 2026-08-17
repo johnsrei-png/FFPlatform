@@ -4005,13 +4005,21 @@
         }
 
         async function loadProjections() {
-            try {
-                const res = await fetch('/api/get-projections?season=2025');
-                const data = await res.json();
-                projectionData = data.projections || null;
-            } catch (e) {
-                projectionData = null;
+            async function fetchProj(season) {
+                try {
+                    const res = await fetch('/api/get-projections?season=' + season);
+                    const data = await res.json();
+                    const proj = data.projections || null;
+                    // Consider it usable only if it actually has entries.
+                    if (proj && Object.keys(proj).length > 0) return proj;
+                    return null;
+                } catch (e) { return null; }
             }
+            // Prefer 2026 (upcoming season); fall back to 2025 if 2026 isn't available yet
+            // so the app never goes blank on projections.
+            let proj = await fetchProj('2026');
+            if (!proj) proj = await fetchProj('2025');
+            projectionData = proj;
             invalidateValueCache();
             applyProjectionsToRows();
         }
