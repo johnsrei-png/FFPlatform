@@ -3184,6 +3184,7 @@
                 <button class="roast-all-btn" onclick="openMatchups()">Matchups</button>
                 <button class="roast-all-btn" onclick="openTradeSimulator()">Trade Simulator</button>
                 <button class="roast-all-btn" onclick="roastAllTeams()">Power Rankings</button>
+                <button class="roast-all-btn" onclick="downloadKeeperSheet()">Download Keepers</button>
             </div>
 
             <h2 class="section-title">Recent Transactions</h2>
@@ -3512,6 +3513,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <script>
         const LEAGUE_ID = '1312069771746885632'; // Your Sleeper league ID
         const SALARY_CAP = 200;
@@ -3582,7 +3584,107 @@
             document.getElementById('txnLogModal').classList.remove('active');
         }
 
-        // ===== Weekly Matchups display =====
+        // ===== Keeper spreadsheet download (matches the league's original format) =====
+        async function downloadKeeperSheet() {
+            if (typeof ExcelJS === 'undefined') { alert('Spreadsheet library still loading, give it a second and try again.'); return; }
+            if (!allTeamsData || !allTeamsData.length) { alert('Roster data not loaded yet.'); return; }
+
+            const FONT = 'Helvetica Neue', BLACK='FF000000', WHITE='FFFFFFFF', GRAY='FF808080', BLUE='FF00B0F0', SILVER='FFC0C0C0';
+            const wb = new ExcelJS.Workbook();
+            const ws = wb.addWorksheet('Keepers');
+
+            // Column widths: A rank, then per team [spacer, Pos, Name, Sal]
+            ws.getColumn(1).width = 4.13;
+            const teamCols = []; // [posCol, nameCol, salCol] 1-indexed
+            let col = 3;
+            for (let i=0;i<5;i++){
+                ws.getColumn(col-1).width = 1.13; // spacer
+                ws.getColumn(col).width = 6.13;   // Pos
+                ws.getColumn(col+1).width = 20.13;// Name
+                ws.getColumn(col+2).width = 6.13; // Sal
+                teamCols.push([col, col+1, col+2]);
+                col += 4;
+            }
+            const lastCol = teamCols[4][2];
+
+            const thin = { style:'thin' };
+            const border = { top:thin, left:thin, right:thin, bottom:thin };
+            const fill = (rgb) => ({ type:'pattern', pattern:'solid', fgColor:{argb:rgb} });
+            const center = { horizontal:'center', vertical:'middle' };
+
+            // Title
+            ws.mergeCells(1, 1, 1, lastCol);
+            const title = ws.getCell(1,1);
+            title.value = 'Boom Boom Room Keepers — ' + new Date().toLocaleDateString();
+            title.font = { name:FONT, size:20, bold:true, color:{argb:SILVER} };
+            title.fill = fill(BLUE); title.alignment = center;
+            ws.getRow(1).height = 30;
+            const kp = ws.getCell(3,1); kp.value = 'Keeper Prices'; kp.font = { name:FONT, size:10, bold:true };
+
+            function writeBand(startRow, bandTeams) {
+                const nickRow = startRow, hdrRow = startRow+1, firstPlayer = startRow+2;
+                let maxPlayers = 0;
+                bandTeams.forEach(t => { maxPlayers = Math.max(maxPlayers, (t.players||[]).length); });
+
+                bandTeams.forEach((tm, slot) => {
+                    const [pcol, ncol, scol] = teamCols[slot];
+                    // Nickname (merged Name+Sal)
+                    ws.mergeCells(nickRow, ncol, nickRow, scol);
+                    const nc = ws.getCell(nickRow, ncol);
+                    nc.value = tm.name || '';
+                    nc.font = { name:FONT, size:12, bold:true, color:{argb:WHITE} };
+                    nc.fill = fill(BLACK); nc.alignment = center;
+                    // Header row: Pos / (blank owner slot uses "Player") / Sal.
+                    [[pcol,'Pos'],[ncol,'Player'],[scol,'Sal.']].forEach(([cc,label]) => {
+                        const h = ws.getCell(hdrRow, cc);
+                        h.value = label;
+                        h.font = { name:FONT, size:9, bold:true, color:{argb:WHITE} };
+                        h.fill = fill(BLACK); h.alignment = center;
+                    });
+                    // Players (already salary-sorted desc)
+                    (tm.players||[]).forEach((pl, i) => {
+                        const r = firstPlayer + i;
+                        const pc = ws.getCell(r, pcol); pc.value = pl.position; pc.alignment = center;
+                        const nm = ws.getCell(r, ncol); nm.value = pl.name;
+                        const sc = ws.getCell(r, scol); sc.value = pl.salary; sc.alignment = center;
+                        [pc,nm,sc].forEach(cx => { cx.font = { name:FONT, size:10, bold:true }; cx.border = border; });
+                    });
+                });
+                // Rank numbers in column A
+                for (let i=0;i<maxPlayers;i++){
+                    const a = ws.getCell(firstPlayer+i, 1); a.value = i+1;
+                    a.font = { name:FONT, size:9, bold:true }; a.alignment = center;
+                }
+                // Total Salary + Remaining rows
+                const totRow = firstPlayer + maxPlayers, remRow = totRow + 1;
+                bandTeams.forEach((tm, slot) => {
+                    const [pcol, ncol, scol] = teamCols[slot];
+                    const colL = ws.getColumn(scol).letter;
+                    const tl = ws.getCell(totRow, ncol); tl.value = 'Total Salary';
+                    const tv = ws.getCell(totRow, scol); tv.value = { formula: `SUM(${colL}${firstPlayer}:${colL}${firstPlayer+maxPlayers-1})` };
+                    const rl = ws.getCell(remRow, ncol); rl.value = 'Remaining';
+                    const rv = ws.getCell(remRow, scol); rv.value = { formula: `200-${colL}${totRow}` };
+                    [tl,tv,rl,rv].forEach(cx => { cx.font = { name:FONT, size:9, bold:true, color:{argb:WHITE} }; cx.fill = fill(GRAY); cx.alignment = center; });
+                });
+                return remRow;
+            }
+
+            const band1 = allTeamsData.slice(0,5);
+            const band2 = allTeamsData.slice(5,10);
+            const end1 = writeBand(5, band1);
+            if (band2.length) writeBand(end1+3, band2);
+
+            // Download
+            const buf = await wb.xlsx.writeBuffer();
+            const blob = new Blob([buf], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            const stamp = new Date().toISOString().slice(0,10);
+            a.href = url; a.download = 'BBR_Keepers_' + stamp + '.xlsx';
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
         async function openMatchups() {
             document.getElementById('matchupsModal').classList.add('active');
             const list = document.getElementById('matchupsList');
