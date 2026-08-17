@@ -1964,6 +1964,7 @@
         }
         .val-bargain { color: #052e16; background: #4ade80; }
         .val-overpay { color: #fff1f1; background: #b91c1c; }
+        .val-pricey { color: #3a2c05; background: #e8b04a; }
         .val-cliff   { color: #1a1205; background: #f5c451; }
         .val-clickable { cursor: pointer; }
         .val-clickable:hover { filter: brightness(1.08); }
@@ -1993,6 +1994,7 @@
         }
         .vmp-good { background: rgba(74,222,128,0.18); color: #6effa8; }
         .vmp-bad { background: rgba(185,28,28,0.22); color: #ff9b9b; }
+        .vmp-warn { background: rgba(232,176,74,0.20); color: #f0c77e; }
         .vmp-neutral { background: rgba(255,255,255,0.06); color: #cfe8da; }
         .vmp-explain {
             font-size: 0.72rem;
@@ -3895,21 +3897,20 @@
                     var fairDollars = Math.max(0, vor) * dollarsPerVor;
                     var surplus = Math.round(fairDollars - salary);
 
-                    // Overpay flagging humility: on EXPENSIVE players, the model can't tell a
-                    // true overpay from a projection that underrates the guy. So widen the
-                    // overpay threshold as salary climbs — don't cry "overpay" as loudly on
-                    // pricey players who might just be underprojected. (Bargain side unchanged.)
-                    var overpayThreshold = -8;
-                    if (salary >= 50) overpayThreshold = -22;
-                    else if (salary >= 35) overpayThreshold = -16;
-                    else if (salary >= 20) overpayThreshold = -12;
+                    // Overpay requires TWO signals to agree: the player costs more than his
+                    // value (negative surplus) AND the projection actually thinks he's
+                    // mediocre (a weak tier). An expensive player the projection still rates
+                    // as elite/strong/solid isn't an "overpay" — he's just PRICEY, which is a
+                    // softer flag. This stops the model from harshly stamping OVERPAY on studs
+                    // it might simply be underprojecting (e.g. a $67 RB the data has at RB9).
+                    var weakTier = (tier === 'fringe starter' || tier === 'replaceable');
 
                     byPlayer[entry.pid] = {
                         pos: P, proj: Math.round(entry.proj), posRank: rank+1,
                         vor: Math.round(vor), vorPerGame: Math.round(vorPerGame * 10) / 10,
                         games: games, tier: tier, salary: salary,
                         fairDollars: Math.round(fairDollars), surplus: surplus,
-                        overpayThreshold: overpayThreshold,
+                        weakTier: weakTier,
                         dropToNext: Math.round(dropToNext)
                     };
                 });
@@ -3932,13 +3933,17 @@
         }
         function invalidateValueCache(){ _valueCache = null; }
 
-        // Verdict category for a player's value, honoring the salary-aware overpay
-        // threshold (expensive players need a bigger gap before we call "overpay").
+        // Verdict category for a player's value. An OVERPAY requires two signals to agree:
+        // costs more than his value AND the projection rates him weak (fringe/replaceable).
+        // An expensive-but-well-rated player who still costs too much is 'pricey' (soft),
+        // not an overpay — the model may just be underprojecting a stud.
+        // Returns 'bargain' | 'overpay' | 'pricey' | 'fair'.
         function valueVerdict(v) {
             if (!v || typeof v.surplus !== 'number') return 'fair';
-            var overpayAt = (typeof v.overpayThreshold === 'number') ? v.overpayThreshold : -8;
             if (v.surplus >= 8) return 'bargain';
-            if (v.surplus <= overpayAt) return 'overpay';
+            if (v.surplus <= -8) {
+                return v.weakTier ? 'overpay' : 'pricey';
+            }
             return 'fair';
         }
 
@@ -3971,7 +3976,8 @@
             let verdict = '';
             var vv = valueVerdict(v);
             if (vv === 'bargain') verdict = 'BARGAIN — worth about $' + v.surplus + ' more than he costs';
-            else if (vv === 'overpay') verdict = 'OVERPAY — costs about $' + Math.abs(v.surplus) + ' more than he produces';
+            else if (vv === 'overpay') verdict = 'OVERPAY — a weak-tier player costing about $' + Math.abs(v.surplus) + ' more than he produces';
+            else if (vv === 'pricey') verdict = 'PRICEY — costs about $' + Math.abs(v.surplus) + ' more than his projection, but he\'s well-rated enough that the projection may be underselling him';
             else verdict = 'Fairly priced given his cost';
             rows += mathRow('Surplus = fair − salary', '$' + fair + ' − $' + v.salary + ' = ' + (v.surplus >= 0 ? '+$' : '-$') + Math.abs(v.surplus), true);
             if (v.tierCliff) {
@@ -3984,7 +3990,7 @@
             pop.innerHTML =
                 '<div class="vmp-header"><span class="vmp-name">' + name + '</span>' +
                 '<button class="vmp-close" onclick="hideValueMath()">×</button></div>' +
-                '<div class="vmp-verdict ' + (vv === 'bargain' ? 'vmp-good' : (vv === 'overpay' ? 'vmp-bad' : 'vmp-neutral')) + '">' + verdict + '</div>' +
+                '<div class="vmp-verdict ' + (vv === 'bargain' ? 'vmp-good' : (vv === 'overpay' ? 'vmp-bad' : (vv === 'pricey' ? 'vmp-warn' : 'vmp-neutral'))) + '">' + verdict + '</div>' +
                 '<div class="vmp-explain">' + explanation + '</div>' +
                 '<div class="vmp-rows">' + rows + '</div>' +
                 '<div class="vmp-note">Value is measured vs. replacement level at each position and priced against the league\'s actual cap spending. Only as accurate as the underlying projections.</div>';
@@ -4025,14 +4031,16 @@
                 parts.push('He\'s replaceable — ' + v.pos + v.posRank + ', below the last startable ' + v.pos + '. Production you could find on the waiver wire for the minimum.');
             }
 
-            // 2) Price verdict (surplus) — honor the salary-aware overpay threshold
+            // 2) Price verdict (surplus)
             var vv2 = valueVerdict(v);
             if (vv2 === 'bargain' && v.surplus >= 20) {
                 parts.push('And at just $' + v.salary + ', he\'s a massive bargain — producing roughly $' + v.surplus + ' more value than he costs. This is exactly the kind of cheap, high-value contract that wins cap leagues.');
             } else if (vv2 === 'bargain') {
                 parts.push('At $' + v.salary + ' he\'s good value — about $' + v.surplus + ' of surplus over his price, so he\'s helping your cap, not straining it.');
             } else if (vv2 === 'overpay') {
-                parts.push('At $' + v.salary + ' he grades as an overpay — his projection has him about $' + Math.abs(v.surplus) + ' short of his price' + (v.salary >= 35 ? ', though on a pricey player like this that can also mean the projection is underrating him — worth a gut check.' : '.'));
+                parts.push('At $' + v.salary + ' he\'s an overpay — a fringe/replaceable-tier player costing about $' + Math.abs(v.surplus) + ' more than his production is worth. That\'s dead cap you\'d love to move.');
+            } else if (vv2 === 'pricey') {
+                parts.push('At $' + v.salary + ' he\'s pricey — the math says he costs about $' + Math.abs(v.surplus) + ' more than his projection, but he\'s well-rated enough at his position that the projection may just be underselling him. Not a clear overpay, but you\'re paying up.');
             } else {
                 parts.push('At $' + v.salary + ' he\'s priced about right — his salary and his production line up, so no bargain but no waste either.');
             }
@@ -4114,6 +4122,7 @@
                     var vvb = valueVerdict(v);
                     if (vvb === 'bargain') flag = '<span class="val-flag val-bargain">BARGAIN +$' + v.surplus + '</span>';
                     else if (vvb === 'overpay') flag = '<span class="val-flag val-overpay">OVERPAY $' + v.surplus + '</span>';
+                    else if (vvb === 'pricey') flag = '<span class="val-flag val-pricey">PRICEY $' + v.surplus + '</span>';
                     var cliff = v.tierCliff ? '<span class="val-flag val-cliff">TIER CLIFF</span>' : '';
                     html += '<span class="val-line val-clickable" data-val-player="' + pid + '" onclick="showValueMath(event, \'' + pid + '\')" title="Tap for the math">' + badge + flag + cliff + '</span>';
                 }
@@ -5258,6 +5267,7 @@
                     var vvts = valueVerdict(v);
                     if (vvts === 'bargain') vp.push('BARGAIN +$' + v.surplus);
                     else if (vvts === 'overpay') vp.push('OVERPAY $' + v.surplus);
+                    else if (vvts === 'pricey') vp.push('pricey $' + v.surplus);
                     if (v.tierCliff) vp.push('tier cliff');
                     valTxt = ' [' + vp.join(', ') + ']';
                 }
@@ -5675,6 +5685,7 @@ ${allSummaries}`;
                         var vvc = valueVerdict(v);
                         if (vvc === 'bargain') vparts.push('BARGAIN +$' + v.surplus);
                         else if (vvc === 'overpay') vparts.push('OVERPAY $' + v.surplus);
+                        else if (vvc === 'pricey') vparts.push('pricey $' + v.surplus);
                         if (v.tierCliff) vparts.push('tier cliff after him');
                         valTxt = ' [' + vparts.join(', ') + ']';
                     }
@@ -5693,7 +5704,7 @@ ${allSummaries}`;
             // How to read the value tags — critical so B.O.O.M. doesn't mistake "cheap"
             // for "bad". Value is measured AGAINST replacement level at each position.
             if (valueData) {
-                lines.push('\nHOW TO READ VALUE: Each player is tagged [POSITION-RANK, tier, +VOR, value flag, cliff]. VOR = projected points ABOVE the last startable player at that position (this league starts 1QB/2RB/2WR/1TE + flex over 10 teams). Tiers: elite > strong > solid starter > fringe starter > replaceable. "BARGAIN +$N" means the player is producing about $N MORE value than his salary (a steal); "OVERPAY $-N" means he costs about $N more than his production is worth. "tier cliff after him" means there is a big drop-off to the next player at his position — so he is scarcer/more valuable than VOR alone suggests, and losing him is hard to replace. JUDGE VALUE BY THESE TAGS, NOT BY RAW SALARY: a cheap player with a high rank, positive VOR, and a BARGAIN flag is a strength, never a weakness. Lead with bargains and overpays when discussing value or trades, and use tier cliffs to advise draft/trade timing (grab the last player before a cliff; don\'t reach after one).');
+                lines.push('\nHOW TO READ VALUE: Each player is tagged [POSITION-RANK, tier, +VOR, value flag, cliff]. VOR = projected points ABOVE the last startable player at that position (this league starts 1QB/2RB/2WR/1TE + flex over 10 teams). Tiers: elite > strong > solid starter > fringe starter > replaceable. "BARGAIN +$N" = producing about $N MORE value than his salary (a steal). "OVERPAY $-N" = a WEAK-tier player (fringe/replaceable) who costs $N more than he produces — genuinely bad cap. "pricey $-N" = costs more than his projection says, BUT he is well-rated at his position, so this is NOT a clear overpay — the projection may just be underrating him; treat it as "paying up for a good player," not a blunder. "tier cliff after him" = big drop-off to the next player at his position, so he is scarcer than VOR alone implies. JUDGE VALUE BY THESE TAGS, NOT BY RAW SALARY: a cheap player with a high rank and a BARGAIN flag is a strength. Lead with bargains and true overpays when discussing value or trades; be measured about "pricey" players since the projection may undersell them. Use tier cliffs for draft/trade timing.');
             }
 
             // STANDINGS / RECORD context — dormant in preseason, lights up once games
@@ -6708,6 +6719,7 @@ ${allSummaries}`;
             const vvtr = valueVerdict(v);
             if (vvtr === 'bargain') parts.push('BARGAIN +$' + v.surplus);
             else if (vvtr === 'overpay') parts.push('OVERPAY $' + v.surplus);
+            else if (vvtr === 'pricey') parts.push('pricey $' + v.surplus);
             if (v.tierCliff) parts.push('tier cliff after him');
             return ' [' + parts.join(', ') + ']';
         }
