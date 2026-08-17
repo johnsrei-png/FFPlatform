@@ -3848,25 +3848,22 @@
             // he ranks within this many at his position).
             const starterLine = { QB: claimed.QB, RB: claimed.RB, WR: claimed.WR, TE: claimed.TE };
 
-            // TRUE replacement is NOT the last starter — with 7 bench spots per team (70
-            // total across the league), the decent guys just past the starters are stashed
-            // on benches, NOT freely available. The real waiver-wire replacement sits past
-            // all the rostered depth. So allocate the bench spots too (to the best available
-            // at each position, same dynamic method as flex), and set the replacement line
-            // AFTER the bench. This gives studs their true value over a genuine scrub.
-            const BENCH_SPOTS = 7 * TEAMS; // 70 bench players rostered leaguewide
-            for (let i=0;i<BENCH_SPOTS;i++){
-                // Teams bench all offensive positions; QB included since some carry a backup.
-                const P = bestAvailable(['QB','RB','WR','TE']);
-                if (P) claimed[P]++;
-            }
-
-            // Replacement baseline = projection at the waiver line (last rostered player + 1),
-            // i.e. the best guy NOT on anyone's roster. Below that = truly replaceable.
+            // TRUE replacement level. With 7 bench spots per team, the decent guys just past
+            // the starters are stashed on benches — NOT freely available — so replacement is
+            // meaningfully BELOW the last starter. But our pool is only ROSTERED keepers
+            // (thin, especially pre-draft), so a deep fixed rank (e.g. "RB40") often doesn't
+            // exist in the data and would just clamp back to the last starter (too high).
+            // Robust fix: set replacement as a FRACTION of the last starter's projection.
+            // This is pool-independent, always lands between "last starter" (too high) and
+            // "the abyss" (too low), and scales with each position's real value level.
+            const REPLACEMENT_FRACTION = 0.78; // replacement ≈ 78% of the last starter's pts
             const baseline = {};
             Object.keys(pos).forEach(function(P){
-                const idx = Math.min(claimed[P]-1, pos[P].length-1);
-                baseline[P] = (idx >= 0 && pos[P][idx]) ? pos[P][idx].proj : 0;
+                const list = pos[P];
+                if (!list.length) { baseline[P] = 0; return; }
+                const lastStarterIdx = Math.min(starterLine[P] - 1, list.length - 1);
+                const lastStarterProj = list[lastStarterIdx] ? list[lastStarterIdx].proj : 0;
+                baseline[P] = lastStarterProj * REPLACEMENT_FRACTION;
             });
 
             // --- Surplus value setup ---
@@ -3984,7 +3981,7 @@
             let rows = '';
             rows += mathRow('Projected points (league scoring)', v.proj + ' pts');
             rows += mathRow('Position rank', v.pos + v.posRank + ' across the league');
-            rows += mathRow('Replacement level (' + v.pos + ')', baseline + ' pts — best waiver-wire ' + v.pos + ' (past all rostered starters + benches)');
+            rows += mathRow('Replacement level (' + v.pos + ')', baseline + ' pts — a freely-available ' + v.pos + ' (below the last starter, since bench depth is stashed)');
             rows += mathDivider();
             rows += mathRow('VOR = projected − replacement', v.proj + ' − ' + baseline + ' = ' + (v.vor >= 0 ? '+' : '') + v.vor + ' pts', true);
             rows += mathRow('Projected games', v.games + ' games');
