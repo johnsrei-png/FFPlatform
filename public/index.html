@@ -3848,19 +3848,22 @@
             // he ranks within this many at his position).
             const starterLine = { QB: claimed.QB, RB: claimed.RB, WR: claimed.WR, TE: claimed.TE };
 
-            // TRUE replacement level. With 7 bench spots per team, the decent guys just past
-            // the starters are stashed on benches — NOT freely available — so replacement is
-            // meaningfully BELOW the last starter. But our pool is only ROSTERED keepers
-            // (thin, especially pre-draft), so a deep fixed rank (e.g. "RB40") often doesn't
-            // exist in the data and would just clamp back to the last starter (too high).
-            // Robust fix: set replacement as a FRACTION of the last starter's projection.
-            // This is pool-independent, always lands between "last starter" (too high) and
-            // "the abyss" (too low), and scales with each position's real value level.
-            const REPLACEMENT_FRACTION = 0.78; // replacement ≈ 78% of the last starter's pts
+            // TRUE replacement level. Ideally this is the best FREELY-AVAILABLE player at
+            // each position (the actual waiver wire). If we have live free-agent data, use
+            // it directly — that's the real replacement. Otherwise fall back to a fraction of
+            // the last starter (robust for the thin, rostered-only keeper pool pre-draft).
+            const REPLACEMENT_FRACTION = 0.78;
+            const haveFA = (typeof availableData === 'object' && availableData && Array.isArray(availableData.available) && availableData.available.length > 0);
             const baseline = {};
             Object.keys(pos).forEach(function(P){
                 const list = pos[P];
                 if (!list.length) { baseline[P] = 0; return; }
+                if (haveFA && typeof availableAtPosition === 'function') {
+                    // Real replacement = best available free agent's projection at this position.
+                    const fa = availableAtPosition(P);
+                    if (fa.length) { baseline[P] = fa[0].proj; return; }
+                }
+                // Fallback: fraction of the last starter's projection.
                 const lastStarterIdx = Math.min(starterLine[P] - 1, list.length - 1);
                 const lastStarterProj = list[lastStarterIdx] ? list[lastStarterIdx].proj : 0;
                 baseline[P] = lastStarterProj * REPLACEMENT_FRACTION;
@@ -4119,6 +4122,37 @@
             projectionData = proj;
             invalidateValueCache();
             applyProjectionsToRows();
+        }
+
+        // ===== Available players (free-agent / waiver pool) =====
+        let availableData = null; // { available: [{pid, name, pos, team}], availableCount }
+
+        async function loadAvailablePlayers() {
+            try {
+                const res = await fetch('/api/get-available');
+                const data = await res.json();
+                availableData = (data && Array.isArray(data.available)) ? data : null;
+            } catch (e) {
+                availableData = null;
+            }
+            invalidateValueCache(); // replacement level may now use real free agents
+            applyProjectionsToRows();
+            return availableData;
+        }
+
+        // Best available (rostered-projection-scored) players at a position, sorted by
+        // projected points. Used for true replacement level and pickup suggestions.
+        function availableAtPosition(P) {
+            if (!availableData || !Array.isArray(availableData.available)) return [];
+            const out = [];
+            availableData.available.forEach(function(a){
+                if ((a.pos || '').toUpperCase() !== P) return;
+                const proj = (typeof projectedSeasonPoints === 'function') ? projectedSeasonPoints(a.pid) : null;
+                if (proj === null || proj === undefined) return; // only rank ones we can score
+                out.push({ pid: a.pid, name: a.name, proj: proj });
+            });
+            out.sort(function(a,b){ return b.proj - a.proj; });
+            return out;
         }
 
         function applyProjectionsToRows() {
@@ -4393,6 +4427,7 @@
 
             // Load player projections in the background (scored by our league rules)
             setTimeout(loadProjections, 0);
+            setTimeout(function(){ if (typeof loadAvailablePlayers === 'function') loadAvailablePlayers(); }, 0);
 
             // Load the BoomsDay countdown
             setTimeout(loadBoomsday, 0);
@@ -5724,6 +5759,23 @@ ${allSummaries}`;
             // for "bad". Value is measured AGAINST replacement level at each position.
             if (valueData) {
                 lines.push('\nHOW TO READ VALUE: Each player is tagged [POSITION-RANK, tier, +VOR, value flag, cliff]. VOR = projected points ABOVE a true waiver-wire replacement at that position (this league has 7 bench spots per team, so the real replacement is the best FREELY AVAILABLE player — past all rostered starters AND benches — not the last starter). Tiers: elite > strong > solid starter > fringe starter > replaceable. "BARGAIN +$N" = producing about $N MORE value than his salary (a steal). "OVERPAY $-N" = a WEAK-tier player (fringe/replaceable) who costs $N more than he produces — genuinely bad cap. "pricey $-N" = costs more than his projection says, BUT he is well-rated at his position, so this is NOT a clear overpay — the projection may just be underrating him; treat it as "paying up for a good player," not a blunder. "tier cliff after him" = big drop-off to the next player at his position, so he is scarcer than VOR alone implies. JUDGE VALUE BY THESE TAGS, NOT BY RAW SALARY: a cheap player with a high rank and a BARGAIN flag is a strength. Lead with bargains and true overpays when discussing value or trades; be measured about "pricey" players since the projection may undersell them. Use tier cliffs for draft/trade timing.');
+            }
+
+            // BEST AVAILABLE (waiver/free-agent pickup targets) — the top unrostered
+            // players at each position by projected points, so B.O.O.M. can recommend real
+            // pickups. Only present when we have free-agent data.
+            if (typeof availableData === 'object' && availableData && Array.isArray(availableData.available) && availableData.available.length && typeof availableAtPosition === 'function') {
+                var faLines = [];
+                ['QB','RB','WR','TE'].forEach(function(P){
+                    var top = availableAtPosition(P).slice(0, 5);
+                    if (!top.length) return;
+                    var names = top.map(function(x){ return x.name + ' (~' + Math.round(x.proj) + ' pts)'; }).join(', ');
+                    faLines.push(P + ': ' + names);
+                });
+                if (faLines.length) {
+                    lines.push('\nBEST AVAILABLE (FREE AGENTS / WAIVER WIRE — these players are NOT on any roster and can be picked up; top options by projected points per position). Use these to recommend real pickups and upgrades over weak rostered players:');
+                    faLines.forEach(function(l){ lines.push('- ' + l); });
+                }
             }
 
             // STANDINGS / RECORD context — dormant in preseason, lights up once games
