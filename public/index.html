@@ -5172,16 +5172,35 @@
                 if (pa !== pb) return pa - pb;
                 return b.salary - a.salary;
             });
-            const playerLines = sorted.map(p =>
-                `${p.name} (${p.position}, ${p.team}) - $${p.salary}`
-            ).join('\n');
+            const val = (typeof computePositionalValue === 'function') ? computePositionalValue() : null;
+            let teamProjTotal = 0, teamVorTotal = 0;
+            const playerLines = sorted.map(p => {
+                const proj = (typeof projectedSeasonPoints === 'function') ? projectedSeasonPoints(p.id) : null;
+                const projTxt = (proj !== null && proj !== undefined) ? `, ~${Math.round(proj)} pts` : '';
+                if (proj) teamProjTotal += proj;
+                let valTxt = '';
+                if (val && val.byPlayer[p.id]) {
+                    const v = val.byPlayer[p.id];
+                    teamVorTotal += (v.vor > 0 ? v.vor : 0);
+                    const vp = [v.pos + v.posRank, v.tier];
+                    if (v.vor > 0) vp.push('+' + v.vor + ' VOR');
+                    if (v.surplus >= 8) vp.push('BARGAIN +$' + v.surplus);
+                    else if (v.surplus <= -8) vp.push('OVERPAY $' + v.surplus);
+                    if (v.tierCliff) vp.push('tier cliff');
+                    valTxt = ' [' + vp.join(', ') + ']';
+                }
+                return `${p.name} (${p.position}, ${p.team}) - $${p.salary}${projTxt}${valTxt}`;
+            }).join('\n');
+            const totalsLine = val
+                ? `\nTeam projected points: ~${Math.round(teamProjTotal)} | Team total VOR (value over replacement): +${Math.round(teamVorTotal)}`
+                : '';
             return `Team: ${team.name}
 Owner: ${team.owner}
 Record: ${team.wins}-${team.losses}
 Total Salary: $${team.totalSalary} / $${SALARY_CAP}
 Cap Space: $${team.capSpace}
 Roster (${team.players.length} players):
-${playerLines}`;
+${playerLines}${totalsLine}`;
         }
 
         // Call Claude to roast a single team
@@ -5329,17 +5348,26 @@ Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, pos
 
             const allSummaries = allTeamsData.map(t => buildTeamSummary(t)).join('\n\n---\n\n');
 
-            const prompt = `You are a savage, hilarious fantasy football analyst for a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap). Below are all ${allTeamsData.length} teams.
+            const personaBlock = (typeof buildOwnerPersonas === 'function') ? buildOwnerPersonas('') : '';
+            const DRAFT_DATE_PR = new Date('2026-08-27T00:00:00');
+            const preDraftPR = (new Date()) < DRAFT_DATE_PR;
+            const phaseNote = preDraftPR
+                ? `\n*** PRE-DRAFT KEEPER WINDOW (draft is Aug 27, 2026) ***\nThese are NOT final rosters — they are only the players each team is currently KEEPING under the cap, and teams can still trade, drop, and draft before rosters are set. So frame this as a KEEPER POWER RANKING: rank who has set themselves up best with their keepers and value SO FAR, not a final verdict. Acknowledge open spots and cap as draft ammo (a strength, not a weakness), and note the draft can still reshuffle everything. Do NOT treat thin keeper lists as doomed or full rosters as locked.`
+                : `\n*** IN-SEASON: rosters are final — rank them as they stand. ***`;
+
+            const prompt = `You are B.O.O.M. — the sharp, savage, slightly menacing AI fantasy football overlord of the "Boom Boom Room" keeper/dynasty salary-cap league ($200 cap). Rank all ${allTeamsData.length} teams and roast them in your signature voice, using the owner personas for flavor.
 
 IMPORTANT LEAGUE CONTEXT:
 ${LEAGUE_RULES}
 - This league does NOT use kickers. Never mention kickers or criticize a team for not having one.
 - Roster structure: 16 total spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE only, 1 DEF) plus 7 bench. Both flex spots take WR/TE, so WR and TE depth is especially valuable. Judge rosters against this format.
-- Players are acquired by bidding on a waiver wire, so a high salary does NOT automatically mean an "overpay." Sometimes a manager has to bid well above a player's real value to win someone they need. Judge whether a salary makes sense given the team's needs and situation — a pricey win can be justified. Reserve "overpay" criticism for clear cases of wasted cap on players a team didn't need or who don't move the needle.
+- Players are acquired by bidding on a waiver wire, so a high salary does NOT automatically mean an "overpay." Judge whether a salary makes sense given the team's needs; reserve "overpay" for clear wasted cap.
+${phaseNote}
+${personaBlock}
 
-Rank all ${allTeamsData.length} teams from BEST to WORST based on roster quality, cap efficiency, and keeper value. The BEST team is #1 and the WORST team is #${allTeamsData.length}. Be brutal and funny — no mercy — but roast ROSTER CONSTRUCTION and cap decisions, never attack people.
+Rank all ${allTeamsData.length} teams from BEST to WORST. The BEST team is #1 and the WORST is #${allTeamsData.length}. Base the ranking primarily on POSITIONAL VALUE: each player has a tag [POSITION-RANK, tier, VOR, bargain/overpay, cliff] where VOR is projected points above a replacement-level starter at that position, and each team shows a total VOR. Higher team VOR and more bargains = better; overpays and replaceable-tier players = worse. Use the projected points and value tags as your evidence, not just names or salary. Be brutal and funny — no mercy — but roast ROSTER CONSTRUCTION and cap decisions, and lean on each owner's persona for the needle. Never attack people personally; roast their roster and their reputation.
 
-Also give EACH team a short, funny superlative title (2-5 words) capturing their vibe — glowing for good teams, mocking for bad ones. Make them original and specific.
+Also give EACH team a short, funny superlative title (2-5 words) capturing their vibe — glowing for good teams, mocking for bad ones. Make them original and specific to that owner/roster.
 
 Keep each team's roast to ONE punchy sentence so the full response stays short. For EACH team, respond in EXACTLY this format (no markdown, no bullets), one team per line:
 
@@ -5355,8 +5383,8 @@ ${allSummaries}`;
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
                         prompt,
-                        model: "claude-haiku-4-5-20251001",
-                        maxTokens: 1500
+                        model: "claude-sonnet-5",
+                        maxTokens: 1600
                     })
                 });
 
