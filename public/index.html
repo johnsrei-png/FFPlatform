@@ -1949,11 +1949,11 @@
             letter-spacing: 0.02em;
             border: 1px solid transparent;
         }
-        .val-elite   { color: #6effa8; background: rgba(46,204,113,0.16); border-color: rgba(46,204,113,0.5); }
-        .val-strong  { color: #9be8b8; background: rgba(46,204,113,0.10); border-color: rgba(46,204,113,0.3); }
-        .val-solid-starter  { color: #cfe8da; background: rgba(255,255,255,0.05); }
-        .val-fringe-starter { color: #a89f8d; background: rgba(255,255,255,0.04); }
-        .val-replaceable    { color: #8a8175; background: rgba(255,255,255,0.03); }
+        .val-elite   { color: #0f5132; background: rgba(25,135,84,0.16); border-color: rgba(25,135,84,0.45); }
+        .val-strong  { color: #146c43; background: rgba(25,135,84,0.10); border-color: rgba(25,135,84,0.28); }
+        .val-solid-starter  { color: #495057; background: rgba(0,0,0,0.05); border-color: rgba(0,0,0,0.12); }
+        .val-fringe-starter { color: #6c757d; background: rgba(0,0,0,0.035); border-color: rgba(0,0,0,0.09); }
+        .val-replaceable    { color: #868e96; background: rgba(0,0,0,0.025); border-color: rgba(0,0,0,0.06); }
         .val-flag {
             font-family: var(--font-mono);
             font-size: 0.5312rem;
@@ -1965,6 +1965,47 @@
         .val-bargain { color: #052e16; background: #4ade80; }
         .val-overpay { color: #fff1f1; background: #b91c1c; }
         .val-cliff   { color: #1a1205; background: #f5c451; }
+        .val-clickable { cursor: pointer; }
+        .val-clickable:hover { filter: brightness(1.08); }
+
+        /* Value math popover */
+        .value-math-popover {
+            position: absolute;
+            z-index: 9999;
+            background: #12160f;
+            border: 1px solid rgba(46,204,113,0.4);
+            border-radius: 10px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 0 20px rgba(46,204,113,0.12);
+            padding: 0.85rem 0.95rem;
+            color: #e6f2ea;
+            font-family: var(--font-body);
+        }
+        .vmp-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+        .vmp-name { font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; color: #eafff2; }
+        .vmp-close {
+            background: none; border: none; color: #9db8a8; font-size: 1.2rem; line-height: 1;
+            cursor: pointer; padding: 0 0.2rem;
+        }
+        .vmp-close:hover { color: #fff; }
+        .vmp-verdict {
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;
+            padding: 0.35rem 0.5rem; border-radius: 6px; margin-bottom: 0.6rem;
+        }
+        .vmp-good { background: rgba(74,222,128,0.18); color: #6effa8; }
+        .vmp-bad { background: rgba(185,28,28,0.22); color: #ff9b9b; }
+        .vmp-neutral { background: rgba(255,255,255,0.06); color: #cfe8da; }
+        .vmp-rows { display: flex; flex-direction: column; gap: 0.15rem; }
+        .vmp-row { display: flex; justify-content: space-between; gap: 0.75rem; font-size: 0.72rem; line-height: 1.35; }
+        .vmp-label { color: #a9c4b6; }
+        .vmp-value { color: #e6f2ea; font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+        .vmp-row-key .vmp-label { color: #eafff2; font-weight: 700; }
+        .vmp-row-key .vmp-value { color: #6effa8; font-weight: 700; }
+        .vmp-divider { height: 1px; background: rgba(46,204,113,0.18); margin: 0.4rem 0; }
+        .vmp-note { margin-top: 0.6rem; font-size: 0.625rem; color: #829a8c; line-height: 1.4; font-style: italic; }
+        @media (max-width: 480px) {
+            .vmp-row { font-size: 0.68rem; }
+            .vmp-value { white-space: normal; }
+        }
 
         .loading {
             text-align: center;
@@ -3430,6 +3471,8 @@
         </div>
     </div>
 
+    <div id="valueMathPopover" class="value-math-popover" style="display:none;"></div>
+
     <div class="trade-modal" id="askBoomModal">
         <div class="trade-modal-content askboom-content">
             <div class="roast-modal-header">
@@ -3871,6 +3914,83 @@
         }
         function invalidateValueCache(){ _valueCache = null; }
 
+        // Click a value badge -> show a popover breaking down the exact math.
+        function showValueMath(evt, pid) {
+            evt.stopPropagation();
+            const val = (typeof computePositionalValue === 'function') ? computePositionalValue() : null;
+            const pop = document.getElementById('valueMathPopover');
+            if (!val || !val.byPlayer[pid] || !pop) return;
+            const v = val.byPlayer[pid];
+            const baseline = Math.round(val.baseline[v.pos] || 0);
+            const dpv = val.dollarsPerVor || 0;
+            const name = (typeof playerName === 'function') ? playerName(pid) : 'Player';
+
+            // Build the breakdown
+            let rows = '';
+            rows += mathRow('Projected points (league scoring)', v.proj + ' pts');
+            rows += mathRow('Position rank', v.pos + v.posRank + ' across the league');
+            rows += mathRow('Replacement level (' + v.pos + ')', baseline + ' pts — last startable ' + v.pos);
+            rows += mathDivider();
+            rows += mathRow('VOR = projected − replacement', v.proj + ' − ' + baseline + ' = ' + (v.vor >= 0 ? '+' : '') + v.vor + ' pts', true);
+            rows += mathRow('Projected games', v.games + ' games');
+            rows += mathRow('VOR per game', (v.vorPerGame >= 0 ? '+' : '') + v.vorPerGame + ' pts/gm');
+            rows += mathDivider();
+            // Surplus / dollar value
+            const fair = v.fairDollars;
+            rows += mathRow('League value rate', '$' + dpv.toFixed(2) + ' per VOR point');
+            rows += mathRow('Fair value = VOR × rate', Math.max(0, v.vor) + ' × $' + dpv.toFixed(2) + ' = $' + fair);
+            rows += mathRow('Actual salary', '$' + v.salary);
+            let verdict = '';
+            if (v.surplus >= 8) verdict = 'BARGAIN — worth about $' + v.surplus + ' more than he costs';
+            else if (v.surplus <= -8) verdict = 'OVERPAY — costs about $' + Math.abs(v.surplus) + ' more than he produces';
+            else verdict = 'Fairly priced (within $8 of fair value)';
+            rows += mathRow('Surplus = fair − salary', '$' + fair + ' − $' + v.salary + ' = ' + (v.surplus >= 0 ? '+$' : '-$') + Math.abs(v.surplus), true);
+            if (v.tierCliff) {
+                rows += mathDivider();
+                rows += mathRow('Tier cliff', 'Big drop-off (' + v.dropToNext + ' pts) to the next ' + v.pos + ' — he is scarcer than VOR alone implies');
+            }
+
+            pop.innerHTML =
+                '<div class="vmp-header"><span class="vmp-name">' + name + '</span>' +
+                '<button class="vmp-close" onclick="hideValueMath()">×</button></div>' +
+                '<div class="vmp-verdict ' + (v.surplus >= 8 ? 'vmp-good' : (v.surplus <= -8 ? 'vmp-bad' : 'vmp-neutral')) + '">' + verdict + '</div>' +
+                '<div class="vmp-rows">' + rows + '</div>' +
+                '<div class="vmp-note">Value is measured vs. replacement level at each position and priced against the league\'s actual cap spending. Only as accurate as the underlying projections.</div>';
+
+            // Position near the clicked badge, keeping it on-screen.
+            pop.style.display = 'block';
+            const rect = evt.currentTarget.getBoundingClientRect();
+            const popW = Math.min(320, window.innerWidth - 20);
+            pop.style.width = popW + 'px';
+            let left = rect.left + window.scrollX;
+            if (left + popW > window.scrollX + window.innerWidth - 10) left = window.scrollX + window.innerWidth - popW - 10;
+            if (left < window.scrollX + 10) left = window.scrollX + 10;
+            let top = rect.bottom + window.scrollY + 6;
+            // If it would go off the bottom, place above the badge instead.
+            const popH = pop.offsetHeight;
+            if (top + popH > window.scrollY + window.innerHeight - 10) {
+                top = rect.top + window.scrollY - popH - 6;
+                if (top < window.scrollY + 10) top = window.scrollY + 10;
+            }
+            pop.style.left = left + 'px';
+            pop.style.top = top + 'px';
+        }
+        function mathRow(label, value, emphasize) {
+            return '<div class="vmp-row' + (emphasize ? ' vmp-row-key' : '') + '"><span class="vmp-label">' + label + '</span><span class="vmp-value">' + value + '</span></div>';
+        }
+        function mathDivider() { return '<div class="vmp-divider"></div>'; }
+        function hideValueMath() {
+            const pop = document.getElementById('valueMathPopover');
+            if (pop) pop.style.display = 'none';
+        }
+        // Close popover on any outside click or Escape.
+        document.addEventListener('click', function(e){
+            const pop = document.getElementById('valueMathPopover');
+            if (!pop || pop.style.display === 'none') return;
+            if (!pop.contains(e.target) && !e.target.closest('.val-clickable')) hideValueMath();
+        });
+        document.addEventListener('keydown', function(e){ if (e.key === 'Escape') hideValueMath(); });
+
         // Projected games (default 17 if not provided).
         function projectedGames(playerId) {
             if (!projectionData || !projectionData[playerId]) return 17;
@@ -3906,7 +4026,7 @@
                 const perGame = projectedPerGame(pid);
                 var html = '<span class="proj-total">' + Math.round(total) + ' pts</span>' +
                     '<span class="proj-pergame">' + perGame.toFixed(1) + '/gm</span>';
-                // Value badge (tier + VOR + bargain/overpay/cliff)
+                // Value badge (tier + VOR + bargain/overpay/cliff) — clickable for math
                 if (val && val.byPlayer[pid]) {
                     var v = val.byPlayer[pid];
                     var tierClass = 'val-' + v.tier.replace(/\s+/g, '-');
@@ -3916,7 +4036,7 @@
                     if (v.surplus >= 8) flag = '<span class="val-flag val-bargain">BARGAIN +$' + v.surplus + '</span>';
                     else if (v.surplus <= -8) flag = '<span class="val-flag val-overpay">OVERPAY $' + v.surplus + '</span>';
                     var cliff = v.tierCliff ? '<span class="val-flag val-cliff">TIER CLIFF</span>' : '';
-                    html += '<span class="val-line">' + badge + flag + cliff + '</span>';
+                    html += '<span class="val-line val-clickable" data-val-player="' + pid + '" onclick="showValueMath(event, \'' + pid + '\')" title="Tap for the math">' + badge + flag + cliff + '</span>';
                 }
                 el.innerHTML = html;
             });
@@ -6464,6 +6584,30 @@ ${allSummaries}`;
             return anyKnown ? total : (side.players.length ? 0 : 0);
         }
 
+        // Value tag for a single player, reusing the VOR system (for trade analysis).
+        function playerValueTag(pid) {
+            const val = (typeof computePositionalValue === 'function') ? computePositionalValue() : null;
+            if (!val || !val.byPlayer[pid]) return '';
+            const v = val.byPlayer[pid];
+            const parts = [v.pos + v.posRank, v.tier];
+            if (v.vor > 0) parts.push('+' + v.vor + ' VOR');
+            if (v.surplus >= 8) parts.push('BARGAIN +$' + v.surplus);
+            else if (v.surplus <= -8) parts.push('OVERPAY $' + v.surplus);
+            if (v.tierCliff) parts.push('tier cliff after him');
+            return ' [' + parts.join(', ') + ']';
+        }
+
+        // Total VOR a side is giving up (positional value, not just raw points).
+        function sideTotalVOR(side) {
+            const val = (typeof computePositionalValue === 'function') ? computePositionalValue() : null;
+            if (!val) return null;
+            let total = 0, any = false;
+            side.players.forEach(function(p) {
+                if (val.byPlayer[p.id]) { total += val.byPlayer[p.id].vor; any = true; }
+            });
+            return any ? Math.round(total) : null;
+        }
+
         function updateTradeSummary() {
             const a = getTradeSideData('A');
             const b = getTradeSideData('B');
@@ -6563,7 +6707,8 @@ ${allSummaries}`;
                 side.players.forEach(p => {
                     const proj = projectedSeasonPoints(p.id);
                     const projTxt = proj !== null ? `, ~${Math.round(proj)} proj pts` : '';
-                    parts.push(`${p.name} (${p.position}, $${p.salary}${projTxt})`);
+                    const valTxt = playerValueTag(p.id);
+                    parts.push(`${p.name} (${p.position}, $${p.salary}${projTxt})${valTxt}`);
                 });
                 side.picks.forEach(pk => parts.push(pk.label));
                 return parts.length ? parts.join(', ') : 'nothing';
@@ -6577,19 +6722,34 @@ ${allSummaries}`;
             if (haveProj) {
                 const aNet = Math.round(bGiveProj - aGiveProj);
                 const bNet = Math.round(aGiveProj - bGiveProj);
-                projectionBlock = `\nPROJECTED POINTS (season totals, scored by THIS league's rules — use these as the main value signal):\n` +
+                projectionBlock = `\nPROJECTED POINTS (season totals, scored by THIS league's rules):\n` +
                     `- ${a.team.name} sends ~${Math.round(aGiveProj)} projected points, receives ~${Math.round(bGiveProj)} → net ${aNet >= 0 ? '+' : ''}${aNet}.\n` +
-                    `- ${b.team.name} sends ~${Math.round(bGiveProj)} projected points, receives ~${Math.round(aGiveProj)} → net ${bNet >= 0 ? '+' : ''}${bNet}.\n` +
-                    `(Draft picks have no projection attached; weigh them separately as future value.)\n`;
+                    `- ${b.team.name} sends ~${Math.round(bGiveProj)} projected points, receives ~${Math.round(aGiveProj)} → net ${bNet >= 0 ? '+' : ''}${bNet}.\n`;
             }
 
-            const prompt = `You are a sharp, funny fantasy football analyst evaluating a proposed trade in a keeper/dynasty salary-cap league (the "Boom Boom Room", $200 cap).
+            // Positional VALUE (VOR) swing — the better signal than raw points.
+            const aGiveVOR = sideTotalVOR(a);
+            const bGiveVOR = sideTotalVOR(b);
+            let vorBlock = '';
+            if (aGiveVOR !== null || bGiveVOR !== null) {
+                const aV = aGiveVOR || 0, bV = bGiveVOR || 0;
+                const aNetV = bV - aV, bNetV = aV - bV;
+                vorBlock = `\nPOSITIONAL VALUE SWING (VOR = points above replacement at each position — THE PRIMARY VALUE SIGNAL, better than raw points because it accounts for position):\n` +
+                    `- ${a.team.name} gives up ${aV} VOR, gets back ${bV} VOR → net ${aNetV >= 0 ? '+' : ''}${aNetV} VOR.\n` +
+                    `- ${b.team.name} gives up ${bV} VOR, gets back ${aV} VOR → net ${bNetV >= 0 ? '+' : ''}${bNetV} VOR.\n` +
+                    `Also weigh each player's value tag: BARGAIN = producing more than his salary (an asset), OVERPAY = costing more than he produces (dead weight), tier cliff = scarce/hard to replace. Draft picks have no projection — weigh them as future value.\n`;
+            }
+
+            const personaBlock = (typeof buildOwnerPersonas === 'function') ? buildOwnerPersonas('') : '';
+
+            const prompt = `You are B.O.O.M. — the sharp, confident, slightly menacing AI fantasy football overlord of the "Boom Boom Room" keeper/dynasty salary-cap league ($200 cap). Evaluate this proposed trade with your usual bite, using the owner personas for flavor when you talk about each side.
 
 LEAGUE CONTEXT:
 ${LEAGUE_RULES}
 - No kickers.
 - Roster: 16 spots — 9 starters (1 QB, 2 RB, 2 WR, 1 TE, 1 FLEX RB/WR/TE, 1 FLEX WR/TE only, 1 DEF) + 7 bench. Both flex spots take WR/TE, so WR/TE depth is valuable.
-- Players are kept year to year and their salaries escalate, so cap hits and long-term value matter, not just this season.
+- Players are kept year to year and salaries escalate, so cap hits and long-term value matter, not just this season.
+${personaBlock}
 
 THE TRADE (read carefully — do not mix up the sides):
 - ${a.team.name} GIVES UP: ${describe(a)}
@@ -6597,21 +6757,23 @@ THE TRADE (read carefully — do not mix up the sides):
 - ${b.team.name} GIVES UP: ${describe(b)}
 - ${b.team.name} RECEIVES: ${describe(a)}
 
-So after the trade, ${a.team.name}'s new players are what ${b.team.name} sent (${describe(b)}), and ${b.team.name}'s new players are what ${a.team.name} sent (${describe(a)}). Evaluate each team based on what they RECEIVE, not what they give away.
+So after the trade, ${a.team.name}'s new players are what ${b.team.name} sent, and ${b.team.name}'s new players are what ${a.team.name} sent. Evaluate each team based on what they RECEIVE.
+
+Each player carries a value tag [POSITION-RANK, tier, VOR, bargain/overpay, cliff]. JUDGE THE TRADE BY POSITIONAL VALUE (VOR) AND SURPLUS, NOT RAW POINTS OR SALARY ALONE — a cheap high-VOR player is a steal, an expensive low-VOR player is dead weight.
 
 CAP IMPACT:
 - ${a.team.name}: currently $${a.team.totalSalary} committed, would be $${a.team.totalSalary - aOut + bOut} after the trade.
 - ${b.team.name}: currently $${b.team.totalSalary} committed, would be $${b.team.totalSalary - bOut + aOut} after the trade.
-${projectionBlock}
-Give your evaluation in EXACTLY these five labeled sections. Put each label on its own line followed by its content, using this exact format with the double colons:
+${projectionBlock}${vorBlock}
+Give your evaluation as B.O.O.M. in EXACTLY these five labeled sections. Put each label on its own line followed by its content, using this exact format with the double colons:
 
-VERDICT :: One clear sentence naming who wins the trade (or "even") and the headline reason.
-FAIRNESS :: 1-2 sentences on whether it's balanced or lopsided, and by how much.
-${a.team.name.toUpperCase()} :: 1-2 sentences on how this trade affects this team — positional needs, cap, and fit.
-${b.team.name.toUpperCase()} :: 1-2 sentences on how this trade affects this team — positional needs, cap, and fit.
+VERDICT :: One clear sentence naming who wins the trade (or "even") and the headline reason, grounded in the VOR/value swing.
+FAIRNESS :: 1-2 sentences on whether it's balanced or lopsided and by how much, citing the value swing and any bargains/overpays changing hands.
+${a.team.name.toUpperCase()} :: 1-2 sentences on how this trade affects this team — positional needs, cap, value gained/lost — with a little persona-flavored needle for the owner.
+${b.team.name.toUpperCase()} :: 1-2 sentences, same treatment for this team and its owner.
 LONG TERM :: 1-2 sentences on the keeper/dynasty angle given salaries escalate year to year.
 
-Be honest and a little funny, but fair. Do not use markdown, asterisks, or bullet points — just the label, the double colon, and plain sentences.`;
+Be honest and a little savage, but fair — the value data is your evidence. Do not use markdown, asterisks, or bullet points — just the label, the double colon, and plain sentences.`;
 
             try {
                 const response = await fetch('/api/roast', {
