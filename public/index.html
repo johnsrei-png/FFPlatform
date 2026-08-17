@@ -3844,8 +3844,25 @@
             for (let i=0;i<TEAMS;i++){ const P = bestAvailable(['RB','WR','TE']); if (P) claimed[P]++; }
             for (let i=0;i<TEAMS;i++){ const P = bestAvailable(['WR','TE']); if (P) claimed[P]++; }
 
-            // Replacement baseline = projection of the LAST starter at each position
-            // (i.e. the player at index claimed[P]-1). Below that line = replaceable.
+            // Preserve the starter line (used for tier labels: a player is "startable" if
+            // he ranks within this many at his position).
+            const starterLine = { QB: claimed.QB, RB: claimed.RB, WR: claimed.WR, TE: claimed.TE };
+
+            // TRUE replacement is NOT the last starter — with 7 bench spots per team (70
+            // total across the league), the decent guys just past the starters are stashed
+            // on benches, NOT freely available. The real waiver-wire replacement sits past
+            // all the rostered depth. So allocate the bench spots too (to the best available
+            // at each position, same dynamic method as flex), and set the replacement line
+            // AFTER the bench. This gives studs their true value over a genuine scrub.
+            const BENCH_SPOTS = 7 * TEAMS; // 70 bench players rostered leaguewide
+            for (let i=0;i<BENCH_SPOTS;i++){
+                // Teams bench all offensive positions; QB included since some carry a backup.
+                const P = bestAvailable(['QB','RB','WR','TE']);
+                if (P) claimed[P]++;
+            }
+
+            // Replacement baseline = projection at the waiver line (last rostered player + 1),
+            // i.e. the best guy NOT on anyone's roster. Below that = truly replaceable.
             const baseline = {};
             Object.keys(pos).forEach(function(P){
                 const idx = Math.min(claimed[P]-1, pos[P].length-1);
@@ -3875,16 +3892,21 @@
             // Assign each player a VOR, per-game VOR, tier, and surplus value.
             const byPlayer = {};
             Object.keys(pos).forEach(function(P){
-                const startersHere = claimed[P];
+                // Tier is based on STARTER status (startable rank), not the lower waiver line.
+                const startersHere = starterLine[P];
+                // Thresholds for elite/strong scale off the position's own value spread:
+                // use the top starter's VOR as the yardstick so cutoffs make sense at the
+                // new (lower) baseline instead of everyone looking "elite".
+                const topVor = (pos[P][0] ? pos[P][0].proj : 0) - baseline[P];
                 pos[P].forEach(function(entry, rank){
                     const vor = entry.proj - baseline[P];
                     const games = (typeof projectedGames === 'function') ? projectedGames(entry.pid) : 17;
                     const vorPerGame = games > 0 ? vor / games : vor;
                     let tier;
                     if (rank < startersHere) {
-                        if (vor >= baseline[P] * 0.45) tier = 'elite';
-                        else if (vor >= baseline[P] * 0.20) tier = 'strong';
-                        else if (vor > 0) tier = 'solid starter';
+                        if (vor >= topVor * 0.70) tier = 'elite';
+                        else if (vor >= topVor * 0.45) tier = 'strong';
+                        else if (vor >= topVor * 0.20) tier = 'solid starter';
                         else tier = 'fringe starter';
                     } else {
                         tier = 'replaceable';
@@ -3962,7 +3984,7 @@
             let rows = '';
             rows += mathRow('Projected points (league scoring)', v.proj + ' pts');
             rows += mathRow('Position rank', v.pos + v.posRank + ' across the league');
-            rows += mathRow('Replacement level (' + v.pos + ')', baseline + ' pts — last startable ' + v.pos);
+            rows += mathRow('Replacement level (' + v.pos + ')', baseline + ' pts — best waiver-wire ' + v.pos + ' (past all rostered starters + benches)');
             rows += mathDivider();
             rows += mathRow('VOR = projected − replacement', v.proj + ' − ' + baseline + ' = ' + (v.vor >= 0 ? '+' : '') + v.vor + ' pts', true);
             rows += mathRow('Projected games', v.games + ' games');
@@ -5704,7 +5726,7 @@ ${allSummaries}`;
             // How to read the value tags — critical so B.O.O.M. doesn't mistake "cheap"
             // for "bad". Value is measured AGAINST replacement level at each position.
             if (valueData) {
-                lines.push('\nHOW TO READ VALUE: Each player is tagged [POSITION-RANK, tier, +VOR, value flag, cliff]. VOR = projected points ABOVE the last startable player at that position (this league starts 1QB/2RB/2WR/1TE + flex over 10 teams). Tiers: elite > strong > solid starter > fringe starter > replaceable. "BARGAIN +$N" = producing about $N MORE value than his salary (a steal). "OVERPAY $-N" = a WEAK-tier player (fringe/replaceable) who costs $N more than he produces — genuinely bad cap. "pricey $-N" = costs more than his projection says, BUT he is well-rated at his position, so this is NOT a clear overpay — the projection may just be underrating him; treat it as "paying up for a good player," not a blunder. "tier cliff after him" = big drop-off to the next player at his position, so he is scarcer than VOR alone implies. JUDGE VALUE BY THESE TAGS, NOT BY RAW SALARY: a cheap player with a high rank and a BARGAIN flag is a strength. Lead with bargains and true overpays when discussing value or trades; be measured about "pricey" players since the projection may undersell them. Use tier cliffs for draft/trade timing.');
+                lines.push('\nHOW TO READ VALUE: Each player is tagged [POSITION-RANK, tier, +VOR, value flag, cliff]. VOR = projected points ABOVE a true waiver-wire replacement at that position (this league has 7 bench spots per team, so the real replacement is the best FREELY AVAILABLE player — past all rostered starters AND benches — not the last starter). Tiers: elite > strong > solid starter > fringe starter > replaceable. "BARGAIN +$N" = producing about $N MORE value than his salary (a steal). "OVERPAY $-N" = a WEAK-tier player (fringe/replaceable) who costs $N more than he produces — genuinely bad cap. "pricey $-N" = costs more than his projection says, BUT he is well-rated at his position, so this is NOT a clear overpay — the projection may just be underrating him; treat it as "paying up for a good player," not a blunder. "tier cliff after him" = big drop-off to the next player at his position, so he is scarcer than VOR alone implies. JUDGE VALUE BY THESE TAGS, NOT BY RAW SALARY: a cheap player with a high rank and a BARGAIN flag is a strength. Lead with bargains and true overpays when discussing value or trades; be measured about "pricey" players since the projection may undersell them. Use tier cliffs for draft/trade timing.');
             }
 
             // STANDINGS / RECORD context — dormant in preseason, lights up once games
