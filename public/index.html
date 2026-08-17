@@ -3853,20 +3853,32 @@
 
             // --- Surplus value setup ---
             // Convert VOR points into dollars so we can flag bargains vs. overpays.
-            // Rate = total salary spent on positive-VOR players / total positive VOR.
-            // Then a player's "fair $" = VOR * rate, and surplus = fair$ - actual salary.
+            // NON-LINEAR: real auction prices scale faster than linearly at the top —
+            // elite players command a scarcity premium far above their raw VOR. So instead
+            // of a flat $/VOR rate (which underprices studs and overprices mid-tier guys),
+            // we weight each player by VOR^CURVE and distribute the league's REAL dollar
+            // pool along that curve. Total dollars stay anchored to actual spending; the
+            // shape shifts money UP to the studs and DOWN from the middle.
             var salaryById = {};
             (allTeamsData || []).forEach(function(t){
                 (t.players || []).forEach(function(p){ salaryById[p.id] = (typeof p.salary === 'number') ? p.salary : 0; });
             });
-            var totalPosVor = 0, totalSalaryOnValue = 0;
+            var VALUE_CURVE = 1.5; // >1 = premium on studs. 1.0 would be the old linear model.
+            var totalWeight = 0, totalSalaryOnValue = 0, totalPosVor = 0;
             Object.keys(pos).forEach(function(P){
                 pos[P].forEach(function(entry){
                     var vor = entry.proj - baseline[P];
-                    if (vor > 0) { totalPosVor += vor; totalSalaryOnValue += (salaryById[entry.pid] || 0); }
+                    if (vor > 0) {
+                        totalWeight += Math.pow(vor, VALUE_CURVE);
+                        totalSalaryOnValue += (salaryById[entry.pid] || 0);
+                        totalPosVor += vor;
+                    }
                 });
             });
-            // $ per VOR point (fallback to a small positive rate if data is thin).
+            // Dollars available to price the value pool (what the league actually spends on
+            // above-replacement players). Fair value = player's weight share of this pool.
+            var valueDollarPool = totalSalaryOnValue > 0 ? totalSalaryOnValue : (totalPosVor * 0.5);
+            // Keep a linear rate around too, for display/reference.
             var dollarsPerVor = totalPosVor > 0 ? (totalSalaryOnValue / totalPosVor) : 0.5;
 
             // Assign each player a VOR, per-game VOR, tier, and surplus value.
@@ -3890,9 +3902,10 @@
                     var next = pos[P][rank+1];
                     var dropToNext = next ? (entry.proj - next.proj) : 0;
 
-                    // Surplus value: positive = bargain, negative = overpay.
+                    // Fair value via the premium curve: share of the dollar pool by weight.
                     var salary = salaryById[entry.pid] || 0;
-                    var fairDollars = Math.max(0, vor) * dollarsPerVor;
+                    var weight = vor > 0 ? Math.pow(vor, VALUE_CURVE) : 0;
+                    var fairDollars = (totalWeight > 0 && weight > 0) ? (weight / totalWeight) * valueDollarPool : 0;
                     var surplus = Math.round(fairDollars - salary);
 
                     byPlayer[entry.pid] = {
@@ -3943,10 +3956,10 @@
             rows += mathRow('Projected games', v.games + ' games');
             rows += mathRow('VOR per game', (v.vorPerGame >= 0 ? '+' : '') + v.vorPerGame + ' pts/gm');
             rows += mathDivider();
-            // Surplus / dollar value
+            // Surplus / dollar value (priced on a non-linear curve — studs get a premium)
             const fair = v.fairDollars;
-            rows += mathRow('League value rate', '$' + dpv.toFixed(2) + ' per VOR point');
-            rows += mathRow('Fair value = VOR × rate', Math.max(0, v.vor) + ' × $' + dpv.toFixed(2) + ' = $' + fair);
+            rows += mathRow('Baseline $/VOR (linear ref)', '$' + dpv.toFixed(2) + ' per VOR point');
+            rows += mathRow('Fair value (premium curve)', '$' + fair + ' — studs priced above linear, depth below');
             rows += mathRow('Actual salary', '$' + v.salary);
             let verdict = '';
             if (v.surplus >= 8) verdict = 'BARGAIN — worth about $' + v.surplus + ' more than he costs';
