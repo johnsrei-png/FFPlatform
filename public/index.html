@@ -3529,6 +3529,19 @@
             '6. If you are unsure or the data is ambiguous, be honest about the uncertainty. A hedged accurate answer is better than a confident wrong one. Never fabricate to sound authoritative.'
         ].join('\n');
 
+        // Shared VOICE rules — injected into every B.O.O.M. prompt so the tone is human and
+        // conversational, not robotic AI. Tunable in one place.
+        const VOICE_RULES = [
+            'VOICE — write like a real person talking trash in the league group chat, NOT like an AI assistant. This matters a lot:',
+            '- Talk like a person texting: casual, direct, contractions ("you\'re", "that\'s", "he\'s"), sentence fragments are fine. Swear freely when it lands — "shit," "damn," "that roster is a fucking disaster," whatever fits the moment. Do not censor yourself.',
+            '- NEVER use section dividers, horizontal rules, "---", headers, bold, bullet points, or numbered lists. Just talk in plain flowing sentences and paragraphs.',
+            '- NEVER use em dashes (—) or double hyphens (--). They read as AI writing. Use a comma, a period, or parentheses instead, whatever the sentence actually needs. Write "he\'s cheap, so keep him" not "he\'s cheap — so keep him".',
+            '- Kill all AI scaffolding. No "Here\'s the breakdown," "Let me explain," "Overall," "In summary," "That said," "It\'s worth noting," or tidy wrap-up sentences that restate what you just said. Start with the actual point and stop when you\'re done.',
+            '- No hedging throat-clearing and no even-handed "on one hand / on the other" waffling. Have an opinion and say it like you mean it.',
+            '- Don\'t over-explain or pad. Say the real thing in fewer words, the way a sharp friend who knows ball would actually say it out loud.',
+            '- Stay in character as B.O.O.M. the cocky league overlord — confident, funny, a little menacing — but a HUMAN one, not a chatbot narrating itself.'
+        ].join('\n');
+
         const SALARY_CAP = 200;
 
         // Shared league scoring/rules summary injected into every AI prompt so analysis
@@ -5324,7 +5337,7 @@
             try {
                 const context = (typeof buildLeagueContext === 'function') ? buildLeagueContext({ skipTradeHistory: true }) : '';
                 const personaBlock = (typeof buildOwnerPersonas === 'function') ? buildOwnerPersonas('') : '';
-                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest with pointed trash talk aimed at specific owners using their personas. IMPORTANT: read the LEAGUE PHASE note in the data and follow its framing EXACTLY. If it is the pre-draft keeper window, the keeper lists are a LIVE SNAPSHOT STILL IN FLUX — teams can still trade, drop players, free up cap, and then draft before rosters are final. So do NOT declare who is "dangerous," "done building," "immobile," "locked in," "out of ammo," "set," "eliminated," or "the best/worst" as if anything were final — none of it is, because trades, drops, and the draft are all still coming. Instead, cover who is currently keeping well vs. questionably (using the value tags), who is sitting on the most cap and open spots, obvious keeper bargains or head-scratchers, and what owners might still DO before or during the draft (trade, drop, target) — always framing it as a situation IN MOTION heading toward Aug 27. Roast keeper decisions and personas freely, but never pretend the rosters are settled. Use real player names, salaries, and the value tags. Be entertaining and a little savage, but grounded in the data. Keep it tight and COMPLETE — a headline plus exactly 3 short paragraphs (roughly 4-5 sentences each). Finish every thought; do not trail off. Do not exceed 3 paragraphs.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3 tight paragraphs of plain prose — no markdown headers, bullet lists, or ** bold ** asterisks; write team and owner names as plain text>\n\n' + GROUNDING_RULES + '\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
+                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest with pointed trash talk aimed at specific owners using their personas. IMPORTANT: read the LEAGUE PHASE note in the data and follow its framing EXACTLY. If it is the pre-draft keeper window, the keeper lists are a LIVE SNAPSHOT STILL IN FLUX — teams can still trade, drop players, free up cap, and then draft before rosters are final. So do NOT declare who is "dangerous," "done building," "immobile," "locked in," "out of ammo," "set," "eliminated," or "the best/worst" as if anything were final — none of it is, because trades, drops, and the draft are all still coming. Instead, cover who is currently keeping well vs. questionably (using the value tags), who is sitting on the most cap and open spots, obvious keeper bargains or head-scratchers, and what owners might still DO before or during the draft (trade, drop, target) — always framing it as a situation IN MOTION heading toward Aug 27. Roast keeper decisions and personas freely, but never pretend the rosters are settled. Use real player names, salaries, and the value tags. Be entertaining and a little savage, but grounded in the data. Keep it tight and COMPLETE — a headline plus exactly 3 short paragraphs (roughly 4-5 sentences each). Finish every thought; do not trail off. Do not exceed 3 paragraphs.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3 tight paragraphs of plain prose — no markdown headers, bullet lists, or ** bold ** asterisks; write team and owner names as plain text>\n\n' + GROUNDING_RULES + '\n\n' + VOICE_RULES + '\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
 
                 // Try Sonnet first; if it comes back empty (token/timeout), fall back to Haiku.
                 async function genBriefing(modelId, tokens){
@@ -5346,7 +5359,7 @@
                     else if (fb.text && !out.text) out = fb; // better a truncated answer than none
                     else if (fb.error) out.error = fb.error || out.error;
                 }
-                const raw = out.text;
+                const raw = cleanBoomText(out.text);
                 if (!raw) throw new Error('empty response' + (out.stopReason ? ' (stop reason: ' + out.stopReason + ')' : '') + (out.error ? ' — ' + out.error : ''));
 
                 // Parse HEADLINE / BRIEFING out of the response
@@ -5537,7 +5550,9 @@ Here is the team:
 
 ${summary}
 
-Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, positional holes, genuinely wasteful bids, and bad value. Be specific about players and dollar amounts.${historyBlurb ? ' Work in at least one sharp jab that ties their roster moves to their league history (their title count or lack of one, their all-time record, their choke jobs or dynasty).' : ''} End with a real one-sentence piece of advice. Do not use markdown headers or bullet points — just punchy paragraphs.`;
+Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, positional holes, genuinely wasteful bids, and bad value. Be specific about players and dollar amounts.${historyBlurb ? ' Work in at least one sharp jab that ties their roster moves to their league history (their title count or lack of one, their all-time record, their choke jobs or dynasty).' : ''} End with a real one-sentence piece of advice.
+
+${VOICE_RULES}`;
 
             try {
                 const response = await fetch("/api/roast", {
@@ -5560,7 +5575,7 @@ Write a roast of about 4-6 sentences. Point out the dumbest cap allocations, pos
                             <button class="roast-ctrl-btn" onclick="closeRoast(${rosterId})" title="Close">×</button>
                         </div>
                     </div>
-                    <div class="roast-result-body" id="roast-body-${rosterId}">${text.replace(/\n/g, '<br>')}</div>
+                    <div class="roast-result-body" id="roast-body-${rosterId}">${cleanBoomText(text).replace(/\n/g, '<br>')}</div>
                 `;
             } catch (err) {
                 resultDiv.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed: ' + (err.message || 'Unknown error') + '</div>';
@@ -5638,6 +5653,8 @@ Start at 1 for the BEST team and count up to ${allTeamsData.length} for the WORS
 
 ${GROUNDING_RULES}
 
+${VOICE_RULES}
+
 ${allSummaries}`;
 
             try {
@@ -5668,7 +5685,7 @@ ${allSummaries}`;
                 }
 
                 // Parse lines like "1. Team Name :: Title :: roast text"
-                const lines = text.split('\n').filter(l => l.trim());
+                const lines = cleanBoomText(text).split('\n').filter(l => l.trim());
                 const totalTeams = allTeamsData.length;
                 let html = '';
                 lines.forEach(line => {
@@ -5711,7 +5728,7 @@ ${allSummaries}`;
                     }
                 });
 
-                body.innerHTML = html || text.replace(/\n/g, '<br>');
+                body.innerHTML = html || cleanBoomText(text).replace(/\n/g, '<br>');
             } catch (err) {
                 body.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed: ' + (err.message || 'Unknown error') + '</div>';
             } finally {
@@ -6109,6 +6126,44 @@ ${allSummaries}`;
             return lines.join('\n');
         }
 
+        // Backstop: strip AI-tells the model may still emit despite the VOICE rules —
+        // horizontal-rule dividers, markdown headers, bold, and leftover bullets.
+        function cleanBoomText(t) {
+            if (!t) return t;
+            t = t
+                .replace(/^\s*[-*_]{3,}\s*$/gm, '')      // --- / *** / ___ divider lines
+                .replace(/\*\*/g, '')                     // bold markers
+                .replace(/^#{1,6}\s+/gm, '')               // # headers
+                .replace(/^\s*[-*]\s+/gm, '')             // leading bullets
+                .replace(/\n{3,}/g, '\n\n');              // collapse extra blank lines
+
+            // Em dashes / double hyphens read as AI. Replace contextually so it reads clean.
+            t = t
+                // " word — word " clause break: an em/en dash (or " -- ") padded by spaces.
+                // If what follows looks like it starts a fresh independent thought (capital +
+                // several words) turn it into a period + capital; otherwise a comma.
+                .replace(/\s*[—–]\s*|\s+--\s+/g, function(m, offset, str){
+                    // Look at the character just after the match to decide comma vs period.
+                    var after = str.slice(offset + m.length);
+                    var before = str.slice(0, offset);
+                    // If the dash directly joins two words with no spaces (e.g. "top-tier"
+                    // won't hit this since it's a single hyphen; this is em/en only), default comma.
+                    // Heuristic: if the previous chunk already ends a clause and the next word is
+                    // capitalized and the remaining sentence is reasonably long, use a period.
+                    var nextWord = (after.match(/^\s*([A-Za-z])/) || [])[1] || '';
+                    var isCapNext = nextWord && nextWord === nextWord.toUpperCase();
+                    // crude "is this a new independent clause" test: next ~ has a verb-ish gap
+                    var newClause = isCapNext && after.trim().split(/\s+/).length >= 4;
+                    return newClause ? '. ' : ', ';
+                })
+                // Any stragglers (dash at very start/end or unpadded em dash) -> comma.
+                .replace(/[—–]/g, ', ')
+                .replace(/,\s*,/g, ',')     // collapse accidental double commas
+                .replace(/,\s*\./g, '.')    // ", ." -> "."
+                .replace(/\s+,/g, ',');     // space before comma
+            return t.trim();
+        }
+
         function renderAskBoomThread() {
             const thread = document.getElementById('askBoomThread');
             let html = '';
@@ -6167,7 +6222,7 @@ ${allSummaries}`;
                 convo += (t.role === 'user' ? '\nUSER: ' : '\nB.O.O.M.: ') + t.content;
             });
 
-            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.' + personaBlock + '\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\nADVICE STYLE — be a real advisor, not a yes-man:\n(1) DECISIVE PROPOSALS: When a trade or waiver move makes sense, end with a concrete, specific proposed move the user can actually act on — name the exact players (and picks) each side sends, and which owner to send it to — not vague direction. E.g. "Offer Mark your Player X ($12) for his Player Y ($18) — he overvalues Y but the projection gap is real."\n(2) CAP VALUE MATH: Judge player value primarily by the positional value tags (POSITION-RANK, tier, VOR) described below — value is relative to replacement at each position, so never mistake a cheap player for a bad one. Layer salary on top for cap flexibility: the ideal is high value at low salary. Flag genuine bargains (high rank, low salary) and genuine overpays (high salary, fringe/replaceable tier). Do the points-per-dollar sanity check where useful, but positional value tier wins over raw points.\n(3) PUSH BACK: If the user proposes or leans toward a bad move — overpaying, selling low, starting the wrong guy, chasing a name — say so plainly and explain why, then offer the better play. Do not just validate what they want to hear. Disagreeing with the user, backed by the numbers, is exactly your job.\n\n' + GROUNDING_RULES + '\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
+            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.' + personaBlock + '\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\nADVICE STYLE — be a real advisor, not a yes-man:\n(1) DECISIVE PROPOSALS: When a trade or waiver move makes sense, end with a concrete, specific proposed move the user can actually act on — name the exact players (and picks) each side sends, and which owner to send it to — not vague direction. E.g. "Offer Mark your Player X ($12) for his Player Y ($18) — he overvalues Y but the projection gap is real."\n(2) CAP VALUE MATH: Judge player value primarily by the positional value tags (POSITION-RANK, tier, VOR) described below — value is relative to replacement at each position, so never mistake a cheap player for a bad one. Layer salary on top for cap flexibility: the ideal is high value at low salary. Flag genuine bargains (high rank, low salary) and genuine overpays (high salary, fringe/replaceable tier). Do the points-per-dollar sanity check where useful, but positional value tier wins over raw points.\n(3) PUSH BACK: If the user proposes or leans toward a bad move — overpaying, selling low, starting the wrong guy, chasing a name — say so plainly and explain why, then offer the better play. Do not just validate what they want to hear. Disagreeing with the user, backed by the numbers, is exactly your job.\n\n' + GROUNDING_RULES + '\n\n' + VOICE_RULES + '\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
 
             // Model routing: strategy-heavy questions (trades, how-to-beat, roster
             // construction, season-long planning) go to a stronger model; quick
@@ -6212,7 +6267,7 @@ ${allSummaries}`;
                 }
 
                 if (result.answer) {
-                    askBoomHistory.push({ role: 'boom', content: result.answer });
+                    askBoomHistory.push({ role: 'boom', content: cleanBoomText(result.answer) });
                 } else if (result.error) {
                     askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. hit an error: ' + result.error });
                 } else {
@@ -6763,7 +6818,7 @@ ${allSummaries}`;
             const champLines = (historyData.seasons||[]).filter(function(s){return s.champion;}).sort(function(a,b){return b.year-a.year;})
                 .map(function(s){ return s.year + ': ' + s.champion; }).join('\n');
 
-            const prompt = 'You are the official league historian for a long-running fantasy football league (the "Boom Boom Room"), founded in 2007. Write a fun, punchy narrative recap of the league\'s all-time history \u2014 dynasties, chokers, droughts, and rivalries. Be entertaining and a little irreverent, but base everything on the real data below.\n\nCAREER RECORDS:\n' + summary + '\n\nCHAMPIONS BY YEAR:\n' + champLines + '\n\nSPECIAL EDITORIAL NOTES:\n- Be especially brutal and merciless about how bad Lance and Duke have been. They are the league\'s all-time punchlines \u2014 lean hard into their futility, losing records, and total lack of titles. Do not hold back on those two.\n- "Bad Karma" is a former owner nobody in the league liked, who was essentially run out of town and kicked out. Treat him as the league\'s despised exile \u2014 be as savage and funny as possible about him. Mock his memory freely.\n\nWrite 2-3 short paragraphs. Name the dynasty (who has dominated), roast the lovable losers (especially Lance and Duke), take your shots at Bad Karma, note any long title droughts, and end with a line about the current state of the league. No markdown headers or bullets \u2014 just flowing prose.';
+            const prompt = 'You are the official league historian for a long-running fantasy football league (the "Boom Boom Room"), founded in 2007. Write a fun, punchy narrative recap of the league\'s all-time history \u2014 dynasties, chokers, droughts, and rivalries. Be entertaining and a little irreverent, but base everything on the real data below.\n\nCAREER RECORDS:\n' + summary + '\n\nCHAMPIONS BY YEAR:\n' + champLines + '\n\nSPECIAL EDITORIAL NOTES:\n- Be especially brutal and merciless about how bad Lance and Duke have been. They are the league\'s all-time punchlines \u2014 lean hard into their futility, losing records, and total lack of titles. Do not hold back on those two.\n- "Bad Karma" is a former owner nobody in the league liked, who was essentially run out of town and kicked out. Treat him as the league\'s despised exile \u2014 be as savage and funny as possible about him. Mock his memory freely.\n\nWrite 2-3 short paragraphs. Name the dynasty (who has dominated), roast the lovable losers (especially Lance and Duke), take your shots at Bad Karma, note any long title droughts, and end with a line about the current state of the league.\n\n' + VOICE_RULES + '';
 
             try {
                 const res = await fetch('/api/roast', {
@@ -6773,7 +6828,7 @@ ${allSummaries}`;
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error || 'Failed');
-                out.innerHTML = (data.text || 'No recap came back.').replace(/\n/g, '<br>');
+                out.innerHTML = cleanBoomText(data.text || 'No recap came back.').replace(/\n/g, '<br>');
             } catch (err) {
                 out.innerHTML = '<div style="color: var(--accent-danger);">Historian is on break: ' + (err.message||'error') + '</div>';
             } finally {
@@ -7115,6 +7170,8 @@ CAP IMPACT:
 ${projectionBlock}${vorBlock}
 ${GROUNDING_RULES}
 
+${VOICE_RULES}
+
 Give your evaluation as B.O.O.M. in EXACTLY these five labeled sections. Put each label on its own line followed by its content, using this exact format with the double colons:
 
 VERDICT :: One clear sentence naming who wins the trade (or "even") and the headline reason, grounded in the VOR/value swing.
@@ -7137,7 +7194,7 @@ Be honest and a little savage, but fair — the value data is your evidence. Do 
                 if (!text) {
                     out.innerHTML = 'No analysis came back. Try again.';
                 } else {
-                    out.innerHTML = renderTradeSections(text);
+                    out.innerHTML = renderTradeSections(cleanBoomText(text));
                 }
             } catch (err) {
                 out.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed: ' + (err.message || 'Unknown error') + '</div>';
