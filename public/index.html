@@ -5664,16 +5664,27 @@ ${allSummaries}`;
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({ prompt, model: modelId, maxTokens: tokens })
                     });
-                    const d = await r.json();
-                    if (!r.ok) return { text: '', error: (d.error || ('Server returned ' + r.status)) };
+                    // Read as text first — a crashed/timed-out function returns an HTML error
+                    // page, not JSON, and calling .json() on that throws "Unexpected token '<'".
+                    const bodyText = await r.text();
+                    let d = null;
+                    try { d = JSON.parse(bodyText); }
+                    catch (e) {
+                        // Non-JSON response (HTML error page, gateway timeout, etc.)
+                        var snippet = (bodyText || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 120);
+                        return { text: '', error: 'Server error (' + r.status + ')' + (snippet ? ': ' + snippet : ' — the model call likely timed out') };
+                    }
+                    if (!r.ok) return { text: '', error: (d && d.error) || ('Server returned ' + r.status) };
                     return { text: (d.text || '').trim(), stopReason: d.stopReason || null };
                 }
 
-                // Ranking 10+ teams needs room; 2600 tokens keeps it from truncating.
-                // If Sonnet comes back empty or truncated, fall back to fast Haiku.
-                let out = await callRankings("claude-sonnet-5", 2600);
+                // Ranking 10+ teams needs room but not too much — a lighter ceiling lowers
+                // the chance of hitting Netlify's 10s function timeout (which returns an HTML
+                // error page). If Sonnet comes back empty, truncated, or errors/times out,
+                // fall back to the faster Haiku model.
+                let out = await callRankings("claude-sonnet-5", 2200);
                 if (!out.text || out.stopReason === 'max_tokens') {
-                    const fb = await callRankings("claude-haiku-4-5-20251001", 2600);
+                    const fb = await callRankings("claude-haiku-4-5-20251001", 2200);
                     if (fb.text) out = fb;
                     else if (fb.error) out.error = fb.error || out.error;
                 }
