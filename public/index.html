@@ -3516,6 +3516,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <script>
         const LEAGUE_ID = '1312069771746885632'; // Your Sleeper league ID
+        // Shared key sent with every /api/roast call so the backend can reject
+        // requests that don't come from this app. Must match BOOM_SHARED_SECRET in
+        // Netlify. Note: this is a light gate (it's visible in frontend code); the
+        // origin check on the server is the stronger protection.
+        const BOOM_KEY = 'REPLACE_WITH_YOUR_SECRET';
 
         // Shared grounding rules injected into every B.O.O.M. prompt to cut hallucination.
         // Kept in one place so all features (chat, briefing, rankings, trades) stay consistent.
@@ -4748,7 +4753,7 @@
             try {
                 const response = await fetch('/api/update-salary', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({
                         playerId: editingPlayer.playerId,
                         playerName: editingPlayer.playerName,
@@ -4992,7 +4997,7 @@
             try {
                 const response = await fetch('/api/update-salary', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({
                         playerId: playerId,
                         playerName: playerName,
@@ -5056,7 +5061,7 @@
             try {
                 const response = await fetch('/api/update-draft-pick', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({
                         leagueId: leagueId,
                         currentOwner: currentTeamForPick,
@@ -5088,7 +5093,7 @@
             try {
                 const response = await fetch('/api/update-draft-pick', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({
                         leagueId: leagueId,
                         currentOwner: currentOwner,
@@ -5155,7 +5160,7 @@
             try {
                 const response = await fetch('/api/advance-season', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({
                         leagueId: leagueId
                     })
@@ -5259,7 +5264,7 @@
             try {
                 await fetch('/api/app-settings', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({ key: 'boomsday', value: JSON.stringify(payload) })
                 });
                 boomsdayName = name;
@@ -5275,7 +5280,7 @@
             try {
                 await fetch('/api/app-settings', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({ key: 'boomsday', value: '' })
                 });
             } catch (e) {}
@@ -5343,7 +5348,7 @@
                 async function genBriefing(modelId, tokens){
                     const res = await fetch('/api/roast', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                         body: JSON.stringify({ prompt: prompt, model: modelId, maxTokens: tokens })
                     });
                     const data = await res.json();
@@ -5375,7 +5380,7 @@
                 const payload = { headline: headline, full: full, generated: new Date().toISOString() };
                 await fetch('/api/app-settings', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({ key: 'boom_briefing', value: JSON.stringify(payload) })
                 });
                 await loadBriefing();
@@ -5557,7 +5562,7 @@ ${VOICE_RULES}`;
             try {
                 const response = await fetch("/api/roast", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { "Content-Type": "application/json", "x-boom-key": BOOM_KEY },
                     body: JSON.stringify({ prompt })
                 });
 
@@ -5661,7 +5666,7 @@ ${allSummaries}`;
                 async function callRankings(modelId, tokens){
                     const r = await fetch("/api/roast", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { "Content-Type": "application/json", "x-boom-key": BOOM_KEY },
                         body: JSON.stringify({ prompt, model: modelId, maxTokens: tokens })
                     });
                     // Read as text first — a crashed/timed-out function returns an HTML error
@@ -6253,7 +6258,7 @@ ${allSummaries}`;
                 try {
                     const res = await fetch('/api/roast', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                         body: JSON.stringify({ prompt: prompt, model: modelId, maxTokens: tokens })
                     });
                     const data = await res.json();
@@ -6843,7 +6848,7 @@ ${allSummaries}`;
             try {
                 const res = await fetch('/api/roast', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({ prompt: prompt, model: 'claude-haiku-4-5-20251001', maxTokens: 2048 })
                 });
                 const data = await res.json();
@@ -6901,7 +6906,7 @@ ${allSummaries}`;
             try {
                 const res = await fetch('/api/save-season', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({
                         year: year,
                         champion: val('as-champ'),
@@ -7205,7 +7210,7 @@ Be honest and a little savage, but fair — the value data is your evidence. Do 
             try {
                 const response = await fetch('/api/roast', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-boom-key': BOOM_KEY },
                     body: JSON.stringify({ prompt, model: 'claude-sonnet-5', maxTokens: 2048 })
                 });
                 const data = await response.json();
