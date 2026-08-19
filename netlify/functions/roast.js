@@ -16,17 +16,9 @@ exports.handler = async (event) => {
     return { statusCode: 405, body: JSON.stringify({ error: 'Method not allowed' }) };
   }
 
-  // ---- Protection layer: shared secret + origin check ----
-  // Shared secret: the frontend sends this in an 'x-boom-key' header; it must match
-  // the BOOM_SHARED_SECRET env var. Stops casual/direct abuse of the endpoint.
-  const expectedSecret = process.env.BOOM_SHARED_SECRET;
-  if (expectedSecret) {
-    const provided = (event.headers && (event.headers['x-boom-key'] || event.headers['X-Boom-Key'])) || '';
-    if (provided !== expectedSecret) {
-      return { statusCode: 401, body: JSON.stringify({ error: 'Unauthorized' }) };
-    }
-  }
-  // Origin check: only accept requests coming from our own site.
+  // ---- Protection layer: origin check ----
+  // Only accept requests coming from our own site (set ALLOWED_ORIGINS in Netlify).
+  // This needs no secret in the frontend, so nothing sensitive ends up in public files.
   if (!originAllowed(event)) {
     return { statusCode: 403, body: JSON.stringify({ error: 'Forbidden origin' }) };
   }
