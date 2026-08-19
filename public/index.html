@@ -5953,6 +5953,12 @@ ${allSummaries}`;
                         lines.push('\nBEST AVAILABLE (FREE AGENTS / WAIVER WIRE — not on any roster, can be picked up; top options by projected points per position). Use these to recommend real pickups and upgrades over weak rostered players:');
                         faLines.forEach(function(l){ lines.push('- ' + l); });
                     }
+                } else {
+                    // FA data exists but failed the reliability check (pre-draft the Sleeper
+                    // rosters are empty/incomplete, so studs wrongly look "available"). Tell
+                    // B.O.O.M. WHY it can't use it, so if the user asks about free agents it can
+                    // explain the real reason instead of a vague "I don't have that data".
+                    lines.push('\nFREE-AGENT / WAIVER DATA STATUS: Not available yet. The platform CAN cross-reference the full NFL player list against league rosters to find free agents, but right now (pre-draft) the league Sleeper rosters are still empty or incomplete, so that check is unreliable and would wrongly flag rostered stars as available. The system deliberately suppresses free-agent info until after the draft (Aug 27) when rosters are real. If the user asks who is available on waivers or free agency, explain THIS: you will have real waiver data once the draft happens and rosters are set, but pre-draft it is not trustworthy, so you are not guessing. Do not claim you simply lack the capability. You have it, it just is not reliable yet.');
                 }
             }
 
