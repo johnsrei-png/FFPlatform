@@ -3200,6 +3200,7 @@
             margin: 1rem 0 1.25rem;
             text-align: center;
             position: relative;
+            overflow: visible;
         }
         .pot-label {
             font-family: var(--font-display);
@@ -3229,12 +3230,19 @@
             letter-spacing: 0.05em;
         }
         .pot-toggle-hint:hover { color: rgba(0,255,136,0.7); }
-        .pot-breakdown {
+                .pot-breakdown {
             display: none;
-            margin-top: 1.25rem;
-            border-top: 1px solid rgba(0,255,136,0.15);
-            padding-top: 1.25rem;
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #0a1a0f 0%, #0f2018 60%, #0a1a0f 100%);
+            border: 1px solid rgba(0,255,136,0.25);
+            border-radius: 12px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.5), 0 0 30px rgba(0,255,136,0.08);
+            padding: 1.25rem 1.75rem;
             text-align: left;
+            z-index: 500;
         }
         .pot-breakdown.open { display: block; }
         .pot-section-title {
@@ -4151,8 +4159,20 @@
             var bd = document.getElementById('potBreakdown');
             var hint = document.querySelector('.pot-toggle-hint');
             if (bd) bd.classList.toggle('open', _potOpen);
-            if (hint) hint.textContent = (_potOpen ? '▲ hide' : '▼ breakdown');
+            if (hint) hint.textContent = (_potOpen ? '▲ close' : '▼ breakdown');
         }
+        // Close pot breakdown on outside click
+        document.addEventListener('click', function(e) {
+            if (!_potOpen) return;
+            var tracker = document.getElementById('potTracker');
+            if (tracker && !tracker.contains(e.target)) {
+                _potOpen = false;
+                var bd = document.getElementById('potBreakdown');
+                var hint = document.querySelector('.pot-toggle-hint');
+                if (bd) bd.classList.remove('open');
+                if (hint) hint.textContent = '▼ breakdown';
+            }
+        });
 
         function togglePotLedger() {
             _ledgerOpen = !_ledgerOpen;
