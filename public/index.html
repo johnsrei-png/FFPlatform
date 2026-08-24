@@ -2512,8 +2512,10 @@
 
         .cap-preview {
             display: none;
-            background: rgba(37, 99, 235, 0.95);
-            color: white;
+            background: #0a1a0f;
+            border: 1px solid rgba(0,255,136,0.25);
+            box-shadow: 0 0 20px rgba(0,255,136,0.06);
+            color: #b0ccbc;
             padding: 0.75rem 1rem;
             border-radius: 8px;
             margin-top: 0.5rem;
@@ -2527,13 +2529,17 @@
 
         .cap-preview-label {
             font-weight: 600;
+            color: rgba(0,255,136,0.6);
             margin-bottom: 0.25rem;
+            font-size: 0.78rem;
+            letter-spacing: 0.03em;
         }
 
         .cap-preview-value {
             font-size: 1.25rem;
             font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: var(--font-mono);
+            color: #00ff88;
         }
 
         @keyframes slideIn {
