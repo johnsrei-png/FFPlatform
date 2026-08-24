@@ -3135,6 +3135,52 @@
                 padding: 0.625rem 1rem 0.625rem 2.25rem;
             }
         }
+        /* Summon B.O.O.M. card */
+        .boom-summon-card {
+            flex: 1;
+            background: linear-gradient(135deg, #0a1a0f 0%, #0f2018 60%, #0a1a0f 100%);
+            border: 1px solid rgba(0,255,136,0.25);
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0,255,136,0.08), inset 0 1px 0 rgba(0,255,136,0.1);
+            padding: 1.5rem 1.75rem;
+            text-align: center;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            user-select: none;
+        }
+        .boom-summon-card:hover {
+            border-color: rgba(0,255,136,0.5);
+            box-shadow: 0 0 50px rgba(0,255,136,0.15), inset 0 1px 0 rgba(0,255,136,0.15);
+        }
+        .boom-summon-label {
+            font-family: var(--font-display);
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.22em;
+            color: rgba(0,255,136,0.5);
+            text-transform: uppercase;
+            margin-bottom: 0.4rem;
+        }
+        .boom-summon-text {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4.5vw, 3.5rem);
+            font-weight: 700;
+            color: #00ff88;
+            letter-spacing: 0.06em;
+            line-height: 1;
+            animation: pot-throb 2s ease-in-out infinite;
+            animation-delay: 0.5s; /* offset from pot so they don't pulse in sync */
+        }
+        .boom-summon-hint {
+            font-size: 0.65rem;
+            color: rgba(0,255,136,0.35);
+            margin-top: 0.5rem;
+            letter-spacing: 0.08em;
+        }
         /* ===== Pot + Countdown side-by-side row ===== */
         .pot-countdown-row {
             display: flex;
@@ -3163,12 +3209,15 @@
             flex-direction: column;
             justify-content: center;
         }
-        @media (max-width: 640px) {
+        @media (max-width: 768px) {
             .pot-countdown-row {
                 flex-direction: column;
             }
             .pot-countdown-row .boomsday {
                 align-self: auto;
+            }
+            .boom-summon-card {
+                padding: 1.25rem;
             }
         }
         /* ===== Pot Tracker ===== */
@@ -3490,6 +3539,12 @@
                         </div>
                         <div class="boomsday-date" id="boomsdayDate"></div>
                     </div>
+                </div>
+
+                <div class="boom-summon-card" onclick="openAskBoom()">
+                    <div class="boom-summon-label">Ask the Overlord</div>
+                    <div class="boom-summon-text">B.O.O.M.</div>
+                    <div class="boom-summon-hint">tap to summon</div>
                 </div>
             </div>
 
