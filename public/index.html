@@ -3379,16 +3379,18 @@
                     <div class="pot-section-title">Paid out</div>
                     <div class="pot-row">
                         <span>
-                            Weekly high point
+                            Weekly high point <span style="opacity:0.55;font-size:0.75em">(13 × $10 = $130 total)</span>
                             <span id="potWeeksCtrl"></span>
                         </span>
                         <span class="pot-val neg" id="potWeeklyOut">−$0</span>
                     </div>
+                    <div style="font-size:0.7rem;color:rgba(0,255,136,0.4);padding:0 0 0.35rem 0.25rem" id="potWeeklyDetail"></div>
                     <div class="pot-row">
-                        <span>Season high point <span id="potSeasonBtn"></span></span>
+                        <span>Season high point <span style="opacity:0.55;font-size:0.75em">($130 total)</span> <span id="potSeasonBtn"></span></span>
                         <span class="pot-val neg" id="potSeasonOut">$0</span>
                     </div>
-                    <div class="pot-row total"><span>Total paid out</span><span class="pot-val neg" id="potPaidOut">−$0</span></div>
+                    <div style="font-size:0.7rem;color:rgba(0,255,136,0.4);padding:0 0 0.35rem 0.25rem" id="potSeasonDetail"></div>
+                    <div class="pot-row total"><span>Total paid out so far</span><span class="pot-val neg" id="potPaidOut">−$0</span></div>
 
                     <div class="pot-section-title">Remaining pot</div>
                     <div class="pot-row big-total"><span>Available to split</span><span class="pot-val" id="potRemaining">$1,000</span></div>
@@ -3420,7 +3422,6 @@
                                     <th>Team</th>
                                     <th>Waivers</th>
                                     <th>Trades</th>
-                                    <th>Adj</th>
                                     <th>Fees</th>
                                 </tr>
                             </thead>
@@ -3973,12 +3974,21 @@
         function computePot() {
             var auto = computeAutoFees();
             var totalFees = 0;
-            var perTeam = {}; // { owner: { waiver, trade, adj, total } }
+            var perTeam = {};
             (allTeamsData||[]).forEach(function(t) {
                 var a = auto[t.owner] || { waiver:0, trade:0 };
-                var adj = ((potSettings.adjustments||{})[t.owner] || 0);
-                var teamTotal = a.waiver + a.trade + adj;
-                perTeam[t.owner] = { waiver: a.waiver, trade: a.trade, adj: adj, total: teamTotal };
+                var ov = (potSettings.adjustments||{})[t.owner] || {};
+                // Per-field override: if commissioner has set a value, use it; else use auto.
+                var waiverCount = (ov.waiver !== null && ov.waiver !== undefined) ? ov.waiver : a.waiver;
+                var tradeCount  = (ov.trade  !== null && ov.trade  !== undefined) ? ov.trade  : a.trade;
+                var teamTotal = waiverCount + tradeCount;
+                perTeam[t.owner] = {
+                    waiver: waiverCount, autoWaiver: a.waiver,
+                    trade:  tradeCount,  autoTrade:  a.trade,
+                    waiverOverridden: (ov.waiver !== null && ov.waiver !== undefined),
+                    tradeOverridden:  (ov.trade  !== null && ov.trade  !== undefined),
+                    total: teamTotal
+                };
                 totalFees += teamTotal;
             });
             var collected = POT_BUYINS + totalFees;
@@ -4005,6 +4015,21 @@
             set('potWeeklyOut', fmtNeg(d.weeklyOut));
             set('potSeasonOut', d.seasonOut ? '−' + fmt(d.seasonOut) : '$0');
             set('potPaidOut', fmtNeg(d.paidOut));
+
+            // Show scheduled/remaining payout detail lines
+            var weeksPaid = potSettings.weeksPaid || 0;
+            var weeksLeft = POT_REG_WEEKS - weeksPaid;
+            var weeklyEl = document.getElementById('potWeeklyDetail');
+            if (weeklyEl) {
+                weeklyEl.textContent = weeksPaid + ' of ' + POT_REG_WEEKS + ' weeks paid · '
+                    + fmt(weeksLeft * POT_WEEKLY_AMT) + ' still to pay (' + weeksLeft + ' wks left)';
+            }
+            var seasonDetailEl = document.getElementById('potSeasonDetail');
+            if (seasonDetailEl) {
+                seasonDetailEl.textContent = potSettings.seasonHighPaid
+                    ? 'Paid at end of season'
+                    : fmt(POT_SEASON_AMT) + ' to be paid at season end (unpaid)';
+            }
             set('potRemaining', fmt(d.remaining));
             set('potSplit1', fmt(d.remaining * POT_SPLITS[0]));
             set('potSplit2', fmt(d.remaining * POT_SPLITS[1]));
@@ -4044,19 +4069,43 @@
             if (!tbody) return;
             var rows = '';
             (allTeamsData||[]).forEach(function(t) {
-                var pd = perTeam[t.owner] || { waiver:0, trade:0, adj:0, total:0 };
-                var adjCell = commissionerMode
-                    ? '<input class="pot-ledger-input" type="number" value="' + pd.adj + '" onchange="savePotAdjustment(\'' + (t.owner||'').replace(/'/g,"\\'") + '\', this.value)" style="width:52px">'
-                    : (pd.adj !== 0 ? (pd.adj > 0 ? '+'+pd.adj : pd.adj) : '—');
-                rows += '<tr>' +
-                    '<td>' + (t.name||t.owner) + '</td>' +
-                    '<td>' + pd.waiver + '</td>' +
-                    '<td>' + pd.trade + '</td>' +
-                    '<td>' + adjCell + '</td>' +
-                    '<td style="color:#00ff88">$' + Math.max(0, pd.total) + '</td>' +
-                    '</tr>';
+                var pd = perTeam[t.owner] || { waiver:0, trade:0, total:0, waiverOverridden:false, tradeOverridden:false, autoWaiver:0, autoTrade:0 };
+                var esc = function(s){ return (s||'').replace(/'/g,"\\'"); };
+
+                if (commissionerMode) {
+                    // Editable inputs for each field; shows auto value as placeholder so
+                    // commissioner knows what the auto count is before overriding.
+                    var waiverHint = pd.waiverOverridden ? '<span style="font-size:0.65rem;opacity:0.45">auto:'+pd.autoWaiver+'</span>' : '';
+                    var tradeHint  = pd.tradeOverridden  ? '<span style="font-size:0.65rem;opacity:0.45">auto:'+pd.autoTrade+'</span>'  : '';
+                    var waiverVal  = pd.waiverOverridden ? pd.waiver : pd.autoWaiver;
+                    var tradeVal   = pd.tradeOverridden  ? pd.trade  : pd.autoTrade;
+                    rows += '<tr>' +
+                        '<td>' + (t.name||t.owner) + '</td>' +
+                        '<td>' +
+                            '<input class="pot-ledger-input" type="number" min="0" value="' + waiverVal + '" ' +
+                            'onchange="savePotFieldOverride(\'' + esc(t.owner) + '\',\'waiver\',this.value)" ' +
+                            'title="Auto: ' + pd.autoWaiver + '">' + waiverHint +
+                        '</td>' +
+                        '<td>' +
+                            '<input class="pot-ledger-input" type="number" min="0" value="' + tradeVal + '" ' +
+                            'onchange="savePotFieldOverride(\'' + esc(t.owner) + '\',\'trade\',this.value)" ' +
+                            'title="Auto: ' + pd.autoTrade + '">' + tradeHint +
+                        '</td>' +
+                        '<td style="color:#00ff88">$' + Math.max(0, pd.total) + '</td>' +
+                        '</tr>';
+                } else {
+                    // Read-only view — show a * if the commissioner has overridden this value
+                    var wDisp = pd.waiver + (pd.waiverOverridden ? '*' : '');
+                    var tDisp = pd.trade  + (pd.tradeOverridden  ? '*' : '');
+                    rows += '<tr>' +
+                        '<td>' + (t.name||t.owner) + '</td>' +
+                        '<td>' + wDisp + '</td>' +
+                        '<td>' + tDisp + '</td>' +
+                        '<td style="color:#00ff88">$' + Math.max(0, pd.total) + '</td>' +
+                        '</tr>';
+                }
             });
-            tbody.innerHTML = rows || '<tr><td colspan="5" style="opacity:0.5;text-align:center">No transaction data yet</td></tr>';
+            tbody.innerHTML = rows || '<tr><td colspan="4" style="opacity:0.5;text-align:center">No transaction data yet</td></tr>';
         }
 
         function togglePotBreakdown() {
@@ -4085,9 +4134,12 @@
             savePotSettings(); renderPotTracker();
         }
 
-        function savePotAdjustment(owner, val) {
+        function savePotFieldOverride(owner, field, val) {
             if (!potSettings.adjustments) potSettings.adjustments = {};
-            potSettings.adjustments[owner] = parseInt(val) || 0;
+            if (!potSettings.adjustments[owner]) potSettings.adjustments[owner] = {};
+            // Store the override value. Empty/blank = revert to auto (null).
+            var n = parseInt(val);
+            potSettings.adjustments[owner][field] = isNaN(n) ? null : n;
             savePotSettings(); renderPotTracker();
         }
         // ===== End Pot Tracker =====
