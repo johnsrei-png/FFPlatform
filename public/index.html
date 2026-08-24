@@ -3135,6 +3135,42 @@
                 padding: 0.625rem 1rem 0.625rem 2.25rem;
             }
         }
+        /* ===== Pot + Countdown side-by-side row ===== */
+        .pot-countdown-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+            margin: 1rem 0 1.25rem;
+        }
+        .pot-countdown-row .pot-tracker {
+            flex: 3;
+            margin: 0;
+        }
+        .pot-countdown-row .boomsday {
+            flex: 2;
+            margin: 0;
+            align-self: stretch;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .pot-countdown-row .boomsday[style*="display: block"],
+        .pot-countdown-row .boomsday[style*="display:block"] {
+            display: flex !important;
+        }
+        .pot-countdown-row .boomsday-inner {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        @media (max-width: 640px) {
+            .pot-countdown-row {
+                flex-direction: column;
+            }
+            .pot-countdown-row .boomsday {
+                align-self: auto;
+            }
+        }
         /* ===== Pot Tracker ===== */
         @keyframes pot-throb {
             0%, 100% {
@@ -3365,85 +3401,87 @@
                 <div class="boom-briefing-meta" id="boomBriefingMeta"></div>
             </div>
 
-            <!-- Pot Tracker -->
-            <div class="pot-tracker" id="potTracker">
-                <div class="pot-label">💰 The Pot 💰</div>
-                <div class="pot-number" id="potNumber" onclick="togglePotBreakdown()">$—</div>
-                <div class="pot-toggle-hint" onclick="togglePotBreakdown()">▼ breakdown</div>
-                <div class="pot-breakdown" id="potBreakdown">
-                    <div class="pot-section-title">Collected</div>
-                    <div class="pot-row"><span>Buy-ins (10 × $100)</span><span class="pot-val pos" id="potBuyins">$1,000</span></div>
-                    <div class="pot-row"><span>Transaction fees</span><span class="pot-val pos" id="potFees">+$0</span></div>
-                    <div class="pot-row total"><span>Total collected</span><span class="pot-val" id="potCollected">$1,000</span></div>
+            <!-- Pot + Countdown row -->
+            <div class="pot-countdown-row">
+                <div class="pot-tracker" id="potTracker">
+                    <div class="pot-label">💰 The Pot 💰</div>
+                    <div class="pot-number" id="potNumber" onclick="togglePotBreakdown()">$—</div>
+                    <div class="pot-toggle-hint" onclick="togglePotBreakdown()">▼ breakdown</div>
+                    <div class="pot-breakdown" id="potBreakdown">
+                        <div class="pot-section-title">Collected</div>
+                        <div class="pot-row"><span>Buy-ins (10 × $100)</span><span class="pot-val pos" id="potBuyins">$1,000</span></div>
+                        <div class="pot-row"><span>Transaction fees</span><span class="pot-val pos" id="potFees">+$0</span></div>
+                        <div class="pot-row total"><span>Total collected</span><span class="pot-val" id="potCollected">$1,000</span></div>
 
-                    <div class="pot-section-title">Paid out</div>
-                    <div class="pot-row">
-                        <span>
-                            Weekly high point <span style="opacity:0.55;font-size:0.75em">(13 × $10 = $130 total)</span>
-                            <span id="potWeeksCtrl"></span>
-                        </span>
-                        <span class="pot-val neg" id="potWeeklyOut">−$0</span>
-                    </div>
-                    <div style="font-size:0.7rem;color:rgba(0,255,136,0.4);padding:0 0 0.35rem 0.25rem" id="potWeeklyDetail"></div>
-                    <div class="pot-row">
-                        <span>Season high point <span style="opacity:0.55;font-size:0.75em">($130 total)</span> <span id="potSeasonBtn"></span></span>
-                        <span class="pot-val neg" id="potSeasonOut">$0</span>
-                    </div>
-                    <div style="font-size:0.7rem;color:rgba(0,255,136,0.4);padding:0 0 0.35rem 0.25rem" id="potSeasonDetail"></div>
-                    <div class="pot-row total"><span>Total paid out so far</span><span class="pot-val neg" id="potPaidOut">−$0</span></div>
-
-                    <div class="pot-section-title">Remaining pot</div>
-                    <div class="pot-row big-total"><span>Available to split</span><span class="pot-val" id="potRemaining">$1,000</span></div>
-
-                    <div class="pot-section-title">Projected splits</div>
-                    <div class="pot-splits">
-                        <div class="pot-split-card">
-                            <div class="pot-split-place">🥇</div>
-                            <div class="pot-split-pct">55% · 1st</div>
-                            <div class="pot-split-amt" id="potSplit1">—</div>
+                        <div class="pot-section-title">Paid out</div>
+                        <div class="pot-row">
+                            <span>
+                                Weekly high point <span style="opacity:0.55;font-size:0.75em">(13 × $10 = $130 total)</span>
+                                <span id="potWeeksCtrl"></span>
+                            </span>
+                            <span class="pot-val neg" id="potWeeklyOut">−$0</span>
                         </div>
-                        <div class="pot-split-card">
-                            <div class="pot-split-place">🥈</div>
-                            <div class="pot-split-pct">35% · 2nd</div>
-                            <div class="pot-split-amt" id="potSplit2">—</div>
+                        <div style="font-size:0.7rem;color:rgba(0,255,136,0.4);padding:0 0 0.35rem 0.25rem" id="potWeeklyDetail"></div>
+                        <div class="pot-row">
+                            <span>Season high point <span style="opacity:0.55;font-size:0.75em">($130 total)</span> <span id="potSeasonBtn"></span></span>
+                            <span class="pot-val neg" id="potSeasonOut">$0</span>
                         </div>
-                        <div class="pot-split-card">
-                            <div class="pot-split-place">🥉</div>
-                            <div class="pot-split-pct">10% · 3rd</div>
-                            <div class="pot-split-amt" id="potSplit3">—</div>
-                        </div>
-                    </div>
+                        <div style="font-size:0.7rem;color:rgba(0,255,136,0.4);padding:0 0 0.35rem 0.25rem" id="potSeasonDetail"></div>
+                        <div class="pot-row total"><span>Total paid out so far</span><span class="pot-val neg" id="potPaidOut">−$0</span></div>
 
-                    <button class="pot-ledger-toggle" onclick="togglePotLedger()">▼ Transaction Ledger (per team)</button>
-                    <div class="pot-ledger" id="potLedger">
-                        <table class="pot-ledger-table">
-                            <thead>
-                                <tr>
-                                    <th>Team</th>
-                                    <th>Waivers</th>
-                                    <th>Trades</th>
-                                    <th>Fees</th>
-                                </tr>
-                            </thead>
-                            <tbody id="potLedgerBody"></tbody>
-                        </table>
+                        <div class="pot-section-title">Remaining pot</div>
+                        <div class="pot-row big-total"><span>Available to split</span><span class="pot-val" id="potRemaining">$1,000</span></div>
+
+                        <div class="pot-section-title">Projected splits</div>
+                        <div class="pot-splits">
+                            <div class="pot-split-card">
+                                <div class="pot-split-place">🥇</div>
+                                <div class="pot-split-pct">55% · 1st</div>
+                                <div class="pot-split-amt" id="potSplit1">—</div>
+                            </div>
+                            <div class="pot-split-card">
+                                <div class="pot-split-place">🥈</div>
+                                <div class="pot-split-pct">35% · 2nd</div>
+                                <div class="pot-split-amt" id="potSplit2">—</div>
+                            </div>
+                            <div class="pot-split-card">
+                                <div class="pot-split-place">🥉</div>
+                                <div class="pot-split-pct">10% · 3rd</div>
+                                <div class="pot-split-amt" id="potSplit3">—</div>
+                            </div>
+                        </div>
+
+                        <button class="pot-ledger-toggle" onclick="togglePotLedger()">▼ Transaction Ledger (per team)</button>
+                        <div class="pot-ledger" id="potLedger">
+                            <table class="pot-ledger-table">
+                                <thead>
+                                    <tr>
+                                        <th>Team</th>
+                                        <th>Waivers</th>
+                                        <th>Trades</th>
+                                        <th>Fees</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="potLedgerBody"></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div id="boomsdayCountdown" class="boomsday" style="display: none;">
-                <div class="boomsday-inner">
-                    <div class="boomsday-label" id="boomsdayLabel">Countdown to BoomsDay</div>
-                    <div class="boomsday-clock" id="boomsdayClock">
-                        <div class="boomsday-unit"><span class="bd-num" id="bd-days">0</span><span class="bd-lab">Days</span></div>
-                        <div class="boomsday-sep">:</div>
-                        <div class="boomsday-unit"><span class="bd-num" id="bd-hours">0</span><span class="bd-lab">Hrs</span></div>
-                        <div class="boomsday-sep">:</div>
-                        <div class="boomsday-unit"><span class="bd-num" id="bd-mins">0</span><span class="bd-lab">Min</span></div>
-                        <div class="boomsday-sep">:</div>
-                        <div class="boomsday-unit"><span class="bd-num" id="bd-secs">0</span><span class="bd-lab">Sec</span></div>
+                <div id="boomsdayCountdown" class="boomsday" style="display: none;">
+                    <div class="boomsday-inner">
+                        <div class="boomsday-label" id="boomsdayLabel">Countdown to BoomsDay</div>
+                        <div class="boomsday-clock" id="boomsdayClock">
+                            <div class="boomsday-unit"><span class="bd-num" id="bd-days">0</span><span class="bd-lab">Days</span></div>
+                            <div class="boomsday-sep">:</div>
+                            <div class="boomsday-unit"><span class="bd-num" id="bd-hours">0</span><span class="bd-lab">Hrs</span></div>
+                            <div class="boomsday-sep">:</div>
+                            <div class="boomsday-unit"><span class="bd-num" id="bd-mins">0</span><span class="bd-lab">Min</span></div>
+                            <div class="boomsday-sep">:</div>
+                            <div class="boomsday-unit"><span class="bd-num" id="bd-secs">0</span><span class="bd-lab">Sec</span></div>
+                        </div>
+                        <div class="boomsday-date" id="boomsdayDate"></div>
                     </div>
-                    <div class="boomsday-date" id="boomsdayDate"></div>
                 </div>
             </div>
 
