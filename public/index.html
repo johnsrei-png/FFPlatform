@@ -457,13 +457,6 @@
             margin-bottom: 0.5rem;
         }
 
-        .cap-bar-fill {
-            height: 100%;
-            background: var(--accent-primary);
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            border-radius: 0;
-        }
-
         .cap-bar-fill.warning { 
             background: var(--accent-warning);
         }
@@ -3391,7 +3384,71 @@
         }
         .pot-season-btn.paid { background: rgba(0,255,136,0.12); color: #00ff88; }
         /* ===== End Pot Tracker ===== */
-        /* ===== Mobile polish ===== */
+        /* ===== Scroll-triggered card reveals ===== */
+        .team-card {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .team-card.revealed {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* ===== Transaction ticker ===== */
+        .boom-ticker-wrap {
+            overflow: hidden;
+            background: #0a1a0f;
+            border-top: 1px solid rgba(0,255,136,0.2);
+            border-bottom: 1px solid rgba(0,255,136,0.2);
+            padding: 0.4rem 0;
+            margin: 0.5rem 0 1rem;
+            white-space: nowrap;
+            position: relative;
+        }
+        .boom-ticker-wrap::before,
+        .boom-ticker-wrap::after {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0;
+            width: 3rem;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .boom-ticker-wrap::before { left: 0; background: linear-gradient(to right, #0a1a0f, transparent); }
+        .boom-ticker-wrap::after  { right: 0; background: linear-gradient(to left, #0a1a0f, transparent); }
+        @keyframes ticker-scroll {
+            0%   { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .boom-ticker {
+            display: inline-block;
+            animation: ticker-scroll 40s linear infinite;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: rgba(0,255,136,0.65);
+            letter-spacing: 0.03em;
+        }
+        .boom-ticker:hover { animation-play-state: paused; }
+        .ticker-sep { color: rgba(0,255,136,0.25); margin: 0 1.2rem; }
+        .ticker-trade { color: #f0c77e; }
+        .ticker-waiver { color: rgba(0,255,136,0.8); }
+        .ticker-drop { color: rgba(255,100,100,0.7); }
+
+        /* ===== Cap bar animation — bars start at 0, fill when card is revealed ===== */
+        .cap-bar-fill {
+            height: 100%;
+            background: var(--accent-primary);
+            transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            border-radius: 0;
+            width: 0% !important; /* overridden to real width by JS after reveal */
+        }
+        .cap-bar-fill.animated {
+            width: var(--bar-target) !important;
+        }
+        .cap-bar-fill.warning { background: var(--accent-warning); }
+        .cap-bar-fill.danger  { background: var(--accent-danger); }
+        /* ===== End animation CSS ===== */
         @media (max-width: 640px) {
             /* Never let anything cause horizontal scroll of the whole page. */
             html, body { overflow-x: hidden; max-width: 100%; }
@@ -3552,6 +3609,10 @@
                 <div class="search-box">
                     <input type="text" id="playerSearch" placeholder="Search players by name…" oninput="filterPlayers()">
                 </div>
+            </div>
+
+            <div class="boom-ticker-wrap" id="boomTickerWrap" style="display:none">
+                <div class="boom-ticker" id="boomTicker"></div>
             </div>
 
             <div class="boom-toolbar">
@@ -4104,9 +4165,16 @@
             var fmt = function(n){ return '$' + Math.round(n).toLocaleString(); };
             var fmtNeg = function(n){ return n ? '−' + fmt(n) : '$0'; };
 
-            // Big number
+            // Big number — count up on first render, update directly on subsequent renders.
             var numEl = document.getElementById('potNumber');
-            if (numEl) numEl.textContent = fmt(d.remaining);
+            if (numEl) {
+                var prevText = numEl.textContent;
+                if (prevText === '$—' || prevText === '') {
+                    potCountUp(d.remaining);
+                } else {
+                    numEl.textContent = fmt(d.remaining);
+                }
+            }
 
             // Breakdown rows
             var set = function(id, val){ var el = document.getElementById(id); if(el) el.textContent = val; };
@@ -4255,6 +4323,116 @@
             savePotSettings(); renderPotTracker();
         }
         // ===== End Pot Tracker =====
+
+        // ===== UI Animations =====
+
+        // 1. COUNT-UP: animates a number from 0 to target with easing.
+        function countUp(el, target, duration, prefix, suffix) {
+            if (!el) return;
+            prefix = prefix || '';
+            suffix = suffix || '';
+            duration = duration || 800;
+            const start = performance.now();
+            function step(now) {
+                var progress = Math.min((now - start) / duration, 1);
+                var eased = 1 - Math.pow(1 - progress, 3); // ease-out cubic
+                var value = Math.round(eased * target);
+                el.textContent = prefix + value.toLocaleString() + suffix;
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        // 2. SCROLL-TRIGGERED CARD REVEALS + CAP BAR ANIMATION.
+        // Cards fade/slide in as they enter the viewport; cap bars fill at the same time.
+        var _cardObserver = null;
+        function initCardReveal() {
+            if (!('IntersectionObserver' in window)) {
+                // Fallback: reveal everything immediately if IO not supported.
+                document.querySelectorAll('.team-card').forEach(function(c){
+                    c.classList.add('revealed');
+                    c.querySelectorAll('.cap-bar-fill').forEach(function(b){ b.classList.add('animated'); });
+                });
+                return;
+            }
+            if (_cardObserver) _cardObserver.disconnect();
+            _cardObserver = new IntersectionObserver(function(entries) {
+                entries.forEach(function(entry) {
+                    if (!entry.isIntersecting) return;
+                    var card = entry.target;
+                    var idx = parseInt(card.getAttribute('data-reveal-idx') || '0');
+                    // Stagger each card slightly so they cascade in.
+                    setTimeout(function() {
+                        card.classList.add('revealed');
+                        // Animate cap bars inside this card.
+                        card.querySelectorAll('.cap-bar-fill').forEach(function(b){
+                            b.classList.add('animated');
+                        });
+                        // Count up the committed salary figure.
+                        var fig = card.querySelector('.cap-total-figure');
+                        if (fig) {
+                            var m = fig.textContent.match(/\$(\d+)/);
+                            if (m) countUp(fig, parseInt(m[1]), 600, '$', ' / $' + SALARY_CAP);
+                        }
+                    }, idx * 60);
+                    _cardObserver.unobserve(card);
+                });
+            }, { threshold: 0.08 });
+
+            document.querySelectorAll('.team-card').forEach(function(card, idx) {
+                card.setAttribute('data-reveal-idx', idx);
+                card.classList.remove('revealed');
+                card.querySelectorAll('.cap-bar-fill').forEach(function(b){ b.classList.remove('animated'); });
+                _cardObserver.observe(card);
+            });
+        }
+
+        // 3. TRANSACTION TICKER.
+        function buildTicker() {
+            var wrap = document.getElementById('boomTickerWrap');
+            var el = document.getElementById('boomTicker');
+            if (!el || !wrap) return;
+            var txns = (typeof transactionData !== 'undefined' && transactionData && transactionData.transactions)
+                ? transactionData.transactions.filter(function(t){ return String(t.season) === '2026'; }).slice(-40)
+                : [];
+            if (!txns.length) { wrap.style.display = 'none'; return; }
+
+            var items = [];
+            txns.forEach(function(t) {
+                if (t.type === 'trade') {
+                    var sides = {};
+                    (t.adds || []).forEach(function(a){ (sides[a.owner] = sides[a.owner]||[]).push(a.name||playerName(a.pid)); });
+                    Object.keys(sides).forEach(function(o){
+                        items.push('<span class="ticker-trade">TRADE · ' + o + ' gets ' + sides[o].join(', ') + '</span>');
+                    });
+                } else if (t.type === 'waiver' || t.type === 'free_agent') {
+                    var owner = (t.owners && t.owners[0]) || '?';
+                    var adds = (t.adds || []).map(function(a){ return a.name || playerName(a.pid); }).join(', ');
+                    var drops = (t.drops || []).map(function(d){ return d.name || playerName(d.pid); }).join(', ');
+                    if (adds) items.push('<span class="ticker-waiver">+ ' + owner + ' adds ' + adds + '</span>');
+                    if (drops) items.push('<span class="ticker-drop">− ' + owner + ' drops ' + drops + '</span>');
+                }
+            });
+
+            if (!items.length) { wrap.style.display = 'none'; return; }
+            var sep = '<span class="ticker-sep">✦</span>';
+            // Duplicate for seamless loop.
+            var html = items.join(sep) + sep + items.join(sep) + sep;
+            el.innerHTML = html;
+            wrap.style.display = '';
+            // Adjust speed based on content length.
+            var duration = Math.max(30, Math.round(items.length * 4));
+            el.style.animationDuration = duration + 's';
+        }
+
+        // 4. POT COUNT-UP: called by renderPotTracker when the number first appears.
+        function potCountUp(target) {
+            var el = document.getElementById('potNumber');
+            if (!el || !target) return;
+            countUp(el, target, 1000, '$');
+        }
+
+        // ===== End UI Animations =====
 
         // ===== Keeper spreadsheet download (matches the league's original format) =====
         async function downloadKeeperSheet() {
@@ -5249,7 +5427,7 @@
                         </div>
                     </div>
                     <div class="cap-bar">
-                        <div class="cap-bar-fill ${barClass}" style="width: ${Math.min(capPercentage, 100)}%"></div>
+                        <div class="cap-bar-fill ${barClass}" style="--bar-target: ${Math.min(capPercentage, 100)}%"></div>
                     </div>
                     <div class="cap-total-line">
                         <span class="cap-total-label">Committed</span>
@@ -5310,6 +5488,11 @@
                 `;
                 teamsGrid.appendChild(teamCard);
             });
+
+            // Kick off scroll-reveal + cap bar animations now that cards are in the DOM.
+            if (typeof initCardReveal === 'function') initCardReveal();
+            // Build the transaction ticker.
+            if (typeof buildTicker === 'function') buildTicker();
 
             // Populate the mobile jump-to-team dropdown
             const jumpSelect = document.getElementById('teamJumpSelect');
