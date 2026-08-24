@@ -45,6 +45,30 @@
             --font-mono: 'IBM Plex Mono', 'SF Mono', Menlo, monospace;
         }
 
+        /* Dark theme — keeps the field-green identity on a dark ledger. Toggled via the
+           data-theme attribute on <html>, persisted in localStorage. */
+        [data-theme="dark"] {
+            --bg-primary: #16181a;      /* dark slate */
+            --bg-secondary: #1e2124;
+            --bg-card: #1e2124;
+            --bg-sunken: #24282c;
+            --accent-primary: #3fa576;  /* brighter field green for contrast on dark */
+            --accent-secondary: #2f8a60;
+            --accent-success: #3fbb7d;
+            --accent-danger: #e0655c;   /* lifted brick so it reads on dark */
+            --accent-warning: #d9a441;
+            --ink: #eef0f2;
+            --text-primary: #eef0f2;
+            --text-secondary: #a8afb6;
+            --text-muted: #7d858c;
+            --border: #33383d;
+            --border-strong: #454b52;
+            --rule: #33383d;
+            --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.3);
+            --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+            --shadow-md: 0 2px 10px rgba(0, 0, 0, 0.5);
+        }
+
         body {
             font-family: var(--font-body);
             background: var(--bg-primary);
@@ -3111,6 +3135,190 @@
                 padding: 0.625rem 1rem 0.625rem 2.25rem;
             }
         }
+        /* ===== Pot Tracker ===== */
+        @keyframes pot-throb {
+            0%, 100% {
+                text-shadow:
+                    0 0 10px rgba(0,255,136,0.9),
+                    0 0 25px rgba(0,255,136,0.7),
+                    0 0 50px rgba(0,220,100,0.5),
+                    0 0 100px rgba(0,200,80,0.3);
+                transform: scale(1);
+            }
+            50% {
+                text-shadow:
+                    0 0 15px rgba(0,255,136,1),
+                    0 0 35px rgba(0,255,136,0.9),
+                    0 0 70px rgba(0,220,100,0.7),
+                    0 0 140px rgba(0,200,80,0.5),
+                    0 0 220px rgba(0,180,60,0.3);
+                transform: scale(1.04);
+            }
+        }
+        .pot-tracker {
+            background: linear-gradient(135deg, #0a1a0f 0%, #0f2018 60%, #0a1a0f 100%);
+            border: 1px solid rgba(0,255,136,0.25);
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(0,255,136,0.08), inset 0 1px 0 rgba(0,255,136,0.1);
+            padding: 1.5rem 1.75rem;
+            margin: 1rem 0 1.25rem;
+            text-align: center;
+            position: relative;
+        }
+        .pot-label {
+            font-family: var(--font-display);
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.25em;
+            color: rgba(0,255,136,0.6);
+            text-transform: uppercase;
+            margin-bottom: 0.25rem;
+        }
+        .pot-number {
+            font-family: var(--font-display);
+            font-size: clamp(2.8rem, 8vw, 5rem);
+            font-weight: 700;
+            color: #00ff88;
+            line-height: 1;
+            animation: pot-throb 2s ease-in-out infinite;
+            cursor: pointer;
+            user-select: none;
+            letter-spacing: -0.02em;
+        }
+        .pot-toggle-hint {
+            font-size: 0.7rem;
+            color: rgba(0,255,136,0.4);
+            margin-top: 0.5rem;
+            cursor: pointer;
+            letter-spacing: 0.05em;
+        }
+        .pot-toggle-hint:hover { color: rgba(0,255,136,0.7); }
+        .pot-breakdown {
+            display: none;
+            margin-top: 1.25rem;
+            border-top: 1px solid rgba(0,255,136,0.15);
+            padding-top: 1.25rem;
+            text-align: left;
+        }
+        .pot-breakdown.open { display: block; }
+        .pot-section-title {
+            font-family: var(--font-display);
+            font-size: 0.65rem;
+            letter-spacing: 0.2em;
+            color: rgba(0,255,136,0.5);
+            text-transform: uppercase;
+            margin: 1rem 0 0.4rem;
+        }
+        .pot-section-title:first-child { margin-top: 0; }
+        .pot-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 1rem;
+            font-size: 0.82rem;
+            padding: 0.2rem 0;
+            color: #b0ccbc;
+        }
+        .pot-row.total {
+            border-top: 1px solid rgba(0,255,136,0.15);
+            margin-top: 0.3rem;
+            padding-top: 0.4rem;
+            font-weight: 700;
+            color: #d0eede;
+        }
+        .pot-row.big-total {
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            color: #00ff88;
+            border-top: 1px solid rgba(0,255,136,0.3);
+            margin-top: 0.3rem;
+            padding-top: 0.5rem;
+        }
+        .pot-val { font-family: var(--font-mono); white-space: nowrap; }
+        .pot-val.pos { color: #6effa8; }
+        .pot-val.neg { color: #ff9b9b; }
+        .pot-splits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6rem; margin-top: 0.75rem; }
+        .pot-split-card {
+            background: rgba(0,255,136,0.06);
+            border: 1px solid rgba(0,255,136,0.15);
+            border-radius: 8px;
+            padding: 0.6rem 0.75rem;
+            text-align: center;
+        }
+        .pot-split-place { font-size: 1.1rem; margin-bottom: 0.2rem; }
+        .pot-split-pct { font-size: 0.65rem; color: rgba(0,255,136,0.5); letter-spacing: 0.1em; }
+        .pot-split-amt { font-family: var(--font-mono); font-size: 1.05rem; font-weight: 700; color: #00ff88; }
+        /* Ledger */
+        .pot-ledger-toggle {
+            background: none; border: 1px solid rgba(0,255,136,0.2); border-radius: 6px;
+            color: rgba(0,255,136,0.6); font-size: 0.7rem; letter-spacing: 0.1em;
+            padding: 0.3rem 0.75rem; cursor: pointer; margin-top: 0.75rem; width: 100%;
+        }
+        .pot-ledger-toggle:hover { background: rgba(0,255,136,0.06); color: rgba(0,255,136,0.9); }
+        .pot-ledger { display: none; margin-top: 0.75rem; }
+        .pot-ledger.open { display: block; }
+        .pot-ledger-table { width: 100%; border-collapse: collapse; font-size: 0.76rem; }
+        .pot-ledger-table th {
+            font-family: var(--font-display);
+            font-size: 0.62rem;
+            letter-spacing: 0.12em;
+            color: rgba(0,255,136,0.5);
+            text-align: left;
+            padding: 0.3rem 0.5rem;
+            border-bottom: 1px solid rgba(0,255,136,0.15);
+        }
+        .pot-ledger-table td {
+            padding: 0.35rem 0.5rem;
+            color: #b0ccbc;
+            border-bottom: 1px solid rgba(0,255,136,0.06);
+            font-family: var(--font-mono);
+        }
+        .pot-ledger-table td:first-child { font-family: var(--font-body); color: #d0eede; }
+        .pot-ledger-table tr:last-child td { border-bottom: none; }
+        .pot-ledger-input {
+            width: 52px; background: rgba(0,255,136,0.08); border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 4px; color: #00ff88; font-family: var(--font-mono); font-size: 0.75rem;
+            padding: 0.15rem 0.3rem; text-align: center;
+        }
+        .pot-ledger-input:focus { outline: none; border-color: rgba(0,255,136,0.5); }
+        .pot-weeks-ctrl {
+            display: flex; align-items: center; gap: 0.5rem; justify-content: center;
+        }
+        .pot-weeks-btn {
+            background: rgba(0,255,136,0.1); border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 4px; color: #00ff88; width: 26px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 1rem; line-height: 1;
+        }
+        .pot-weeks-btn:hover { background: rgba(0,255,136,0.2); }
+        .pot-season-btn {
+            background: none; border: 1px solid rgba(0,255,136,0.2); border-radius: 4px;
+            color: rgba(0,255,136,0.6); font-size: 0.7rem; padding: 0.25rem 0.6rem;
+            cursor: pointer; margin-left: 0.5rem;
+        }
+        .pot-season-btn.paid { background: rgba(0,255,136,0.12); color: #00ff88; }
+        /* ===== End Pot Tracker ===== */
+        /* ===== Mobile polish ===== */
+        @media (max-width: 640px) {
+            /* Never let anything cause horizontal scroll of the whole page. */
+            html, body { overflow-x: hidden; max-width: 100%; }
+            /* Modals: fit the viewport with a little margin, and scroll internally. */
+            .roast-modal-content, .trade-modal-content, .askboom-content {
+                width: 94vw !important;
+                max-width: 94vw !important;
+                max-height: 88vh !important;
+                overflow-y: auto;
+            }
+            /* Comfortable tap targets for all buttons. */
+            button, .roast-all-btn, .askboom-preset { min-height: 40px; }
+            /* Header buttons wrap cleanly instead of overflowing. */
+            .header-right { flex-wrap: wrap; gap: 0.4rem; }
+            #themeToggleBtn { min-height: 36px; padding: 0.3rem 0.5rem; }
+            /* Value popover shouldn't exceed the screen. */
+            .value-math-popover { max-width: 92vw !important; }
+            /* Copy/close controls stay tappable. */
+            .roast-ctrl-btn, .roast-modal-close { min-width: 32px; min-height: 32px; }
+        }
     </style>
 </head>
 <body>
@@ -3124,6 +3332,7 @@
             </div>
             <button class="menu-toggle" id="menuToggle" onclick="toggleMobileMenu()" aria-label="Menu">Menu</button>
             <div class="header-right" id="headerRight">
+                <button id="themeToggleBtn" onclick="toggleTheme()" title="Toggle light/dark" aria-label="Toggle light or dark theme">🌙</button>
                 <button onclick="loadPublicData()">Refresh</button>
                 <button onclick="exportToCSV()">Export CSV</button>
                 <button onclick="openHistory()">League History</button>
@@ -3154,6 +3363,71 @@
                 </div>
                 <div class="boom-briefing-full" id="boomBriefingFull"></div>
                 <div class="boom-briefing-meta" id="boomBriefingMeta"></div>
+            </div>
+
+            <!-- Pot Tracker -->
+            <div class="pot-tracker" id="potTracker">
+                <div class="pot-label">💰 The Pot 💰</div>
+                <div class="pot-number" id="potNumber" onclick="togglePotBreakdown()">$—</div>
+                <div class="pot-toggle-hint" onclick="togglePotBreakdown()">▼ breakdown</div>
+                <div class="pot-breakdown" id="potBreakdown">
+                    <div class="pot-section-title">Collected</div>
+                    <div class="pot-row"><span>Buy-ins (10 × $100)</span><span class="pot-val pos" id="potBuyins">$1,000</span></div>
+                    <div class="pot-row"><span>Transaction fees</span><span class="pot-val pos" id="potFees">+$0</span></div>
+                    <div class="pot-row total"><span>Total collected</span><span class="pot-val" id="potCollected">$1,000</span></div>
+
+                    <div class="pot-section-title">Paid out</div>
+                    <div class="pot-row">
+                        <span>
+                            Weekly high point
+                            <span id="potWeeksCtrl"></span>
+                        </span>
+                        <span class="pot-val neg" id="potWeeklyOut">−$0</span>
+                    </div>
+                    <div class="pot-row">
+                        <span>Season high point <span id="potSeasonBtn"></span></span>
+                        <span class="pot-val neg" id="potSeasonOut">$0</span>
+                    </div>
+                    <div class="pot-row total"><span>Total paid out</span><span class="pot-val neg" id="potPaidOut">−$0</span></div>
+
+                    <div class="pot-section-title">Remaining pot</div>
+                    <div class="pot-row big-total"><span>Available to split</span><span class="pot-val" id="potRemaining">$1,000</span></div>
+
+                    <div class="pot-section-title">Projected splits</div>
+                    <div class="pot-splits">
+                        <div class="pot-split-card">
+                            <div class="pot-split-place">🥇</div>
+                            <div class="pot-split-pct">55% · 1st</div>
+                            <div class="pot-split-amt" id="potSplit1">—</div>
+                        </div>
+                        <div class="pot-split-card">
+                            <div class="pot-split-place">🥈</div>
+                            <div class="pot-split-pct">35% · 2nd</div>
+                            <div class="pot-split-amt" id="potSplit2">—</div>
+                        </div>
+                        <div class="pot-split-card">
+                            <div class="pot-split-place">🥉</div>
+                            <div class="pot-split-pct">10% · 3rd</div>
+                            <div class="pot-split-amt" id="potSplit3">—</div>
+                        </div>
+                    </div>
+
+                    <button class="pot-ledger-toggle" onclick="togglePotLedger()">▼ Transaction Ledger (per team)</button>
+                    <div class="pot-ledger" id="potLedger">
+                        <table class="pot-ledger-table">
+                            <thead>
+                                <tr>
+                                    <th>Team</th>
+                                    <th>Waivers</th>
+                                    <th>Trades</th>
+                                    <th>Adj</th>
+                                    <th>Fees</th>
+                                </tr>
+                            </thead>
+                            <tbody id="potLedgerBody"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             <div id="boomsdayCountdown" class="boomsday" style="display: none;">
@@ -3371,7 +3645,10 @@
         <div class="roast-modal-content">
             <div class="roast-modal-header">
                 <h3>League Power Rankings</h3>
-                <button class="roast-modal-close" onclick="closeRoastModal()">×</button>
+                <div style="display:flex;gap:0.4rem;align-items:center;">
+                    <button class="roast-modal-close" id="rankingsCopyBtn" onclick="copyBoom('rankings', this)" title="Copy to clipboard" style="display:none;">⧉</button>
+                    <button class="roast-modal-close" onclick="closeRoastModal()">×</button>
+                </div>
             </div>
             <div class="roast-modal-body" id="roastModalBody">
                 <!-- Populated dynamically -->
@@ -3517,6 +3794,28 @@
     <script>
         const LEAGUE_ID = '1312069771746885632'; // Your Sleeper league ID
 
+        // Light/dark theme toggle. Persists choice in localStorage; defaults to light.
+        (function initTheme(){
+            try {
+                var saved = localStorage.getItem('boom_theme');
+                if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+            } catch (e) {}
+        })();
+        function toggleTheme() {
+            var el = document.documentElement;
+            var isDark = el.getAttribute('data-theme') === 'dark';
+            if (isDark) { el.removeAttribute('data-theme'); }
+            else { el.setAttribute('data-theme', 'dark'); }
+            try { localStorage.setItem('boom_theme', isDark ? 'light' : 'dark'); } catch (e) {}
+            var btn = document.getElementById('themeToggleBtn');
+            if (btn) btn.textContent = isDark ? '🌙' : '☀️';
+        }
+        // Set the correct icon on load.
+        document.addEventListener('DOMContentLoaded', function(){
+            var btn = document.getElementById('themeToggleBtn');
+            if (btn) btn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️' : '🌙';
+        });
+
         // Shared grounding rules injected into every B.O.O.M. prompt to cut hallucination.
         // Kept in one place so all features (chat, briefing, rankings, trades) stay consistent.
         const GROUNDING_RULES = [
@@ -3609,6 +3908,189 @@
         function closeTransactionLog() {
             document.getElementById('txnLogModal').classList.remove('active');
         }
+
+        // ===== Pot Tracker =====
+        const POT_BUYINS      = 1000;  // 10 teams × $100
+        const POT_WEEKLY_AMT  = 10;    // weekly high-point prize
+        const POT_SEASON_AMT  = 130;   // season high-point prize
+        const POT_REG_WEEKS   = 13;    // regular season weeks
+        const POT_SPLITS      = [0.55, 0.35, 0.10];
+
+        let potSettings = { weeksPaid: 0, seasonHighPaid: false, adjustments: {} };
+        let _potOpen = false, _ledgerOpen = false;
+
+        async function loadPotSettings() {
+            try {
+                const res = await fetch('/api/app-settings?key=pot_settings');
+                const d = await res.json();
+                if (d && d.value) potSettings = Object.assign({ weeksPaid:0, seasonHighPaid:false, adjustments:{} }, JSON.parse(d.value));
+            } catch(e) {}
+            renderPotTracker();
+        }
+
+        async function savePotSettings() {
+            try {
+                await fetch('/api/app-settings', {
+                    method:'POST',
+                    headers:{'Content-Type':'application/json'},
+                    body: JSON.stringify({ key:'pot_settings', value: JSON.stringify(potSettings) })
+                });
+            } catch(e) {}
+        }
+
+        // Count waivers and trades per canonical owner from allTransactions (2026 season only).
+        function computeAutoFees() {
+            const fees = {}; // { ownerName: { waiver:N, trade:N } }
+            (allTeamsData||[]).forEach(t => { fees[t.owner] = { waiver:0, trade:0 }; });
+
+            const txns = (typeof transactionData !== 'undefined' && transactionData && transactionData.transactions)
+                ? transactionData.transactions.filter(t => !t.season || String(t.season) === '2026')
+                : [];
+
+            // Track which trade IDs each owner has been counted for (avoid double-counting the same trade).
+            const tradeSeen = {}; // { txnId_ownerName: true }
+            txns.forEach(function(t) {
+                if (t.type === 'waiver' || t.type === 'free_agent') {
+                    // The owners array holds canonical owner names for this pickup.
+                    (t.owners||[]).forEach(function(o) {
+                        if (fees[o]) fees[o].waiver++;
+                    });
+                } else if (t.type === 'trade') {
+                    // Each owner in the trade pays $1 (once per trade, not per player).
+                    var txnId = t.created + '_' + (t.owners||[]).sort().join('_');
+                    (t.owners||[]).forEach(function(o) {
+                        var key = txnId + '_' + o;
+                        if (!tradeSeen[key] && fees[o]) {
+                            fees[o].trade++;
+                            tradeSeen[key] = true;
+                        }
+                    });
+                }
+            });
+            return fees;
+        }
+
+        function computePot() {
+            var auto = computeAutoFees();
+            var totalFees = 0;
+            var perTeam = {}; // { owner: { waiver, trade, adj, total } }
+            (allTeamsData||[]).forEach(function(t) {
+                var a = auto[t.owner] || { waiver:0, trade:0 };
+                var adj = ((potSettings.adjustments||{})[t.owner] || 0);
+                var teamTotal = a.waiver + a.trade + adj;
+                perTeam[t.owner] = { waiver: a.waiver, trade: a.trade, adj: adj, total: teamTotal };
+                totalFees += teamTotal;
+            });
+            var collected = POT_BUYINS + totalFees;
+            var weeklyOut = (potSettings.weeksPaid||0) * POT_WEEKLY_AMT;
+            var seasonOut = potSettings.seasonHighPaid ? POT_SEASON_AMT : 0;
+            var paidOut   = weeklyOut + seasonOut;
+            var remaining = collected - paidOut;
+            return { collected, totalFees, weeklyOut, seasonOut, paidOut, remaining, perTeam };
+        }
+
+        function renderPotTracker() {
+            var d = computePot();
+            var fmt = function(n){ return '$' + Math.round(n).toLocaleString(); };
+            var fmtNeg = function(n){ return n ? '−' + fmt(n) : '$0'; };
+
+            // Big number
+            var numEl = document.getElementById('potNumber');
+            if (numEl) numEl.textContent = fmt(d.remaining);
+
+            // Breakdown rows
+            var set = function(id, val){ var el = document.getElementById(id); if(el) el.textContent = val; };
+            set('potFees', '+' + fmt(d.totalFees));
+            set('potCollected', fmt(d.collected));
+            set('potWeeklyOut', fmtNeg(d.weeklyOut));
+            set('potSeasonOut', d.seasonOut ? '−' + fmt(d.seasonOut) : '$0');
+            set('potPaidOut', fmtNeg(d.paidOut));
+            set('potRemaining', fmt(d.remaining));
+            set('potSplit1', fmt(d.remaining * POT_SPLITS[0]));
+            set('potSplit2', fmt(d.remaining * POT_SPLITS[1]));
+            set('potSplit3', fmt(d.remaining * POT_SPLITS[2]));
+
+            // Weeks-paid control (commissioner only)
+            var weeksCtrl = document.getElementById('potWeeksCtrl');
+            if (weeksCtrl) {
+                if (commissionerMode) {
+                    weeksCtrl.innerHTML = '<span class="pot-weeks-ctrl">' +
+                        '<button class="pot-weeks-btn" onclick="adjustWeeksPaid(-1)">−</button>' +
+                        '<span style="font-family:var(--font-mono);color:#00ff88;padding:0 0.25rem">' + (potSettings.weeksPaid||0) + '/' + POT_REG_WEEKS + '</span>' +
+                        '<button class="pot-weeks-btn" onclick="adjustWeeksPaid(1)">+</button>' +
+                        '</span>';
+                } else {
+                    weeksCtrl.innerHTML = '<span style="opacity:0.5;font-size:0.75rem">(' + (potSettings.weeksPaid||0) + ' of ' + POT_REG_WEEKS + ' paid)</span>';
+                }
+            }
+
+            // Season high-point button (commissioner only)
+            var seasonBtn = document.getElementById('potSeasonBtn');
+            if (seasonBtn) {
+                if (commissionerMode) {
+                    seasonBtn.innerHTML = '<button class="pot-season-btn' + (potSettings.seasonHighPaid?' paid':'') + '" onclick="toggleSeasonHigh()">' +
+                        (potSettings.seasonHighPaid ? 'PAID ✓' : 'mark paid') + '</button>';
+                } else {
+                    seasonBtn.innerHTML = potSettings.seasonHighPaid ? '<span style="color:#6effa8;font-size:0.7rem">PAID</span>' : '';
+                }
+            }
+
+            // Ledger
+            renderPotLedger(d.perTeam);
+        }
+
+        function renderPotLedger(perTeam) {
+            var tbody = document.getElementById('potLedgerBody');
+            if (!tbody) return;
+            var rows = '';
+            (allTeamsData||[]).forEach(function(t) {
+                var pd = perTeam[t.owner] || { waiver:0, trade:0, adj:0, total:0 };
+                var adjCell = commissionerMode
+                    ? '<input class="pot-ledger-input" type="number" value="' + pd.adj + '" onchange="savePotAdjustment(\'' + (t.owner||'').replace(/'/g,"\\'") + '\', this.value)" style="width:52px">'
+                    : (pd.adj !== 0 ? (pd.adj > 0 ? '+'+pd.adj : pd.adj) : '—');
+                rows += '<tr>' +
+                    '<td>' + (t.name||t.owner) + '</td>' +
+                    '<td>' + pd.waiver + '</td>' +
+                    '<td>' + pd.trade + '</td>' +
+                    '<td>' + adjCell + '</td>' +
+                    '<td style="color:#00ff88">$' + Math.max(0, pd.total) + '</td>' +
+                    '</tr>';
+            });
+            tbody.innerHTML = rows || '<tr><td colspan="5" style="opacity:0.5;text-align:center">No transaction data yet</td></tr>';
+        }
+
+        function togglePotBreakdown() {
+            _potOpen = !_potOpen;
+            var bd = document.getElementById('potBreakdown');
+            var hint = document.querySelector('.pot-toggle-hint');
+            if (bd) bd.classList.toggle('open', _potOpen);
+            if (hint) hint.textContent = (_potOpen ? '▲ hide' : '▼ breakdown');
+        }
+
+        function togglePotLedger() {
+            _ledgerOpen = !_ledgerOpen;
+            var el = document.getElementById('potLedger');
+            var btn = document.querySelector('.pot-ledger-toggle');
+            if (el) el.classList.toggle('open', _ledgerOpen);
+            if (btn) btn.textContent = (_ledgerOpen ? '▲ Hide ledger' : '▼ Transaction Ledger (per team)');
+        }
+
+        function adjustWeeksPaid(delta) {
+            potSettings.weeksPaid = Math.max(0, Math.min(POT_REG_WEEKS, (potSettings.weeksPaid||0) + delta));
+            savePotSettings(); renderPotTracker();
+        }
+
+        function toggleSeasonHigh() {
+            potSettings.seasonHighPaid = !potSettings.seasonHighPaid;
+            savePotSettings(); renderPotTracker();
+        }
+
+        function savePotAdjustment(owner, val) {
+            if (!potSettings.adjustments) potSettings.adjustments = {};
+            potSettings.adjustments[owner] = parseInt(val) || 0;
+            savePotSettings(); renderPotTracker();
+        }
+        // ===== End Pot Tracker =====
 
         // ===== Keeper spreadsheet download (matches the league's original format) =====
         async function downloadKeeperSheet() {
@@ -4566,6 +5048,10 @@
             // Load player projections in the background (scored by our league rules)
             setTimeout(loadProjections, 0);
             setTimeout(function(){ if (typeof loadAvailablePlayers === 'function') loadAvailablePlayers(); }, 0);
+
+            // Load pot settings from Supabase and render the pot tracker.
+            if (typeof loadPotSettings === 'function') loadPotSettings();
+            else if (typeof renderPotTracker === 'function') renderPotTracker();
 
             // Load the BoomsDay countdown
             setTimeout(loadBoomsday, 0);
@@ -5567,10 +6053,13 @@ ${VOICE_RULES}`;
                 }
                 const text = (data.text || '').trim();
 
+                window._boomCopyStore = window._boomCopyStore || {};
+                window._boomCopyStore['roast-' + rosterId] = cleanBoomText(text);
                 resultDiv.innerHTML = `
                     <div class="roast-result-header">
                         <span class="roast-result-title">Analysis</span>
                         <div class="roast-result-controls">
+                            <button class="roast-ctrl-btn" onclick="copyBoom('roast-${rosterId}', this)" title="Copy to clipboard">⧉</button>
                             <button class="roast-ctrl-btn" onclick="toggleRoastMinimize(${rosterId})" title="Minimize/Expand">−</button>
                             <button class="roast-ctrl-btn" onclick="closeRoast(${rosterId})" title="Close">×</button>
                         </div>
@@ -5740,6 +6229,11 @@ ${allSummaries}`;
                 });
 
                 body.innerHTML = html || cleanBoomText(text).replace(/\n/g, '<br>');
+                // Store clean text for copy-to-clipboard and reveal the copy button.
+                window._boomCopyStore = window._boomCopyStore || {};
+                window._boomCopyStore['rankings'] = cleanBoomText(text);
+                var rcb = document.getElementById('rankingsCopyBtn');
+                if (rcb) rcb.style.display = '';
             } catch (err) {
                 body.innerHTML = '<div style="color: var(--accent-danger);">Analysis failed: ' + (err.message || 'Unknown error') + '</div>';
             } finally {
@@ -6145,6 +6639,27 @@ ${allSummaries}`;
 
         // Backstop: strip AI-tells the model may still emit despite the VOICE rules —
         // horizontal-rule dividers, markdown headers, bold, and leftover bullets.
+        // Copy stored B.O.O.M. text to clipboard; briefly flips the button to a check.
+        function copyBoom(key, btn) {
+            var store = window._boomCopyStore || {};
+            var text = store[key];
+            if (!text) return;
+            var done = function(){
+                if (btn) { var o = btn.textContent; btn.textContent = '✓'; setTimeout(function(){ btn.textContent = o; }, 1200); }
+            };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text); done(); });
+            } else { fallbackCopy(text); done(); }
+        }
+        function fallbackCopy(text) {
+            try {
+                var ta = document.createElement('textarea');
+                ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+                document.body.appendChild(ta); ta.select();
+                document.execCommand('copy'); document.body.removeChild(ta);
+            } catch (e) {}
+        }
+
         function cleanBoomText(t) {
             if (!t) return t;
             t = t
