@@ -7069,6 +7069,8 @@
                 alert('Reset failed: ' + e.message);
             }
         }
+
+        async function regenerateBriefing() {
             if (!commissionerMode) return;
             if (briefingBusy) return;
             briefingBusy = true;
