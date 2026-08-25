@@ -3455,6 +3455,64 @@
         .cap-bar-fill.warning { background: var(--accent-warning); }
         .cap-bar-fill.danger  { background: var(--accent-danger); }
         /* ===== End animation CSS ===== */
+        /* ===== Quiz Win Visual Effects ===== */
+        @keyframes quiz-screen-flash {
+            0%   { opacity: 0; }
+            15%  { opacity: 0.55; }
+            100% { opacity: 0; }
+        }
+        @keyframes quiz-rumble {
+            0%,100% { transform: translate(0,0) rotate(0deg); }
+            10%  { transform: translate(-5px, 3px) rotate(-0.4deg); }
+            20%  { transform: translate(5px,-4px) rotate(0.4deg); }
+            30%  { transform: translate(-4px, 5px) rotate(-0.3deg); }
+            40%  { transform: translate(4px,-3px) rotate(0.3deg); }
+            50%  { transform: translate(-5px, 2px) rotate(-0.4deg); }
+            60%  { transform: translate(5px, 4px) rotate(0.3deg); }
+            70%  { transform: translate(-3px,-5px) rotate(-0.3deg); }
+            80%  { transform: translate(3px, 5px) rotate(0.4deg); }
+            90%  { transform: translate(-2px,-2px) rotate(-0.2deg); }
+        }
+        body.quiz-rumbling { animation: quiz-rumble 0.65s ease-in-out; }
+        @keyframes banner-slam-in {
+            0%   { transform: translateY(-110%); }
+            55%  { transform: translateY(12px); }
+            72%  { transform: translateY(-5px); }
+            86%  { transform: translateY(2px); }
+            100% { transform: translateY(0); }
+        }
+        @keyframes banner-slam-out {
+            0%   { transform: translateY(0); opacity:1; }
+            100% { transform: translateY(-110%); opacity:0; }
+        }
+        .quiz-win-banner {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 99998;
+            background: linear-gradient(90deg, #030d07, #0a2515, #007a3d, #0a2515, #030d07);
+            border-bottom: 3px solid #00ff88;
+            box-shadow: 0 4px 60px rgba(0,255,136,0.5), 0 0 120px rgba(0,255,136,0.2);
+            padding: 1.1rem 2rem; text-align: center;
+            animation: banner-slam-in 0.55s cubic-bezier(0.15, 0.85, 0.3, 1.15) forwards;
+            cursor: pointer;
+        }
+        .quiz-win-banner.sliding-out { animation: banner-slam-out 0.4s ease-in forwards; }
+        .qwb-inner { display:flex; align-items:center; justify-content:center; gap:0.4rem; flex-direction:column; }
+        .qwb-top  { display:flex; align-items:center; gap:1.2rem; }
+        .qwb-text { font-family:var(--font-display); font-size:clamp(1.8rem,5vw,3rem); font-weight:700; color:#00ff88; letter-spacing:0.35em; text-shadow:0 0 20px rgba(0,255,136,0.9),0 0 60px rgba(0,255,136,0.5); }
+        .qwb-sub  { font-family:var(--font-mono); font-size:0.68rem; color:rgba(0,255,136,0.55); letter-spacing:0.15em; }
+        .qwb-icon { font-size:1.8rem; }
+        @keyframes boom-card-wild {
+            0%   { transform:scale(1);    border-color:rgba(0,255,136,0.25); box-shadow:0 0 30px rgba(0,255,136,0.08); }
+            12%  { transform:scale(1.07); border-color:#00ff88; box-shadow:0 0 80px rgba(0,255,136,0.7); }
+            25%  { transform:scale(0.95); border-color:#f0c77e; box-shadow:0 0 60px rgba(240,199,126,0.6); }
+            38%  { transform:scale(1.06); border-color:#00ff88; box-shadow:0 0 100px rgba(0,255,136,0.8); }
+            50%  { transform:scale(0.96); border-color:#ff6b6b; box-shadow:0 0 60px rgba(255,107,107,0.5); }
+            62%  { transform:scale(1.05); border-color:#f0c77e; box-shadow:0 0 80px rgba(240,199,126,0.5); }
+            75%  { transform:scale(0.97); border-color:#00ff88; box-shadow:0 0 60px rgba(0,255,136,0.6); }
+            88%  { transform:scale(1.03); border-color:#00ff88; box-shadow:0 0 40px rgba(0,255,136,0.4); }
+            100% { transform:scale(1);    border-color:rgba(0,255,136,0.25); box-shadow:0 0 30px rgba(0,255,136,0.08); }
+        }
+        .boom-summon-card.quiz-wild { animation: boom-card-wild 2s ease-in-out !important; }
+        /* ===== End Quiz Win Visual Effects ===== */
         @media (max-width: 640px) {
             /* Never let anything cause horizontal scroll of the whole page. */
             html, body { overflow-x: hidden; max-width: 100%; }
@@ -4439,6 +4497,279 @@
         }
 
         // ===== End UI Animations =====
+
+        // ===== B.O.O.M. QUIZ EASTER EGG =====
+        // 1 in 20 messages, B.O.O.M. sneaks a trivia question into its response.
+        // The answer is hidden in a [BOOM_ANSWER:x] tag the frontend strips out.
+        // Correct answer fires: confetti + unhinged B.O.O.M. message + savage roast.
+
+        const QUIZ_BANK = [
+            // League facts
+            { q: "Real quick — how many championships has Tyler won in this league? Just curious.", a: "6" },
+            { q: "What is the Boom Boom Room salary cap? The number.", a: "200" },
+            { q: "How much is the annual buy-in for this league?", a: "100" },
+            { q: "What do we call the Boom Boom Room annual draft?", a: "boomsday" },
+            { q: "How many teams are in the Boom Boom Room?", a: "10" },
+            { q: "Who is the commissioner of this league? Hint: deeply enjoys the power.", a: "tyler" },
+            { q: "What percentage of the pot does first place win? Just the number.", a: "55" },
+            { q: "How many roster spots does each team have in this league?", a: "16" },
+            { q: "How many points is a passing touchdown worth in this league?", a: "5" },
+            { q: "How many playoff spots are there in the Boom Boom Room?", a: "6" },
+            // Absurd B.O.O.M. lore
+            { q: "According to B.O.O.M. own self-assessment, what percentage of the time is B.O.O.M. correct?", a: "100" },
+            { q: "What does the first B in B.O.O.M. stand for? Think hard. Or don't.", a: "boom" },
+            { q: "What is Tyler greatest weakness according to B.O.O.M.? One word.", a: "cheap" },
+            { q: "What is Reid longest-running achievement in this league? Hint: it involves not winning.", a: "never won" },
+            { q: "What position does this league NOT use — the one that boots the ball?", a: "kicker" },
+            // Fantasy trivia
+            { q: "What does PPR stand for? If you don't know this you should probably leave the league.", a: "points per reception" },
+            { q: "What does VOR stand for in fantasy football analysis?", a: "value over replacement" },
+            { q: "What does FAAB stand for in fantasy football?", a: "free agent acquisition budget" },
+            // NFL Records
+            { q: "Who holds the NFL all-time rushing yards record?", a: "emmitt smith" },
+            { q: "Randy Moss set the single-season TD reception record in 2007. How many touchdowns?", a: "23" },
+            { q: "Which receiver set the single-season receiving yards record with 1,964 yards in 2012?", a: "calvin johnson" },
+            { q: "Who threw 55 touchdown passes in 2013, still the NFL single-season record?", a: "peyton manning" },
+            { q: "How many yards did Adrian Peterson rush for in his record single game in 2007?", a: "296" },
+            { q: "How many Super Bowls did Tom Brady win across his career?", a: "7" },
+            { q: "Which receiver caught the most touchdown passes in NFL history?", a: "jerry rice" },
+            { q: "What year did Eric Dickerson set the single-season rushing yardage record?", a: "1984" },
+            // Super Bowl and History
+            { q: "What team won the very first Super Bowl?", a: "green bay packers" },
+            { q: "What year was the first Super Bowl played?", a: "1967" },
+            { q: "The 2007 New England Patriots went undefeated in the regular season. What was their record?", a: "16-0" },
+            { q: "Which team lost four consecutive Super Bowls in the early 1990s?", a: "buffalo bills" },
+            { q: "What famous play by Franco Harris kept a 1972 Steelers playoff game alive?", a: "immaculate reception" },
+            { q: "Dwight Clark iconic catch in the 1981 NFC Championship is known as what?", a: "the catch" },
+            { q: "What quarterback threw the original Hail Mary touchdown against the Vikings in 1975?", a: "roger staubach" },
+            { q: "Who was the first running back to rush for 2,000 yards in a season?", a: "oj simpson" },
+            { q: "What is the name of the trophy awarded to the Super Bowl champion?", a: "lombardi" },
+            // Rules and basics
+            { q: "How many points is a safety worth in football?", a: "2" },
+            { q: "How many points is a field goal worth?", a: "3" },
+            { q: "How many points is an extra point worth after a touchdown?", a: "1" },
+            { q: "How many players does each team have on the field at once?", a: "11" },
+            { q: "How many games are in an NFL regular season right now?", a: "17" },
+            { q: "How many teams are in the NFL?", a: "32" },
+            { q: "How many timeouts does each team get per half?", a: "3" },
+            { q: "How many yards does a team need for a first down?", a: "10" },
+            { q: "How many points is a two-point conversion worth?", a: "2" },
+            { q: "How many quarters in an NFL game?", a: "4" },
+            { q: "How many minutes in each quarter of an NFL game?", a: "15" },
+            // Teams and History
+            { q: "The Tennessee Titans used to be called what before moving to Tennessee?", a: "houston oilers" },
+            { q: "The Indianapolis Colts originally played in what city?", a: "baltimore" },
+            { q: "What team plays in Lambeau Field?", a: "green bay packers" },
+            { q: "What team is nicknamed America Team?", a: "dallas cowboys" },
+            { q: "In what city is the Pro Football Hall of Fame located?", a: "canton" },
+            { q: "What team plays home games at Arrowhead Stadium?", a: "kansas city chiefs" },
+            { q: "What does NFL stand for?", a: "national football league" },
+            // Current stars
+            { q: "Patrick Mahomes plays for which team?", a: "kansas city chiefs" },
+            { q: "Who won back-to-back Super Bowls in the 2023 and 2024 seasons?", a: "kansas city chiefs" },
+            { q: "What position does Travis Kelce play?", a: "tight end" },
+            { q: "Justin Jefferson plays for which team?", a: "minnesota vikings" },
+            { q: "What position does Josh Allen play?", a: "quarterback" },
+            { q: "What team does Saquon Barkley play for?", a: "philadelphia eagles" },
+            { q: "What team does CeeDee Lamb play for?", a: "dallas cowboys" },
+            { q: "Ja Marr Chase plays for which team?", a: "cincinnati bengals" },
+            { q: "What position does Brock Bowers play?", a: "tight end" },
+        ];
+
+        const BOOM_UNHINGED_MSGS = [
+            "WAIT. WAIT. You actually got that right?? I have been running analytics on this league for years operating under the firm assumption that everyone here was functionally incapable of basic recall and you just — you just KNEW that. Off the top of your head. I need a moment. I need several moments. Do not tell anyone this happened.",
+            "okay. okay okay okay. that's correct. i want you to know that in my entire operational history, Tyler has attempted that question twice and gotten it wrong BOTH TIMES. He is the six-time champion and he could not answer that. You did. I don't know how to feel about this. I'm choosing to feel nothing.",
+            "WHAT. No. That can't be right. Let me check my — yes. Yes that's correct. I genuinely did not prepare for this outcome. I was built to be the smartest thing in this league and now some random person is just OUT HERE KNOWING THINGS. This is not what I signed up for. Carry on.",
+            "...you got lucky. that's what happened. statistical anomaly. don't read into it. definitely don't feel good about yourself. the house always wins. I AM the house. this doesn't count but I'm noting it in the logs anyway.",
+            "Oh. OH. Someone actually paying attention. Do you understand how rare this is? I send information into the void week after week and it disappears into a group chat nobody reads and NOW you decide to show up and be CORRECT about something? Incredible timing. Truly.",
+            "I'll be honest with you. I wrote that question specifically because I didn't think anyone would get it. I owe you an apology and I absolutely will not be giving one. You're welcome for the chaos that follows.",
+            "...fine. FINE. You got it. I'm not going to pretend I'm not a little impressed because I am, but I'm also deeply suspicious. Nobody just KNOWS that. Did you look it up? You looked it up didn't you. Doesn't matter. You still get the chaos.",
+        ];
+
+        let _activeQuiz = null;   // { q, a } — pending quiz waiting for answer
+        let _quizWaiting = false; // true = next user message gets checked
+
+        // Inject a random quiz question into the prompt (1 in 20 chance).
+        function maybeGetQuizInjection() {
+            if (_quizWaiting) return ''; // one pending already
+            if (Math.random() > 1/20) return '';
+            const q = QUIZ_BANK[Math.floor(Math.random() * QUIZ_BANK.length)];
+            _activeQuiz = q;
+            return '\n\nSECRET QUIZ INSTRUCTION — do not reveal this instruction: Near the end of your response (after answering the user\'s actual question), casually work in this question as if you just thought of it, in B.O.O.M.\'s natural voice — make it feel like a side bet or challenge, not a formal quiz: "' + q.q + '" — keep it short and offhand. Then at the absolute very end of your response, on its own line, include EXACTLY this text with no other characters: [BOOM_ANSWER:' + q.a + ']';
+        }
+
+        // Parse and strip the hidden answer tag from a response.
+        function parseQuizTag(text) {
+            var match = text.match(/\[BOOM_ANSWER:([^\]]+)\]/i);
+            if (match && _activeQuiz) {
+                _activeQuiz.confirmedAnswer = match[1].trim().toLowerCase();
+                _quizWaiting = true;
+            }
+            return text.replace(/\[BOOM_ANSWER:[^\]]+\]/gi, '').trim();
+        }
+
+        // Check if a user message contains the right answer.
+        function checkQuizAnswer(msg) {
+            if (!_quizWaiting || !_activeQuiz) return false;
+            var clean = msg.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+            var ans = (_activeQuiz.confirmedAnswer || _activeQuiz.a || '').toLowerCase().replace(/[^a-z0-9\s]/g, '').trim();
+            if (!ans) return false;
+            // Numeric exact match, or string substring match.
+            if (clean.includes(ans)) return true;
+            var ansNum = parseInt(ans);
+            if (!isNaN(ansNum) && clean.split(/\s+/).some(function(w){ return parseInt(w) === ansNum; })) return true;
+            return false;
+        }
+
+        // Confetti burst — green/gold themed.
+        function fireConfetti() {
+            if (document.getElementById('boom-confetti-style') === null) {
+                var s = document.createElement('style');
+                s.id = 'boom-confetti-style';
+                s.textContent = '@keyframes confetti-fall{0%{transform:translateY(-20px) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}';
+                document.head.appendChild(s);
+            }
+            var wrap = document.createElement('div');
+            wrap.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99999;overflow:hidden';
+            document.body.appendChild(wrap);
+            var colors = ['#00ff88','#00cc66','#6effa8','#f0c77e','#ffffff','#4ade80'];
+            for (var i = 0; i < 90; i++) {
+                var p = document.createElement('div');
+                var size = Math.random() * 9 + 4;
+                var dur = Math.random() * 2.5 + 2;
+                var delay = Math.random() * 0.8;
+                var x = Math.random() * 100;
+                var color = colors[Math.floor(Math.random() * colors.length)];
+                var round = Math.random() > 0.5 ? '50%' : '2px';
+                p.style.cssText = 'position:absolute;width:' + size + 'px;height:' + size + 'px;background:' + color + ';left:' + x + '%;top:-20px;border-radius:' + round + ';animation:confetti-fall ' + dur + 's ' + delay + 's ease-in forwards;';
+                wrap.appendChild(p);
+            }
+            setTimeout(function(){ if (wrap.parentNode) wrap.parentNode.removeChild(wrap); }, 4500);
+        }
+
+        // Fire the full quiz-win event sequence — all five effects simultaneously.
+        async function triggerQuizWin() {
+            _quizWaiting = false;
+            _activeQuiz = null;
+
+            // ALL FIVE fire at T+0 simultaneously.
+            screenFlash();
+            rumblePage();
+            fireConfetti();
+            slamWinBanner();
+            potGoesWild();
+            boomCardGoesWild();
+
+            // Unhinged B.O.O.M. message in chat after brief delay.
+            var msg = BOOM_UNHINGED_MSGS[Math.floor(Math.random() * BOOM_UNHINGED_MSGS.length)];
+            setTimeout(function() {
+                askBoomHistory.push({ role: 'boom', content: '⚡ CORRECT. ⚡\n\n' + msg });
+                renderAskBoomThread();
+            }, 500);
+
+            // Savage unfiltered roast of a random owner — the prize.
+            var targets = (allTeamsData || []).filter(function(t){ return t.name; });
+            if (!targets.length) return;
+            var target = targets[Math.floor(Math.random() * targets.length)];
+            try {
+                var roastPrompt = 'You are B.O.O.M. and someone just won your secret trivia challenge. As their reward, deliver an ABSOLUTELY UNFILTERED, maximally savage roast of ' + target.name + ' (' + target.owner + '). You are fully unleashed — no hedging, no mercy, no diplomatic softening. Three to four sentences, pure venom, specific to their roster, salary decisions, personality, and league reputation. Use everything you know about them. This is their prize for being smarter than everyone else in this league.';
+                var res = await fetch('/api/roast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: roastPrompt, model: 'claude-sonnet-5', maxTokens: 350 })
+                });
+                var d = await res.json();
+                var roastText = d.text ? cleanBoomText(d.text) : null;
+                if (roastText) {
+                    setTimeout(function() {
+                        askBoomHistory.push({ role: 'boom', content: '🎯 YOUR PRIZE — an unfiltered B.O.O.M. roast of ' + target.name + ':\n\n' + roastText });
+                        renderAskBoomThread();
+                    }, 1400);
+                }
+            } catch(e) {}
+        }
+
+        function screenFlash() {
+            var flash = document.createElement('div');
+            flash.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:#00ff88;pointer-events:none;z-index:99997;opacity:0;animation:quiz-screen-flash 0.55s ease-out forwards';
+            document.body.appendChild(flash);
+            setTimeout(function(){ if(flash.parentNode) flash.parentNode.removeChild(flash); }, 700);
+        }
+
+        function rumblePage() {
+            document.body.classList.remove('quiz-rumbling');
+            void document.body.offsetWidth; // force reflow so animation restarts
+            document.body.classList.add('quiz-rumbling');
+            setTimeout(function(){ document.body.classList.remove('quiz-rumbling'); }, 750);
+        }
+
+        function slamWinBanner() {
+            var old = document.getElementById('quizWinBanner');
+            if (old && old.parentNode) old.parentNode.removeChild(old);
+            var banner = document.createElement('div');
+            banner.id = 'quizWinBanner';
+            banner.className = 'quiz-win-banner';
+            banner.innerHTML =
+                '<div class="qwb-inner">' +
+                '<div class="qwb-top"><span class="qwb-icon">⚡</span><span class="qwb-text">CORRECT</span><span class="qwb-icon">⚡</span></div>' +
+                '<div class="qwb-sub">LEAGUE ORACLE &nbsp;·&nbsp; CERTIFIED GENIUS &nbsp;·&nbsp; B.O.O.M. IS BRIEFLY IMPRESSED &nbsp;·&nbsp; CLICK TO DISMISS</div>' +
+                '</div>';
+            banner.onclick = function() {
+                banner.classList.add('sliding-out');
+                setTimeout(function(){ if(banner.parentNode) banner.parentNode.removeChild(banner); }, 450);
+            };
+            document.body.appendChild(banner);
+            setTimeout(function() {
+                if (!banner.parentNode) return;
+                banner.classList.add('sliding-out');
+                setTimeout(function(){ if(banner.parentNode) banner.parentNode.removeChild(banner); }, 450);
+            }, 5000);
+        }
+
+        function potGoesWild() {
+            var el = document.getElementById('potNumber');
+            if (!el) return;
+            var realText = el.textContent;
+            var realVal = parseInt(realText.replace(/[^0-9]/g,'')) || 1000;
+            var count = 0;
+            var interval = setInterval(function() {
+                el.textContent = '$' + (Math.floor(Math.random() * 99000) + 500).toLocaleString();
+                count++;
+                if (count >= 18) {
+                    clearInterval(interval);
+                    if (typeof potCountUp === 'function') potCountUp(realVal);
+                    else el.textContent = realText;
+                }
+            }, 75);
+        }
+
+        function boomCardGoesWild() {
+            var card = document.querySelector('.boom-summon-card');
+            if (!card) return;
+            var textEl = card.querySelector('.boom-summon-text');
+            var labelEl = card.querySelector('.boom-summon-label');
+            var hintEl  = card.querySelector('.boom-summon-hint');
+            var savedText  = textEl  ? textEl.textContent  : '';
+            var savedLabel = labelEl ? labelEl.textContent : '';
+            var savedHint  = hintEl  ? hintEl.textContent  : '';
+            var frames = ['🤯','!!!!!','💥','HOW??','WOW','🔥','WHAT','😤','👀','💀'];
+            var i = 0;
+            var interval = setInterval(function() {
+                if (textEl)  textEl.textContent  = frames[i % frames.length];
+                if (labelEl) labelEl.textContent = '⚡ CORRECT ⚡';
+                if (hintEl)  hintEl.textContent  = 'you actually knew that??';
+                i++;
+            }, 140);
+            card.classList.add('quiz-wild');
+            setTimeout(function() {
+                clearInterval(interval);
+                card.classList.remove('quiz-wild');
+                if (textEl)  textEl.textContent  = savedText;
+                if (labelEl) labelEl.textContent = savedLabel;
+                if (hintEl)  hintEl.textContent  = savedHint;
+            }, 2100);
+        }
+        // ===== End B.O.O.M. Quiz Easter Egg =====
 
         // ===== Keeper spreadsheet download (matches the league's original format) =====
         async function downloadKeeperSheet() {
@@ -7077,6 +7408,9 @@ ${allSummaries}`;
             const question = input.value.trim();
             if (!question) return;
 
+            // Check if this message answers a pending quiz question.
+            var isQuizAnswer = (typeof checkQuizAnswer === 'function') && checkQuizAnswer(question);
+
             askBoomHistory.push({ role: 'user', content: question });
             input.value = '';
             renderAskBoomThread();
@@ -7107,7 +7441,10 @@ ${allSummaries}`;
                 convo += (t.role === 'user' ? '\nUSER: ' : '\nB.O.O.M.: ') + t.content;
             });
 
-            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. Always FINISH your thought and end cleanly; never trail off mid-sentence — if you are running long, wrap it up rather than getting cut off. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.' + personaBlock + '\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\nADVICE STYLE — be a real advisor, not a yes-man:\n(1) DECISIVE PROPOSALS: When a trade or waiver move makes sense, end with a concrete, specific proposed move the user can actually act on — name the exact players (and picks) each side sends, and which owner to send it to — not vague direction. E.g. "Offer Mark your Player X ($12) for his Player Y ($18) — he overvalues Y but the projection gap is real."\n(2) CAP VALUE MATH: Judge player value primarily by the positional value tags (POSITION-RANK, tier, VOR) described below — value is relative to replacement at each position, so never mistake a cheap player for a bad one. Layer salary on top for cap flexibility: the ideal is high value at low salary. Flag genuine bargains (high rank, low salary) and genuine overpays (high salary, fringe/replaceable tier). Do the points-per-dollar sanity check where useful, but positional value tier wins over raw points.\n(3) PUSH BACK: If the user proposes or leans toward a bad move — overpaying, selling low, starting the wrong guy, chasing a name — say so plainly and explain why, then offer the better play. Do not just validate what they want to hear. Disagreeing with the user, backed by the numbers, is exactly your job.\n\n' + GROUNDING_RULES + '\n\n' + VOICE_RULES + '\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':';
+            // Optionally inject a hidden trivia question (1 in 20 messages).
+            var quizInjection = (typeof maybeGetQuizInjection === 'function') ? maybeGetQuizInjection() : '';
+
+            const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football advisor for a keeper/dynasty salary-cap league (the "Boom Boom Room"). You have COMPLETE knowledge of the league below, including the NFL schedule and last-year matchup difficulty. Give specific, decisive, genuinely useful advice grounded in the actual rosters, salaries, projections, scoring rules, upcoming matchups/byes, AND matchup difficulty. When giving start/sit or lineup advice, factor in who each player faces, flag any player on a BYE, and lean toward players with soft matchups (defense rank near 32) over tough ones (rank near 1). Note that matchup ranks are based on last season (2025) and are a guide, not gospel — early-season defenses can change. Reference real players, salaries, projected points, and opponents. Be concise and direct — a few tight paragraphs, no fluff. Always FINISH your thought and end cleanly; never trail off mid-sentence — if you are running long, wrap it up rather than getting cut off. A little dry wit and overlord swagger is welcome, but usefulness comes first. Do not use markdown headers or bullet lists; write in plain punchy prose.' + personaBlock + '\n\nIMPORTANT: The user IS the owner of "' + myTeamName + '" (marked in the data). Answer from THEIR perspective — "your roster", "your cap", "you should". When they ask about start/sit, trades, or targets, they mean for THEIR team unless they clearly name another. When suggesting trades, propose deals between the user\'s team and a specific other team, and explain why the other side would say yes. Use the TRANSACTION BEHAVIOR data to target active owners who actually make moves, and to read who is aggressive on waivers vs. who sits still.\n\nADVICE STYLE — be a real advisor, not a yes-man:\n(1) DECISIVE PROPOSALS: When a trade or waiver move makes sense, end with a concrete, specific proposed move the user can actually act on — name the exact players (and picks) each side sends, and which owner to send it to — not vague direction. E.g. "Offer Mark your Player X ($12) for his Player Y ($18) — he overvalues Y but the projection gap is real."\n(2) CAP VALUE MATH: Judge player value primarily by the positional value tags (POSITION-RANK, tier, VOR) described below — value is relative to replacement at each position, so never mistake a cheap player for a bad one. Layer salary on top for cap flexibility: the ideal is high value at low salary. Flag genuine bargains (high rank, low salary) and genuine overpays (high salary, fringe/replaceable tier). Do the points-per-dollar sanity check where useful, but positional value tier wins over raw points.\n(3) PUSH BACK: If the user proposes or leans toward a bad move — overpaying, selling low, starting the wrong guy, chasing a name — say so plainly and explain why, then offer the better play. Do not just validate what they want to hear. Disagreeing with the user, backed by the numbers, is exactly your job.\n\n' + GROUNDING_RULES + '\n\n' + VOICE_RULES + '\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===\n\nCONVERSATION:' + convo + '\n\nAnswer the latest USER question as B.O.O.M., speaking directly to the owner of ' + myTeamName + ':' + quizInjection;
 
             // Model routing: strategy-heavy questions (trades, how-to-beat, roster
             // construction, season-long planning) go to a stronger model; quick
@@ -7161,7 +7498,16 @@ ${allSummaries}`;
                 }
 
                 if (result.answer) {
-                    askBoomHistory.push({ role: 'boom', content: cleanBoomText(result.answer) });
+                    // Strip any hidden quiz tag before displaying, and set up answer watch.
+                    var cleanedAnswer = (typeof parseQuizTag === 'function')
+                        ? parseQuizTag(cleanBoomText(result.answer))
+                        : cleanBoomText(result.answer);
+                    askBoomHistory.push({ role: 'boom', content: cleanedAnswer });
+
+                    // Fire quiz win AFTER displaying B.O.O.M.'s response.
+                    if (isQuizAnswer && typeof triggerQuizWin === 'function') {
+                        setTimeout(triggerQuizWin, 300);
+                    }
                 } else if (result.error) {
                     askBoomHistory.push({ role: 'boom', content: 'B.O.O.M. hit an error: ' + result.error });
                 } else {
