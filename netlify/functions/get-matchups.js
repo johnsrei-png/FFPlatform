@@ -66,6 +66,15 @@ exports.handler = async (event) => {
       return { matchupId: mid, sides: sides };
     });
 
+    // Aggregate per-player actual fantasy points across all rosters for this week.
+    // players_points from Sleeper already reflects the league's scoring settings.
+    const playerPoints = {};
+    raw.forEach(entry => {
+      if (entry.players_points && typeof entry.players_points === 'object') {
+        Object.assign(playerPoints, entry.players_points);
+      }
+    });
+
     return {
       statusCode: 200,
       headers: jsonHeaders(),
@@ -73,7 +82,8 @@ exports.handler = async (event) => {
         leagueId: leagueId,
         week: week,
         matchupCount: matchups.length,
-        matchups: matchups
+        matchups: matchups,
+        playerPoints: playerPoints  // { player_id: actual_fantasy_points } for this week
       })
     };
   } catch (error) {
