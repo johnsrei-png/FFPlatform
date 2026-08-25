@@ -7032,7 +7032,7 @@
                 toggleEl.style.display = (parsed.full ? '' : 'none');
                 var stamp = parsed.generated ? new Date(parsed.generated).toLocaleDateString([], {month:'short', day:'numeric', year:'numeric'}) : '';
                 metaEl.innerHTML = (stamp ? 'Generated ' + stamp : '') +
-                    (commissionerMode ? ' <button class="boom-briefing-regen" id="briefingRegenBtn" onclick="regenerateBriefing()">Regenerate</button>' : '');
+                    (commissionerMode ? ' <button class="boom-briefing-regen" id="briefingRegenBtn" onclick="regenerateBriefing()">Regenerate</button> <button class="boom-briefing-regen" onclick="resetProjectionBaseline()" title="Clear stored projection snapshots and set today as the new baseline">Reset Proj. Baseline</button>' : '');
             } else {
                 headlineEl.textContent = commissionerMode
                     ? 'No briefing yet — hit Regenerate to have B.O.O.M. write one.'
@@ -7052,7 +7052,23 @@
             toggle.textContent = open ? 'Hide' : 'Read';
         }
 
-        async function regenerateBriefing() {
+        async function resetProjectionBaseline() {
+            if (!confirm('Reset the projection baseline? This clears all stored snapshots and captures today\'s blended projections as the new starting point. There is no undo.')) return;
+            try {
+                // Clear the stored tracking data.
+                await fetch('/api/app-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'proj_tracking', value: JSON.stringify({ snapshots: {}, actuals: {} }) })
+                });
+                projTrackingData = { snapshots: {}, actuals: {} };
+                // Immediately capture today's blended projections as the fresh baseline.
+                await captureProjectionData();
+                alert('Done — today\'s blended projections are now the baseline. The change indicators will reset on next load.');
+            } catch(e) {
+                alert('Reset failed: ' + e.message);
+            }
+        }
             if (!commissionerMode) return;
             if (briefingBusy) return;
             briefingBusy = true;
