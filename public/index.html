@@ -4506,7 +4506,8 @@
             }
 
             // 2. Capture weekly actuals for any completed weeks we haven't stored yet.
-            // Uses players_points from the matchups endpoint (actual scored fantasy pts).
+            // Guard: only store a week if players actually scored — pre-season matchup
+            // responses return playerPoints with 0s for everyone, which corrupts the data.
             const curWeek = (typeof currentNflWeek === 'number' && currentNflWeek > 0) ? currentNflWeek : 0;
             if (curWeek > 1) {
                 for (let wk = 1; wk < curWeek; wk++) {
@@ -4516,13 +4517,24 @@
                             const mr = await fetch('/api/get-matchups?leagueId=' + LEAGUE_ID + '&week=' + wk);
                             const md = await mr.json();
                             if (md && md.playerPoints && Object.keys(md.playerPoints).length > 0) {
-                                projTrackingData.actuals[wkKey] = md.playerPoints;
-                                changed = true;
+                                var totalScored = Object.values(md.playerPoints).reduce(function(s,v){ return s + (v||0); }, 0);
+                                // Only store if real games were played — pre-season endpoints return zeros.
+                                if (totalScored > 10) {
+                                    projTrackingData.actuals[wkKey] = md.playerPoints;
+                                    changed = true;
+                                }
                             }
                         } catch(e) {}
                     }
                 }
             }
+
+            // Purge any previously stored zero-week actuals (bogus pre-season data).
+            Object.keys(projTrackingData.actuals).forEach(function(wk) {
+                var wkData = projTrackingData.actuals[wk];
+                var total = Object.values(wkData).reduce(function(s,v){ return s + (v||0); }, 0);
+                if (total <= 10) { delete projTrackingData.actuals[wk]; changed = true; }
+            });
 
             if (changed) {
                 try {
@@ -4671,7 +4683,8 @@
                 statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + Math.round(chart.startProj) + ' pts</span>Started at</div>';
             }
             // Projected finish pace: actual scored + remaining × current weekly rate.
-            if (chart.weeksPlayed > 0 && chart.curProj !== null) {
+            // Only use this if there are real non-zero actuals (skip bogus pre-season zeros).
+            if (chart.weeksPlayed > 0 && chart.actualTotal > 0 && chart.curProj !== null) {
                 var remaining = 17 - chart.weeksPlayed;
                 var pace = Math.round(chart.actualTotal + remaining * (chart.curProj / 17));
                 statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + pace + ' pts</span>Proj. finish</div>';
