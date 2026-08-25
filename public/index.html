@@ -4471,7 +4471,40 @@
         }
         // ===== End Pot Tracker =====
 
-        // ===== Projection Accuracy Tracker =====
+        // ===== FantasyPros consensus projection blending =====
+        // Fetches FP projections and blends 50/50 with Sleeper's to sharpen accuracy.
+
+        let fpProjData = null; // { nameKey: { pts, position, team } }
+
+        // Normalize a player name for fuzzy matching (handles D.K., D'Andre, Jr., etc.)
+        function normalizeProjName(name) {
+            return (name || '').toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+        }
+
+        async function loadFPProjections() {
+            try {
+                const res = await fetch('/api/get-fp-projections?season=2026');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data || !Array.isArray(data.players) || !data.players.length) return;
+                fpProjData = {};
+                data.players.forEach(function(p) {
+                    // Store by normalized name — use team+position as tiebreaker key
+                    // to handle same-name players.
+                    var key = p.nameKey || normalizeProjName(p.name || '');
+                    fpProjData[key] = { pts: p.pts, position: p.position, team: p.team };
+                    // Also store name+team as a more specific key.
+                    var teamKey = key + '_' + (p.team || '').toLowerCase();
+                    fpProjData[teamKey] = { pts: p.pts, position: p.position, team: p.team };
+                });
+                // Projections changed — invalidate value cache and reapply.
+                invalidateValueCache();
+                applyProjectionsToRows();
+            } catch(e) {
+                // FP data unavailable — Sleeper-only projections remain in effect.
+            }
+        }
+        // ===== End FantasyPros blending =====
         // Captures daily projection snapshots + weekly actual scores.
         // Click any player's projected points to see a trend chart.
 
@@ -5542,7 +5575,25 @@
         // Season projected points for a player id (0 if unknown).
         function projectedSeasonPoints(playerId) {
             if (!projectionData || !projectionData[playerId]) return null;
-            return scoreProjection(projectionData[playerId].stats);
+            const sleeperPts = scoreProjection(projectionData[playerId].stats);
+
+            // Blend with FantasyPros consensus if we have it — 50/50 average.
+            // FP consensus aggregates 130+ analysts, which is empirically more accurate
+            // than any single projection source including Sleeper's alone.
+            if (fpProjData && playersLookup && playersLookup[playerId]) {
+                const p = playersLookup[playerId];
+                const fullName = normalizeProjName(
+                    ((p.first_name || '') + ' ' + (p.last_name || '')).trim()
+                );
+                const teamKey = fullName + '_' + (p.team || '').toLowerCase();
+                // Try team-specific key first (handles same-name players), then name-only.
+                const fp = fpProjData[teamKey] || fpProjData[fullName];
+                if (fp && fp.pts > 0) {
+                    return Math.round((sleeperPts + fp.pts) / 2);
+                }
+            }
+
+            return sleeperPts;
         }
 
         // ===== Positional value (VORP-style) =====
@@ -6218,6 +6269,9 @@
             // Load player projections in the background (scored by our league rules)
             setTimeout(loadProjections, 0);
             setTimeout(function(){ if (typeof loadAvailablePlayers === 'function') loadAvailablePlayers(); }, 0);
+            // Load FantasyPros consensus projections for blending (slightly delayed so
+            // Sleeper projections load first and are immediately useful).
+            setTimeout(function(){ if (typeof loadFPProjections === 'function') loadFPProjections(); }, 1500);
 
             // Load pot settings from Supabase and render the pot tracker.
             if (typeof loadPotSettings === 'function') loadPotSettings();
