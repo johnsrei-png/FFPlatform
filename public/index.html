@@ -3482,9 +3482,34 @@
         .pcp-name { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; color: #eafff2; }
         .pcp-close { background:none; border:none; color:#9db8a8; font-size:1.2rem; cursor:pointer; padding:0 0.2rem; }
         .pcp-close:hover { color:#fff; }
-        .pcp-legend { display:flex; gap:1rem; font-size:0.68rem; color:#a9c4b6; margin-bottom:0.6rem; }
+        .pcp-stats {
+            display: flex; gap: 0.5rem; margin-bottom: 0.65rem; flex-wrap: wrap;
+        }
+        .pcp-stat {
+            background: rgba(0,255,136,0.07); border: 1px solid rgba(0,255,136,0.15);
+            border-radius: 6px; padding: 0.3rem 0.55rem; font-size: 0.7rem;
+            color: #b0ccbc; flex: 1; min-width: 70px; text-align: center;
+        }
+        .pcp-stat-val { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; color: #00ff88; display: block; }
+        .pcp-stat-val.up { color: #6effa8; }
+        .pcp-stat-val.down { color: #ff9b9b; }
+        .pcp-legend { display:flex; gap:1rem; font-size:0.68rem; color:#a9c4b6; margin-bottom:0.5rem; }
         .pcp-legend-dot { display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:0.3rem; vertical-align:middle; }
         .pcp-note { font-size:0.65rem; color:#829a8c; font-style:italic; margin-top:0.5rem; line-height:1.4; }
+        /* SVG dot hover tooltips — CSS-only, no JS needed */
+        .dot-tip { display: none; pointer-events: none; }
+        .proj-dot-g:hover .dot-tip { display: block; }
+        /* Team projected total line */
+        .team-proj-line {
+            display: flex; justify-content: space-between; align-items: center;
+            font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.25rem;
+            padding-top: 0.25rem; border-top: 1px solid var(--border);
+        }
+        .team-proj-label { letter-spacing: 0.03em; }
+        .team-proj-figure { font-family: var(--font-mono); color: var(--text-primary); font-weight: 600; }
+        .team-proj-change { font-family: var(--font-mono); font-size: 0.65rem; }
+        .team-proj-change.up { color: #6effa8; }
+        .team-proj-change.down { color: #ff9b9b; }
         /* ===== End Projection Chart Popover ===== */
         /* ===== Quiz Win Visual Effects ===== */
         @keyframes quiz-screen-flash {
@@ -4510,20 +4535,19 @@
             }
         }
 
-        // Build the SVG chart for a player's projection trend + weekly actuals.
+        // Build the SVG chart — returns { svg, startProj, curProj, actualTotal, weeksPlayed }
         function buildProjectionChartSVG(pid) {
             const snaps = (projTrackingData && projTrackingData.snapshots) || {};
             const acts  = (projTrackingData && projTrackingData.actuals)  || {};
 
-            // Projection trend: season total ÷ 17 to get weekly rate (comparable to actual weekly scores).
             const snapDates = Object.keys(snaps).sort();
-            const projSeries = snapDates.map(function(d){
-                return snaps[d] && snaps[d][pid] ? Math.round((snaps[d][pid] / 17) * 10) / 10 : null;
-            }).filter(function(v){ return v !== null; });
-            const validDates = snapDates.filter(function(d){ return snaps[d] && snaps[d][pid]; });
+            const projSeries = []; const validDates = [];
+            snapDates.forEach(function(d){
+                const v = snaps[d] && snaps[d][pid] ? Math.round((snaps[d][pid] / 17) * 10) / 10 : null;
+                if (v !== null) { projSeries.push(v); validDates.push(d); }
+            });
 
-            // Actual weekly scores.
-            const NFL_START = new Date('2026-09-05'); // approx week 1 kickoff
+            const NFL_START = new Date('2026-09-05');
             const actualSeries = [];
             Object.keys(acts).sort(function(a,b){ return parseInt(a)-parseInt(b); }).forEach(function(wk){
                 const pts = acts[wk][pid];
@@ -4533,73 +4557,82 @@
                 }
             });
 
-            const hasData = projSeries.length > 0;
-            if (!hasData) return '<div style="color:#829a8c;font-size:0.75rem;text-align:center;padding:1rem">No projection history yet — check back once the season starts.</div>';
+            // Stats for the summary bar.
+            const startProj = validDates.length ? snaps[validDates[0]][pid] : null;
+            const curProj   = projectedSeasonPoints(pid);
+            const actualTotal = actualSeries.reduce(function(s,a){ return s + a.pts; }, 0);
+            const weeksPlayed = actualSeries.length;
 
-            // Chart dimensions.
-            const W=300, H=140, PL=38, PR=12, PT=14, PB=30;
-            const cW = W-PL-PR, cH = H-PT-PB;
-
-            // Y scale: 0 to max of projections and actuals, with headroom.
-            const allY = [...projSeries, ...actualSeries.map(function(a){ return a.pts; })];
-            const maxY = Math.max(...allY) + 4;
-            const minY = Math.max(0, Math.min(...allY) - 2);
-            function yp(v){ return PT + cH - ((v - minY) / (maxY - minY)) * cH; }
-
-            // X scale: time from first snapshot date to today (or last actual, whichever is later).
-            const firstDate = new Date(validDates[0]);
-            const lastDate = actualSeries.length
-                ? new Date(Math.max(new Date(), actualSeries[actualSeries.length-1].date))
-                : new Date();
-            const spanMs = Math.max(lastDate - firstDate, 86400000);
-            function xp(date){
-                return PL + ((new Date(date) - firstDate) / spanMs) * cW;
+            if (!projSeries.length) {
+                return { svg: '<div style="color:#829a8c;font-size:0.75rem;text-align:center;padding:1rem">No projection history yet — check back as the season starts.</div>', startProj, curProj, actualTotal, weeksPlayed };
             }
 
-            let svg = '<svg width="' + W + '" height="' + H + '" xmlns="http://www.w3.org/2000/svg" style="display:block">';
+            const W=300, H=145, PL=38, PR=14, PT=18, PB=30;
+            const cW = W-PL-PR, cH = H-PT-PB;
+            const allY = [...projSeries, ...actualSeries.map(function(a){ return a.pts; })];
+            const maxY = Math.ceil(Math.max(...allY) + 4);
+            const minY = Math.max(0, Math.floor(Math.min(...allY) - 2));
+            function yp(v){ return PT + cH - ((v-minY)/(maxY-minY))*cH; }
+            const firstDate = new Date(validDates[0]);
+            const lastDate  = actualSeries.length ? new Date(Math.max(new Date(), actualSeries[actualSeries.length-1].date)) : new Date();
+            const spanMs = Math.max(lastDate - firstDate, 86400000);
+            function xp(d){ return PL + ((new Date(d)-firstDate)/spanMs)*cW; }
 
-            // Grid lines.
-            const yTicks = [minY, (minY+maxY)/2, maxY].map(Math.round);
+            let svg = '<svg width="'+W+'" height="'+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible">';
+
+            // Grid + Y labels.
+            const yTicks = [minY, Math.round((minY+maxY)/2), maxY];
             yTicks.forEach(function(v){
                 const y = yp(v);
-                svg += '<line x1="' + PL + '" y1="' + y + '" x2="' + (W-PR) + '" y2="' + y + '" stroke="rgba(0,255,136,0.1)" stroke-width="1"/>';
-                svg += '<text x="' + (PL-4) + '" y="' + (y+3.5) + '" text-anchor="end" font-size="9" fill="rgba(0,255,136,0.45)" font-family="monospace">' + v + '</text>';
+                svg += '<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="rgba(0,255,136,0.1)" stroke-width="1"/>';
+                svg += '<text x="'+(PL-4)+'" y="'+(y+3.5)+'" text-anchor="end" font-size="9" fill="rgba(0,255,136,0.45)" font-family="monospace">'+v+'</text>';
             });
-
-            // X axis baseline.
-            svg += '<line x1="' + PL + '" y1="' + (PT+cH) + '" x2="' + (W-PR) + '" y2="' + (PT+cH) + '" stroke="rgba(0,255,136,0.2)" stroke-width="1"/>';
+            svg += '<line x1="'+PL+'" y1="'+(PT+cH)+'" x2="'+(W-PR)+'" y2="'+(PT+cH)+'" stroke="rgba(0,255,136,0.2)" stroke-width="1"/>';
+            svg += '<text transform="rotate(-90,'+(PL-28)+','+(PT+cH/2)+')" x="'+(PL-28)+'" y="'+(PT+cH/2+3)+'" text-anchor="middle" font-size="8" fill="rgba(0,255,136,0.3)" font-family="monospace">pts/wk</text>';
 
             // Projection trend line.
             if (validDates.length > 1) {
-                var pts = validDates.map(function(d, i){ return xp(d) + ',' + yp(projSeries[i]); }).join(' ');
-                svg += '<polyline points="' + pts + '" stroke="#00ff88" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>';
+                var lp = validDates.map(function(d,i){ return xp(d)+','+yp(projSeries[i]); }).join(' ');
+                svg += '<polyline points="'+lp+'" stroke="#00ff88" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>';
             }
-            // Projection dots.
-            validDates.forEach(function(d, i){
-                svg += '<circle cx="' + xp(d) + '" cy="' + yp(projSeries[i]) + '" r="3" fill="#00ff88"/>';
+
+            // Projection dots with hover tooltip.
+            validDates.forEach(function(d,i){
+                var cx=xp(d), cy=yp(projSeries[i]);
+                var tipY = cy < PT+20 ? cy+18 : cy-20;
+                var label = projSeries[i]+'pts/wk · '+d.slice(5);
+                var tW = Math.max(label.length * 5.5, 60);
+                svg += '<g class="proj-dot-g">';
+                svg += '<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="#00ff88" stroke="#0a1a0f" stroke-width="1.5"/>';
+                svg += '<g class="dot-tip" transform="translate('+cx+','+tipY+')">';
+                svg += '<rect x="'+(-(tW/2))+'" y="-11" width="'+tW+'" height="14" rx="3" fill="#12160f" stroke="#00ff88" stroke-width="0.7"/>';
+                svg += '<text x="0" y="0" text-anchor="middle" font-size="9" fill="#00ff88" font-family="monospace">'+label+'</text>';
+                svg += '</g></g>';
             });
 
-            // X axis labels: first date + "now" or latest.
-            var x0 = xp(validDates[0]);
-            var xl = xp(validDates[validDates.length-1]);
-            svg += '<text x="' + x0 + '" y="' + (H-5) + '" text-anchor="middle" font-size="9" fill="rgba(0,255,136,0.35)" font-family="monospace">' + validDates[0].slice(5) + '</text>';
+            // X axis date labels.
+            svg += '<text x="'+xp(validDates[0])+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="rgba(0,255,136,0.35)" font-family="monospace">'+validDates[0].slice(5)+'</text>';
             if (validDates.length > 1) {
-                svg += '<text x="' + xl + '" y="' + (H-5) + '" text-anchor="middle" font-size="9" fill="rgba(0,255,136,0.35)" font-family="monospace">now</text>';
+                svg += '<text x="'+xp(validDates[validDates.length-1])+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="rgba(0,255,136,0.35)" font-family="monospace">now</text>';
             }
 
-            // Actual score dots (gold).
+            // Actual score dots with hover tooltip.
             actualSeries.forEach(function(a){
-                var ax = xp(a.date), ay = yp(a.pts);
-                svg += '<circle cx="' + ax + '" cy="' + ay + '" r="5" fill="#f0c77e" stroke="#1a1205" stroke-width="1.5"/>';
-                svg += '<text x="' + ax + '" y="' + (ay-9) + '" text-anchor="middle" font-size="9" fill="#f0c77e" font-weight="bold" font-family="monospace">' + a.pts + '</text>';
-                svg += '<text x="' + ax + '" y="' + (H-5) + '" text-anchor="middle" font-size="8" fill="rgba(240,199,126,0.55)" font-family="monospace">W' + a.wk + '</text>';
+                var ax=xp(a.date), ay=yp(a.pts);
+                var tipY = ay < PT+20 ? ay+18 : ay-20;
+                var label = a.pts+' pts · Wk'+a.wk;
+                var tW = Math.max(label.length * 5.5, 60);
+                svg += '<g class="proj-dot-g">';
+                svg += '<circle cx="'+ax+'" cy="'+ay+'" r="5" fill="#f0c77e" stroke="#1a1205" stroke-width="1.5"/>';
+                svg += '<g class="dot-tip" transform="translate('+ax+','+tipY+')">';
+                svg += '<rect x="'+(-(tW/2))+'" y="-11" width="'+tW+'" height="14" rx="3" fill="#12160f" stroke="#f0c77e" stroke-width="0.7"/>';
+                svg += '<text x="0" y="0" text-anchor="middle" font-size="9" fill="#f0c77e" font-family="monospace">'+label+'</text>';
+                svg += '</g></g>';
+                svg += '<text x="'+ax+'" y="'+(H-5)+'" text-anchor="middle" font-size="8" fill="rgba(240,199,126,0.5)" font-family="monospace">W'+a.wk+'</text>';
             });
-
-            // Y axis label.
-            svg += '<text transform="rotate(-90,' + (PL-28) + ',' + (PT+cH/2) + ')" x="' + (PL-28) + '" y="' + (PT+cH/2+3) + '" text-anchor="middle" font-size="8" fill="rgba(0,255,136,0.35)" font-family="monospace">pts/wk</text>';
 
             svg += '</svg>';
-            return svg;
+            return { svg, startProj, curProj, actualTotal, weeksPlayed };
         }
 
         // Show the projection chart popover for a player.
@@ -4621,20 +4654,44 @@
             const curProj   = projectedSeasonPoints(pid);
             const perWk     = curProj ? Math.round(curProj / 17 * 10) / 10 : null;
 
+            const chart = buildProjectionChartSVG(pid);
+
+            // Stats summary bar.
+            let statsHtml = '<div class="pcp-stats">';
+            if (chart.curProj !== null) {
+                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + Math.round(chart.curProj) + ' pts</span>Current proj.</div>';
+            }
+            if (chart.startProj !== null && chart.curProj !== null && chart.startProj !== chart.curProj) {
+                var diff = Math.round(chart.curProj - chart.startProj);
+                var cls = diff >= 0 ? 'up' : 'down';
+                var sign = diff >= 0 ? '+' : '';
+                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + Math.round(chart.startProj) + ' pts</span>Started at</div>';
+                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val ' + cls + '">' + sign + diff + ' pts</span>Change</div>';
+            } else if (chart.startProj !== null) {
+                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + Math.round(chart.startProj) + ' pts</span>Started at</div>';
+            }
+            // Projected finish pace: actual scored + remaining × current weekly rate.
+            if (chart.weeksPlayed > 0 && chart.curProj !== null) {
+                var remaining = 17 - chart.weeksPlayed;
+                var pace = Math.round(chart.actualTotal + remaining * (chart.curProj / 17));
+                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + pace + ' pts</span>Proj. finish</div>';
+            }
+            statsHtml += '</div>';
+
             pop.innerHTML =
                 '<div class="pcp-header">' +
-                '<span class="pcp-name">' + (playerName||'Player') + ' — Projection Trend</span>' +
+                '<span class="pcp-name">' + (playerName||'Player') + '</span>' +
                 '<button class="pcp-close" onclick="hideProjectionChart()">×</button>' +
                 '</div>' +
+                statsHtml +
                 '<div class="pcp-legend">' +
-                '<span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk (season ÷ 17)</span>' +
-                (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual weekly score</span>' : '') +
+                '<span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk</span>' +
+                (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual weekly</span>' : '') +
                 '</div>' +
-                buildProjectionChartSVG(pid) +
+                (typeof chart.svg === 'string' ? chart.svg : chart) +
                 '<div class="pcp-note">' +
-                (snapCount <= 1 ? 'Only one snapshot so far — the trend line fills in daily as the season progresses. ' : 'Trend captured across ' + snapCount + ' daily snapshots. ') +
-                (actCount === 0 ? 'Actual weekly scores appear here once games are played.' : actCount + ' week' + (actCount>1?'s':'') + ' of actual scores recorded.') +
-                (perWk ? ' Current: ~' + perWk + ' pts/wk projected.' : '') +
+                (snapCount <= 1 ? 'One snapshot so far — trend builds daily as the season progresses. ' : snapCount + ' daily snapshots captured. ') +
+                (actCount === 0 ? 'Actual scores appear once games are played.' : actCount + ' week' + (actCount>1?'s':'') + ' of actuals tracked.') +
                 '</div>';
 
             // Position near the clicked element.
@@ -5866,6 +5923,41 @@
                 }
                 el.innerHTML = html;
             });
+
+            // Update team-level projected total on each card.
+            (allTeamsData || []).forEach(function(team) {
+                var lineEl  = document.getElementById('team-proj-' + team.rosterId);
+                var figEl   = document.getElementById('team-proj-fig-' + team.rosterId);
+                var chgEl   = document.getElementById('team-proj-chg-' + team.rosterId);
+                if (!lineEl || !figEl) return;
+                var total = 0, anyProj = false;
+                (team.players || []).forEach(function(p) {
+                    var pts = projectedSeasonPoints(p.id);
+                    if (pts !== null && pts !== undefined) { total += pts; anyProj = true; }
+                });
+                if (!anyProj) { lineEl.style.display = 'none'; return; }
+                total = Math.round(total);
+                figEl.textContent = total.toLocaleString() + ' pts season';
+                lineEl.style.display = '';
+                // Show change vs. first stored snapshot if available.
+                if (chgEl && projTrackingData && projTrackingData.snapshots) {
+                    var dates = Object.keys(projTrackingData.snapshots).sort();
+                    if (dates.length > 1) {
+                        var firstSnap = projTrackingData.snapshots[dates[0]];
+                        var startTotal = 0;
+                        (team.players || []).forEach(function(p) {
+                            if (firstSnap[p.id]) startTotal += firstSnap[p.id];
+                        });
+                        if (startTotal > 0) {
+                            var diff = total - Math.round(startTotal);
+                            if (Math.abs(diff) >= 1) {
+                                chgEl.textContent = (diff >= 0 ? ' +' : ' ') + diff;
+                                chgEl.className = 'team-proj-change ' + (diff >= 0 ? 'up' : 'down');
+                            } else { chgEl.textContent = ''; }
+                        }
+                    }
+                }
+            });
         }
 
         function getPositionClass(position) {
@@ -6158,6 +6250,13 @@
                     <div class="cap-total-line">
                         <span class="cap-total-label">Committed</span>
                         <span class="cap-total-figure">$${team.totalSalary} / $${SALARY_CAP}</span>
+                    </div>
+                    <div class="team-proj-line" id="team-proj-${team.rosterId}" style="display:none">
+                        <span class="team-proj-label">Projected</span>
+                        <span>
+                            <span class="team-proj-figure" id="team-proj-fig-${team.rosterId}">—</span>
+                            <span class="team-proj-change" id="team-proj-chg-${team.rosterId}"></span>
+                        </span>
                     </div>
                     <div class="playoff-odds" data-roster="${team.rosterId}"></div>
                     <div class="cap-preview" id="cap-preview-${team.rosterId}">
