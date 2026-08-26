@@ -6156,9 +6156,9 @@
                     var nameEl = playerItemEl.querySelector('.player-name');
                     if (nameEl) playerNameSafe = nameEl.textContent.trim();
                 }
-                var pidEsc  = String(pid).replace(/'/g, "\\'");
-                var nameEsc = playerNameSafe.replace(/'/g, "\\'");
-                var html = '<span class="proj-total" onclick="event.stopPropagation();openPlayerChart(\'' + pidEsc + '\',\'' + nameEsc + '\')" title="Click to see projection trend">' + Math.round(total) + ' pts</span>' +
+                var pidEsc  = String(pid).replace(/"/g, '&quot;');
+                var nameEsc = playerNameSafe.replace(/"/g, '&quot;');
+                var html = '<span class="proj-total" data-pid="' + pidEsc + '" data-pname="' + nameEsc + '" onclick="openPlayerChart(this.dataset.pid,this.dataset.pname)" title="Click to see projection trend">' + Math.round(total) + ' pts</span>' +
                     '<span class="proj-pergame">' + perGame.toFixed(1) + '/gm</span>';
                 // Value badge (tier + VOR + bargain/overpay/cliff) — clickable for math
                 if (val && val.byPlayer[pid]) {
