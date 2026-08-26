@@ -6139,16 +6139,13 @@
                 }
                 el.innerHTML = html;
 
-                // Attach click handler directly — more reliable than inline onclick or delegation.
-                var projSpan = el.querySelector('.proj-total');
-                if (projSpan) {
-                    (function(spanPid, spanName) {
-                        projSpan.addEventListener('click', function(e) {
-                            e.stopPropagation();
-                            showProjectionChart(e, spanPid, spanName);
-                        });
-                    })(pid, playerNameSafe);
-                }
+                // Attach click handler to the container element directly.
+                // This is more reliable than attaching to innerHTML-created children.
+                el.style.cursor = 'pointer';
+                el.onclick = function(e) {
+                    e.stopPropagation();
+                    showProjectionChart(e, pid, playerNameSafe);
+                };
             });
 
             // Update team-level projected total on each card.
