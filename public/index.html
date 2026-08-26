@@ -5541,6 +5541,9 @@
             try {
                 const res = await fetch('/api/get-defense-ratings?season=2025');
                 defenseRatings = await res.json();
+                // Schedule adjustment uses defense ratings — recalculate VOR with it.
+                invalidateValueCache();
+                applyProjectionsToRows();
             } catch (e) {
                 defenseRatings = null;
             }
@@ -5550,6 +5553,9 @@
             try {
                 const res = await fetch('/api/get-schedule?season=2026');
                 scheduleData = await res.json();
+                // Schedule adjustment uses opponent data — recalculate VOR with it.
+                invalidateValueCache();
+                applyProjectionsToRows();
             } catch (e) {
                 scheduleData = null;
             }
@@ -5612,23 +5618,29 @@
             if (!projectionData || !projectionData[playerId]) return null;
             const sleeperPts = scoreProjection(projectionData[playerId].stats);
 
-            // Blend with FantasyPros consensus if we have it — 50/50 average.
-            // FP consensus aggregates 130+ analysts, which is empirically more accurate
-            // than any single projection source including Sleeper's alone.
+            // Blend with FantasyPros consensus if available (50/50).
+            let basePts = sleeperPts;
             if (fpProjData && playersLookup && playersLookup[playerId]) {
                 const p = playersLookup[playerId];
                 const fullName = normalizeProjName(
                     ((p.first_name || '') + ' ' + (p.last_name || '')).trim()
                 );
                 const teamKey = fullName + '_' + (p.team || '').toLowerCase();
-                // Try team-specific key first (handles same-name players), then name-only.
                 const fp = fpProjData[teamKey] || fpProjData[fullName];
                 if (fp && fp.pts > 0) {
-                    return Math.round((sleeperPts + fp.pts) / 2);
+                    basePts = (sleeperPts + fp.pts) / 2;
                 }
             }
 
-            return sleeperPts;
+            // Apply schedule-difficulty adjustment. A player with a brutal schedule
+            // of tough defenses at their position projects lower than raw; a soft
+            // schedule projects higher. Adjustment range is roughly ±18%.
+            const adj = computeScheduleAdjustment(playerId);
+            if (adj) {
+                return Math.round(basePts * adj.factor);
+            }
+
+            return Math.round(basePts);
         }
 
         // ===== Positional value (VORP-style) =====
@@ -5933,7 +5945,52 @@
         document.addEventListener('keydown', function(e){ if (e.key === 'Escape') hideValueMath(); });
 
         // Projected games (default 17 if not provided).
+        // Compute a schedule-difficulty multiplier for a player based on their actual
+        // opponents and those defenses' rankings at their position.
+        // Rank 1 (toughest) → 0.82 multiplier (18% penalty)
+        // Rank 16.5 (average) → 1.00 (neutral)
+        // Rank 32 (softest)  → 1.18 multiplier (18% bonus)
+        // Returns { factor, gameCount } or null if data unavailable.
+        function computeScheduleAdjustment(playerId) {
+            if (!scheduleData || !scheduleData.schedule || !defenseRatings || !defenseRatings.ranks) return null;
+            if (!playersLookup || !playersLookup[playerId]) return null;
+
+            const p    = playersLookup[playerId];
+            const team = p.team;
+            const pos  = (p.position || '').toUpperCase();
+            const posKey = { QB:'qb', RB:'rb', WR:'wr', TE:'te' }[pos] || null;
+            if (!posKey || !team) return null;
+
+            const sched      = scheduleData.schedule[team];
+            if (!sched)      return null;
+            const totalWeeks = scheduleData.weeks || 17;
+
+            let multiplierSum = 0, gameCount = 0;
+
+            for (let w = 1; w <= totalWeeks; w++) {
+                if (sched.byes && sched.byes.indexOf(w) !== -1) continue; // bye — skip
+
+                const rawOpp = sched.weekly && sched.weekly[w];
+                const oppTeam = rawOpp ? rawOpp.replace(/^(@|vs)/, '') : null;
+                const rank = oppTeam && defenseRatings.ranks[oppTeam]
+                    ? defenseRatings.ranks[oppTeam][posKey]
+                    : null;
+
+                // Linear scale: rank 1 → 0.82, rank 32 → 1.18
+                const mult = rank ? (0.82 + (rank - 1) * (0.36 / 31)) : 1.0;
+                multiplierSum += mult;
+                gameCount++;
+            }
+
+            if (!gameCount) return null;
+            return { factor: multiplierSum / gameCount, gameCount };
+        }
+
         function projectedGames(playerId) {
+            // Use schedule-derived game count (total weeks minus bye) when available,
+            // fall back to projection data's gp field.
+            const adj = computeScheduleAdjustment(playerId);
+            if (adj && adj.gameCount > 0) return adj.gameCount;
             if (!projectionData || !projectionData[playerId]) return 17;
             const gp = projectionData[playerId].stats.gp;
             return (gp && gp > 0) ? gp : 17;
