@@ -4768,43 +4768,17 @@
         // Global function for player projection chart — called via inline onclick.
         function openPlayerChart(pid, playerName) {
             var pop = document.getElementById('projChartPopover');
-            if (!pop) return;
+            if (!pop) { 
+                document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;top:10px;left:10px;background:red;color:white;z-index:99999;padding:10px">NO POP ELEMENT</div>');
+                return; 
+            }
+            pop.style.cssText = 'display:block!important;position:fixed!important;top:100px!important;left:50px!important;width:330px!important;background:#12160f!important;border:2px solid #00ff88!important;padding:1rem!important;z-index:99999!important;color:white!important;';
+            pop.innerHTML = '<b style="color:#00ff88">CHART CLICKED: ' + pid + ' / ' + (playerName||'?') + '</b><br>Building chart...<button onclick="this.parentElement.style.display=\'none\'">close</button>';
             try {
-                var actCount = Object.keys((projTrackingData && projTrackingData.actuals) || {}).length;
-                var curProj  = projectedSeasonPoints(pid);
-                var perWk    = curProj ? Math.round(projectedPerGame(pid) * 10) / 10 : null;
-                var chart    = buildProjectionChartSVG(pid);
-
-                var statsHtml = '<div class="pcp-stats">';
-                if (perWk !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + perWk + ' pts</span>Proj. per game</div>';
-                if (curProj !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + curProj + ' pts</span>Season total</div>';
-                if (chart.weeksPlayed > 0 && chart.actualTotal > 0) {
-                    var aAvg = Math.round((chart.actualTotal / chart.weeksPlayed) * 10) / 10;
-                    var diff = perWk !== null ? Math.round((aAvg - perWk) * 10) / 10 : null;
-                    statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + aAvg + ' pts</span>Actual avg/wk</div>';
-                    if (diff !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val ' + (diff>=0?'up':'down') + '">' + (diff>=0?'+':'') + diff + '</span>vs projection</div>';
-                }
-                statsHtml += '</div>';
-
-                pop.innerHTML =
-                    '<div class="pcp-header"><span class="pcp-name">' + (playerName||'Player') + '</span>' +
-                    '<button class="pcp-close" onclick="hideProjectionChart()">x</button></div>' +
-                    statsHtml +
-                    '<div class="pcp-legend"><span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk</span>' +
-                    (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual</span>' : '') +
-                    '</div>' + (chart.svg || '') +
-                    '<div class="pcp-note">Green = schedule-adjusted weekly projection. Gold dots = actual weekly scores.</div>';
-
-                pop.style.display = 'block';
-                pop.style.left = '50px';
-                pop.style.top = '200px';
-                pop.style.width = '330px';
+                var chart = buildProjectionChartSVG(pid);
+                pop.innerHTML += '<br>' + (chart && chart.svg ? 'SVG OK' : 'NO SVG');
             } catch(err) {
-                pop.innerHTML = '<div style="padding:0.75rem;color:#829a8c;font-size:0.75rem">Error: ' + (err && err.message) + '</div>';
-                pop.style.display = 'block';
-                pop.style.left = '50px';
-                pop.style.top = '200px';
-                pop.style.width = '330px';
+                pop.innerHTML += '<br>ERROR: ' + err.message;
             }
         }
 
