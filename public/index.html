@@ -3638,6 +3638,7 @@
                 <button id="advanceSeasonBtn" class="advance-season-btn" style="display: none;" onclick="openAdvanceSeasonModal()">Advance Season</button>
                 <button id="escalationBtn" class="escalation-btn" style="display: none;" onclick="openEscalationModal()">Settings</button>
                 <button id="boomsdayBtn" class="escalation-btn" style="display: none;" onclick="openBoomsdayModal()">Set BoomsDay</button>
+                <button id="resetProjBaselineBtn" class="escalation-btn" style="display: none;" onclick="resetProjectionBaseline()">Reset Proj. Baseline</button>
             </div>
         </div>
     </div>
@@ -6438,6 +6439,8 @@
             escalationBtn.style.display = commissionerMode ? 'block' : 'none';
             const boomsdayBtn = document.getElementById('boomsdayBtn');
             if (boomsdayBtn) boomsdayBtn.style.display = commissionerMode ? 'block' : 'none';
+            const resetProjBtn = document.getElementById('resetProjBaselineBtn');
+            if (resetProjBtn) resetProjBtn.style.display = commissionerMode ? 'block' : 'none';
             
             // Reload to show/hide edit functionality
             loadPublicData();
