@@ -4617,98 +4617,147 @@
 
         // Build the SVG chart — returns { svg, startProj, curProj, actualTotal, weeksPlayed }
         function buildProjectionChartSVG(pid) {
-            const snaps = (projTrackingData && projTrackingData.snapshots) || {};
-            const acts  = (projTrackingData && projTrackingData.actuals)  || {};
+            const acts  = (projTrackingData && projTrackingData.actuals) || {};
 
-            const snapDates = Object.keys(snaps).sort();
-            const projSeries = []; const validDates = [];
-            snapDates.forEach(function(d){
-                const v = snaps[d] && snaps[d][pid] ? Math.round((snaps[d][pid] / 17) * 10) / 10 : null;
-                if (v !== null) { projSeries.push(v); validDates.push(d); }
-            });
+            // Get player info for schedule lookup.
+            const player   = playersLookup && playersLookup[pid];
+            const nflTeam  = player ? player.team : null;
+            const pos      = player ? (player.position || '').toUpperCase() : null;
+            const posKey   = { QB:'qb', RB:'rb', WR:'wr', TE:'te' }[pos] || null;
+            const sched    = (scheduleData && scheduleData.schedule && nflTeam)
+                             ? scheduleData.schedule[nflTeam] : null;
+            const totalWks = (scheduleData && scheduleData.weeks) || 17;
 
-            const NFL_START = new Date('2026-09-05');
-            const actualSeries = [];
-            Object.keys(acts).sort(function(a,b){ return parseInt(a)-parseInt(b); }).forEach(function(wk){
-                const pts = acts[wk][pid];
-                if (pts !== undefined && pts !== null) {
-                    const weekDate = new Date(NFL_START.getTime() + (parseInt(wk)-1) * 7 * 86400000);
-                    actualSeries.push({ date: weekDate, pts: Math.round(pts*10)/10, wk: parseInt(wk) });
+            // Current blended + schedule-adjusted per-game base rate.
+            const seasonPts = projectedSeasonPoints(pid);
+            const adj       = computeScheduleAdjustment(pid);
+            // Back out the factor to get the un-adjusted per-game base for per-week calc.
+            const basePts   = (seasonPts && adj) ? (seasonPts / adj.factor) : seasonPts;
+            const basePpg   = basePts ? basePts / 17 : null;
+
+            // Build week-by-week projected and actual series.
+            const weeks = []; // { w, proj: float|null, actual: float|null, isBye: bool, opp: string }
+            for (var w = 1; w <= totalWks; w++) {
+                var isBye = sched && sched.byes && sched.byes.indexOf(w) !== -1;
+                var proj = null;
+                var opp = '';
+                if (!isBye && basePpg) {
+                    var rawOpp = sched && sched.weekly ? sched.weekly[w] : null;
+                    opp = rawOpp || '';
+                    var oppTeam = rawOpp ? rawOpp.replace(/^(@|vs)/, '') : null;
+                    var rank = (oppTeam && defenseRatings && defenseRatings.ranks && defenseRatings.ranks[oppTeam])
+                               ? defenseRatings.ranks[oppTeam][posKey] : null;
+                    var mult = rank ? (0.82 + (rank - 1) * (0.36 / 31)) : 1.0;
+                    proj = Math.round(basePpg * mult * 10) / 10;
                 }
-            });
-
-            // Stats for the summary bar.
-            const startProj = validDates.length ? snaps[validDates[0]][pid] : null;
-            const curProj   = projectedSeasonPoints(pid);
-            const actualTotal = actualSeries.reduce(function(s,a){ return s + a.pts; }, 0);
-            const weeksPlayed = actualSeries.length;
-
-            if (!projSeries.length) {
-                return { svg: '<div style="color:#829a8c;font-size:0.75rem;text-align:center;padding:1rem">No projection history yet — check back as the season starts.</div>', startProj, curProj, actualTotal, weeksPlayed };
+                var actualPts = acts[String(w)] && acts[String(w)][pid] != null
+                    ? Math.round(acts[String(w)][pid] * 10) / 10 : null;
+                weeks.push({ w, proj, actual: actualPts, isBye, opp });
             }
 
-            const W=300, H=145, PL=38, PR=14, PT=18, PB=30;
+            // Stats for summary bar.
+            const curProj     = seasonPts;
+            const actualWks   = weeks.filter(function(x){ return x.actual !== null; });
+            const actualTotal = actualWks.reduce(function(s,x){ return s + x.actual; }, 0);
+            const weeksPlayed = actualPts.length;
+            const startProj   = seasonPts; // no longer tracking historical snapshots as primary display
+
+            const hasAnyProj = weeks.some(function(x){ return x.proj !== null; });
+            if (!hasAnyProj && !weeksPlayed) {
+                return { svg: '<div style="color:#829a8c;font-size:0.75rem;text-align:center;padding:1rem">Schedule data loading — check back in a moment.</div>', startProj, curProj, actualTotal, weeksPlayed };
+            }
+
+            // Chart geometry.
+            const W=300, H=150, PL=36, PR=12, PT=16, PB=28;
             const cW = W-PL-PR, cH = H-PT-PB;
-            const allY = [...projSeries, ...actualSeries.map(function(a){ return a.pts; })];
-            const maxY = Math.ceil(Math.max(...allY) + 4);
-            const minY = Math.max(0, Math.floor(Math.min(...allY) - 2));
-            function yp(v){ return PT + cH - ((v-minY)/(maxY-minY))*cH; }
-            const firstDate = new Date(validDates[0]);
-            const lastDate  = actualSeries.length ? new Date(Math.max(new Date(), actualSeries[actualSeries.length-1].date)) : new Date();
-            const spanMs = Math.max(lastDate - firstDate, 86400000);
-            function xp(d){ return PL + ((new Date(d)-firstDate)/spanMs)*cW; }
+            const allY = weeks.reduce(function(a,x){
+                if (x.proj   !== null) a.push(x.proj);
+                if (x.actual !== null) a.push(x.actual);
+                return a;
+            }, []);
+            const maxY = allY.length ? Math.ceil(Math.max.apply(null, allY) + 3) : 30;
+            const minY = allY.length ? Math.max(0, Math.floor(Math.min.apply(null, allY) - 2)) : 0;
+            function yp(v){ return PT + cH - ((v - minY) / (maxY - minY)) * cH; }
+            function xp(w){ return PL + ((w - 1) / (totalWks - 1)) * cW; }
 
-            let svg = '<svg width="'+W+'" height="'+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible">';
+            var svg = '<svg width="'+W+'" height="'+H+'" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible">';
 
-            // Grid + Y labels.
-            const yTicks = [minY, Math.round((minY+maxY)/2), maxY];
+            // Y axis grid + labels.
+            var yTicks = [minY, Math.round((minY+maxY)/2), maxY];
             yTicks.forEach(function(v){
-                const y = yp(v);
+                var y = yp(v);
                 svg += '<line x1="'+PL+'" y1="'+y+'" x2="'+(W-PR)+'" y2="'+y+'" stroke="rgba(0,255,136,0.1)" stroke-width="1"/>';
-                svg += '<text x="'+(PL-4)+'" y="'+(y+3.5)+'" text-anchor="end" font-size="9" fill="rgba(0,255,136,0.45)" font-family="monospace">'+v+'</text>';
+                svg += '<text x="'+(PL-3)+'" y="'+(y+3.5)+'" text-anchor="end" font-size="9" fill="rgba(0,255,136,0.45)" font-family="monospace">'+v+'</text>';
             });
             svg += '<line x1="'+PL+'" y1="'+(PT+cH)+'" x2="'+(W-PR)+'" y2="'+(PT+cH)+'" stroke="rgba(0,255,136,0.2)" stroke-width="1"/>';
-            svg += '<text transform="rotate(-90,'+(PL-28)+','+(PT+cH/2)+')" x="'+(PL-28)+'" y="'+(PT+cH/2+3)+'" text-anchor="middle" font-size="8" fill="rgba(0,255,136,0.3)" font-family="monospace">pts/wk</text>';
 
-            // Projection trend line.
-            if (validDates.length > 1) {
-                var lp = validDates.map(function(d,i){ return xp(d)+','+yp(projSeries[i]); }).join(' ');
-                svg += '<polyline points="'+lp+'" stroke="#00ff88" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>';
+            // Shade bye week columns lightly.
+            weeks.forEach(function(wk){
+                if (!wk.isBye) return;
+                var x = xp(wk.w);
+                var bw = cW / (totalWks - 1);
+                svg += '<rect x="'+(x - bw/2)+'" y="'+PT+'" width="'+bw+'" height="'+cH+'" fill="rgba(0,255,136,0.04)"/>';
+            });
+
+            // Projected line — drawn as segments (breaks at byes).
+            var projSegment = [];
+            weeks.forEach(function(wk, i){
+                if (wk.proj !== null) {
+                    projSegment.push(xp(wk.w)+','+yp(wk.proj));
+                } else {
+                    // Bye or missing — flush current segment then break.
+                    if (projSegment.length > 1) {
+                        svg += '<polyline points="'+projSegment.join(' ')+'" stroke="#00ff88" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>';
+                    } else if (projSegment.length === 1) {
+                        // Single isolated point — draw a dot instead.
+                        var parts = projSegment[0].split(',');
+                        svg += '<circle cx="'+parts[0]+'" cy="'+parts[1]+'" r="3" fill="#00ff88"/>';
+                    }
+                    projSegment = [];
+                }
+            });
+            if (projSegment.length > 1) {
+                svg += '<polyline points="'+projSegment.join(' ')+'" stroke="#00ff88" stroke-width="2" fill="none" stroke-linejoin="round" stroke-linecap="round"/>';
             }
 
-            // Projection dots with hover tooltip.
-            validDates.forEach(function(d,i){
-                var cx=xp(d), cy=yp(projSeries[i]);
-                var tipY = cy < PT+20 ? cy+18 : cy-20;
-                var label = projSeries[i]+'pts/wk · '+d.slice(5);
-                var tW = Math.max(label.length * 5.5, 60);
+            // Projected week dots with hover tooltip.
+            weeks.forEach(function(wk){
+                if (wk.proj === null) return;
+                var cx = xp(wk.w), cy = yp(wk.proj);
+                var tipY = cy < PT+20 ? cy+18 : cy-18;
+                var oppLabel = wk.opp ? ' vs '+wk.opp : '';
+                var label = wk.proj+' pts'+oppLabel;
+                var tW = Math.max(label.length * 5.2, 55);
                 svg += '<g class="proj-dot-g">';
-                svg += '<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="#00ff88" stroke="#0a1a0f" stroke-width="1.5"/>';
+                svg += '<circle cx="'+cx+'" cy="'+cy+'" r="3.5" fill="#00ff88" stroke="#0a1a0f" stroke-width="1"/>';
                 svg += '<g class="dot-tip" transform="translate('+cx+','+tipY+')">';
                 svg += '<rect x="'+(-(tW/2))+'" y="-11" width="'+tW+'" height="14" rx="3" fill="#12160f" stroke="#00ff88" stroke-width="0.7"/>';
                 svg += '<text x="0" y="0" text-anchor="middle" font-size="9" fill="#00ff88" font-family="monospace">'+label+'</text>';
                 svg += '</g></g>';
             });
 
-            // X axis date labels.
-            svg += '<text x="'+xp(validDates[0])+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="rgba(0,255,136,0.35)" font-family="monospace">'+validDates[0].slice(5)+'</text>';
-            if (validDates.length > 1) {
-                svg += '<text x="'+xp(validDates[validDates.length-1])+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="rgba(0,255,136,0.35)" font-family="monospace">now</text>';
-            }
-
             // Actual score dots with hover tooltip.
-            actualSeries.forEach(function(a){
-                var ax=xp(a.date), ay=yp(a.pts);
-                var tipY = ay < PT+20 ? ay+18 : ay-20;
-                var label = a.pts+' pts · Wk'+a.wk;
-                var tW = Math.max(label.length * 5.5, 60);
+            weeks.forEach(function(wk){
+                if (wk.actual === null) return;
+                var ax = xp(wk.w), ay = yp(wk.actual);
+                var tipY = ay < PT+20 ? ay+18 : ay-18;
+                var diff = wk.proj !== null ? (wk.actual >= wk.proj ? '+' : '') + (wk.actual - wk.proj).toFixed(1) : '';
+                var label = wk.actual+' pts ('+diff+')';
+                var tW = Math.max(label.length * 5.2, 55);
                 svg += '<g class="proj-dot-g">';
                 svg += '<circle cx="'+ax+'" cy="'+ay+'" r="5" fill="#f0c77e" stroke="#1a1205" stroke-width="1.5"/>';
                 svg += '<g class="dot-tip" transform="translate('+ax+','+tipY+')">';
                 svg += '<rect x="'+(-(tW/2))+'" y="-11" width="'+tW+'" height="14" rx="3" fill="#12160f" stroke="#f0c77e" stroke-width="0.7"/>';
                 svg += '<text x="0" y="0" text-anchor="middle" font-size="9" fill="#f0c77e" font-family="monospace">'+label+'</text>';
                 svg += '</g></g>';
-                svg += '<text x="'+ax+'" y="'+(H-5)+'" text-anchor="middle" font-size="8" fill="rgba(240,199,126,0.5)" font-family="monospace">W'+a.wk+'</text>';
+            });
+
+            // X axis week labels — show every 3rd week + W1 and W17 to avoid crowding.
+            weeks.forEach(function(wk){
+                if (wk.w !== 1 && wk.w !== totalWks && wk.w % 3 !== 0) return;
+                var label = wk.isBye ? 'BYE' : 'W'+wk.w;
+                var color = wk.isBye ? 'rgba(0,255,136,0.25)' : 'rgba(0,255,136,0.35)';
+                svg += '<text x="'+xp(wk.w)+'" y="'+(H-4)+'" text-anchor="middle" font-size="8" fill="'+color+'" font-family="monospace">'+label+'</text>';
             });
 
             svg += '</svg>';
@@ -4729,33 +4778,30 @@
                 return;
             }
 
-            const snapCount = Object.keys((projTrackingData.snapshots)||{}).length;
-            const actCount  = Object.keys((projTrackingData.actuals)||{}).length;
+            const snapCount = Object.keys((projTrackingData && projTrackingData.snapshots)||{}).length;
+            const actCount  = Object.keys((projTrackingData && projTrackingData.actuals)||{}).length;
             const curProj   = projectedSeasonPoints(pid);
-            const perWk     = curProj ? Math.round(curProj / 17 * 10) / 10 : null;
+            const perWk     = curProj ? Math.round(projectedPerGame(pid) * 10) / 10 : null;
 
             const chart = buildProjectionChartSVG(pid);
 
-            // Stats summary bar.
+            // Stats bar — show per-game projection and actual performance once games played.
             let statsHtml = '<div class="pcp-stats">';
-            if (chart.curProj !== null) {
-                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + Math.round(chart.curProj) + ' pts</span>Current proj.</div>';
+            if (perWk !== null) {
+                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + perWk + ' pts</span>Proj. per game</div>';
             }
-            if (chart.startProj !== null && chart.curProj !== null && chart.startProj !== chart.curProj) {
-                var diff = Math.round(chart.curProj - chart.startProj);
-                var cls = diff >= 0 ? 'up' : 'down';
-                var sign = diff >= 0 ? '+' : '';
-                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + Math.round(chart.startProj) + ' pts</span>Started at</div>';
-                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val ' + cls + '">' + sign + diff + ' pts</span>Change</div>';
-            } else if (chart.startProj !== null) {
-                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + Math.round(chart.startProj) + ' pts</span>Started at</div>';
+            if (curProj !== null) {
+                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + curProj + ' pts</span>Season total</div>';
             }
-            // Projected finish pace: actual scored + remaining × current weekly rate.
-            // Only use this if there are real non-zero actuals (skip bogus pre-season zeros).
-            if (chart.weeksPlayed > 0 && chart.actualTotal > 0 && chart.curProj !== null) {
-                var remaining = 17 - chart.weeksPlayed;
-                var pace = Math.round(chart.actualTotal + remaining * (chart.curProj / 17));
-                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + pace + ' pts</span>Proj. finish</div>';
+            if (chart.weeksPlayed > 0 && chart.actualTotal > 0) {
+                var actualAvg = Math.round((chart.actualTotal / chart.weeksPlayed) * 10) / 10;
+                var diff = perWk !== null ? Math.round((actualAvg - perWk) * 10) / 10 : null;
+                var cls  = diff !== null ? (diff >= 0 ? 'up' : 'down') : '';
+                var sign = diff !== null && diff >= 0 ? '+' : '';
+                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + actualAvg + ' pts</span>Actual avg/wk</div>';
+                if (diff !== null) {
+                    statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val ' + cls + '">' + sign + diff + '</span>vs projection</div>';
+                }
             }
             statsHtml += '</div>';
 
@@ -4766,13 +4812,13 @@
                 '</div>' +
                 statsHtml +
                 '<div class="pcp-legend">' +
-                '<span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk</span>' +
-                (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual weekly</span>' : '') +
+                '<span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk (schedule-adjusted)</span>' +
+                (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual score · hover for details</span>' : '') +
                 '</div>' +
                 (typeof chart.svg === 'string' ? chart.svg : chart) +
                 '<div class="pcp-note">' +
-                (snapCount <= 1 ? 'One snapshot so far — trend builds daily as the season progresses. ' : snapCount + ' daily snapshots captured. ') +
-                (actCount === 0 ? 'Actual scores appear once games are played.' : actCount + ' week' + (actCount>1?'s':'') + ' of actuals tracked.') +
+                'Green line = week-by-week projection (rises vs soft defenses, dips vs tough ones, gaps = byes). ' +
+                (actCount === 0 ? 'Gold dots appear once games are played.' : 'Gold dots show actual scores — hover for vs-projection comparison.') +
                 '</div>';
 
             // Position near the clicked element.
