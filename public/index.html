@@ -4849,6 +4849,20 @@
             if (pop) pop.style.display = 'none';
         }
 
+        // Delegated click handler for projection chart — more reliable than inline onclick.
+        document.addEventListener('click', function(e) {
+            var el = e.target;
+            while (el && el !== document.body) {
+                if (el.classList && el.classList.contains('proj-total')) {
+                    var pid  = el.getAttribute('data-proj-pid');
+                    var name = el.getAttribute('data-proj-name') || '';
+                    if (pid) showProjectionChart(e, pid, name);
+                    return;
+                }
+                el = el.parentElement;
+            }
+        });
+
         // Close on outside click or Escape.
         document.addEventListener('click', function(e){
             const pop = document.getElementById('projChartPopover');
@@ -6115,7 +6129,13 @@
                 const total = projectedSeasonPoints(pid);
                 if (total === null) { el.innerHTML = ''; return; }
                 const perGame = projectedPerGame(pid);
-                var html = '<span class="proj-total" onclick="showProjectionChart(event,\'' + pid + '\',\'' + (el.closest('.player-item') ? el.closest('.player-item').querySelector('.player-name')?.textContent?.trim()?.replace(/'/g,"\\'") || '' : '') + '\')" title="Click to see projection trend">' + Math.round(total) + ' pts</span>' +
+                var playerNameSafe = '';
+                var playerItemEl = el.closest ? el.closest('.player-item') : null;
+                if (playerItemEl) {
+                    var nameEl = playerItemEl.querySelector('.player-name');
+                    if (nameEl) playerNameSafe = nameEl.textContent.trim();
+                }
+                var html = '<span class="proj-total" data-proj-pid="' + pid + '" data-proj-name="' + playerNameSafe.replace(/"/g,'&quot;') + '" title="Click to see projection trend">' + Math.round(total) + ' pts</span>' +
                     '<span class="proj-pergame">' + perGame.toFixed(1) + '/gm</span>';
                 // Value badge (tier + VOR + bargain/overpay/cliff) — clickable for math
                 if (val && val.byPlayer[pid]) {
