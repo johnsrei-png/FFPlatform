@@ -7799,7 +7799,7 @@ ${allSummaries}`;
                         return oppTeam + '(D#' + r + ' vs ' + pk.toUpperCase() + ', ' + tag + ')';
                     };
 
-                    lines.push('\nSCHEDULE + MATCHUPS for YOUR players (from week ' + wk + '; "@"=away, "vs"=home; BYE=off; defense rank 1=toughest/fewest pts allowed to that position last year, 32=softest; based on 2025 data):');
+                    lines.push('\nSCHEDULE + MATCHUPS for YOUR players (full remaining season; "@"=away, "vs"=home; BYE=off; defense rank 1=toughest/fewest pts allowed to that position last year, 32=softest; based on 2025 data):');
                     (myTeam.players || []).forEach(function(p) {
                         const nfl = p.team;
                         if (!nfl || nfl === 'FA') return;
@@ -7807,7 +7807,7 @@ ${allSummaries}`;
                         if (!sched) return;
                         const pk = posKey(p.position);
                         const upcoming = [];
-                        for (let w = wk; w < wk + 4 && w <= (scheduleData.weeks || 18); w++) {
+                        for (let w = wk; w <= (scheduleData.weeks || 18); w++) {
                             if (sched.byes && sched.byes.indexOf(w) !== -1) upcoming.push('W' + w + ':BYE');
                             else if (sched.weekly && sched.weekly[w]) upcoming.push('W' + w + ':' + rankTxt(sched.weekly[w], pk));
                         }
@@ -7815,21 +7815,38 @@ ${allSummaries}`;
                     });
                 }
 
-                // Full 32-team bye week reference — lets B.O.O.M. answer ANY team's bye question,
-                // not just those with rostered players. Grouped by week for compact reading.
+                // Full 32-team bye week AND weekly opponent schedule — lets B.O.O.M. answer
+                // matchup questions for ANY player on ANY team, not just the user's roster.
+                // Only injects remaining weeks (not past games) to keep context lean.
+                const wkNow = currentNflWeek && currentNflWeek >= 1 ? currentNflWeek : 1;
                 const byesByWeek = {};
-                Object.keys(scheduleData.schedule).forEach(function(team) {
+                const fullScheduleLines = [];
+                Object.keys(scheduleData.schedule).sort().forEach(function(team) {
                     const sched = scheduleData.schedule[team];
-                    (sched && sched.byes ? sched.byes : []).forEach(function(w) {
-                        (byesByWeek[w] = byesByWeek[w] || []).push(team);
-                    });
+                    if (!sched) return;
+                    var weeks = [];
+                    for (var w = wkNow; w <= (scheduleData.weeks || 18); w++) {
+                        if (sched.byes && sched.byes.indexOf(w) !== -1) {
+                            weeks.push('W' + w + ':BYE');
+                            (byesByWeek[w] = byesByWeek[w] || []).push(team);
+                        } else if (sched.weekly && sched.weekly[w]) {
+                            // Ultra-compact: "W9:@NE" with no spaces
+                            weeks.push('W' + w + ':' + sched.weekly[w]);
+                        }
+                    }
+                    if (weeks.length) fullScheduleLines.push(team + ': ' + weeks.join(' '));
                 });
+
                 const byeWeekNums = Object.keys(byesByWeek).sort(function(a,b){ return parseInt(a)-parseInt(b); });
                 if (byeWeekNums.length) {
-                    lines.push('\nNFL BYE WEEKS ' + (scheduleData.season || '2026') + ' — ALL 32 TEAMS (use this to answer any bye week question about any NFL team or player):');
+                    lines.push('\nNFL BYE WEEKS ' + (scheduleData.season || '2026') + ':');
                     byeWeekNums.forEach(function(w) {
                         lines.push('Week ' + w + ': ' + byesByWeek[w].sort().join(', '));
                     });
+                }
+                if (fullScheduleLines.length) {
+                    lines.push('\nNFL REMAINING SCHEDULE (use to answer any matchup question for any player/team; "@"=away, "vs"=home):');
+                    fullScheduleLines.forEach(function(l){ lines.push(l); });
                 }
             }
 
