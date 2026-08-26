@@ -4143,7 +4143,7 @@
         const VOICE_RULES = [
             'VOICE — write like a real person talking trash in the league group chat, NOT like an AI assistant. This matters a lot:',
             '- Talk like a person texting: casual, direct, contractions ("you\'re", "that\'s", "he\'s"), sentence fragments are fine. Swear freely when it lands — "shit," "damn," "that roster is a fucking disaster," whatever fits the moment. Do not censor yourself.',
-            '- NEVER use section dividers, horizontal rules, "---", headers, bold, bullet points, or numbered lists. Just talk in plain flowing sentences and paragraphs.',
+            '- NEVER use section dividers, horizontal rules, "---", headers, bold, bullet points, or numbered lists. Just talk in plain flowing sentences and paragraphs. This includes lineup advice — do NOT use labels like "START WITH CONFIDENCE:", "THE BENCH CALL:", "FADE THESE:" or any other section headers. Just talk through the players conversationally.',
             '- NEVER use em dashes (—) or double hyphens (--). They read as AI writing. Use a comma, a period, or parentheses instead, whatever the sentence actually needs. Write "he\'s cheap, so keep him" not "he\'s cheap — so keep him".',
             '- Kill all AI scaffolding. No "Here\'s the breakdown," "Let me explain," "Overall," "In summary," "That said," "It\'s worth noting," or tidy wrap-up sentences that restate what you just said. Start with the actual point and stop when you\'re done.',
             '- No hedging throat-clearing and no even-handed "on one hand / on the other" waffling. Have an opinion and say it like you mean it.',
@@ -7890,16 +7890,18 @@ ${allSummaries}`;
             // VEGAS LINES — implied team totals are the sharpest fantasy signal available.
             // Higher implied total = more expected scoring = better fantasy environment.
             if (vegasData && vegasData.length) {
-                lines.push('\nVEGAS LINES — CURRENT WEEK (implied pts = projected team scoring; USE THIS for start/sit and waiver advice; higher implied total = better fantasy environment; spread negative = that team favored):');
+                lines.push('\nVEGAS GAME TOTALS — CURRENT WEEK (these are what Vegas oddsmakers project each team to score; use this for start/sit and waiver advice; do NOT use the phrase "implied points" — instead say "Vegas projects [TEAM] to score ~X points" or "the Vegas line has [TEAM] around X points" so it is clear to non-bettors; also reference the spread and over/under when relevant — e.g. "this is a 52-point over/under game" or "KC is a 7-point favorite" or "this is a tight spread, close game expected" — these are useful context for game-script and fantasy volume):');
                 vegasData.forEach(function(g) {
-                    var favTag  = g.spread < 0 ? g.homeTeam + ' favored ' + g.spread : g.awayTeam + ' favored ' + g.spread;
-                    var envHome = g.homeImplied >= 27 ? 'great environment' : (g.homeImplied >= 23 ? 'good environment' : (g.homeImplied <= 18 ? 'tough environment' : 'avg environment'));
-                    var envAway = g.awayImplied >= 27 ? 'great environment' : (g.awayImplied >= 23 ? 'good environment' : (g.awayImplied <= 18 ? 'tough environment' : 'avg environment'));
-                    lines.push(g.awayTeam + ' @ ' + g.homeTeam + ' — O/U ' + g.ouLine + ', ' + favTag + ' | ' +
-                        g.homeTeam + ' implied ' + g.homeImplied + ' (' + envHome + ') | ' +
-                        g.awayTeam + ' implied ' + g.awayImplied + ' (' + envAway + ')');
+                    var favored = g.spread < 0
+                        ? (g.homeTeam + ' favored by ' + Math.abs(g.spread))
+                        : (g.awayTeam + ' favored by ' + Math.abs(g.spread));
+                    var envHome = g.homeImplied >= 27 ? 'great scoring environment' : (g.homeImplied >= 23 ? 'solid environment' : (g.homeImplied <= 18 ? 'tough, low-scoring game expected' : 'average environment'));
+                    var envAway = g.awayImplied >= 27 ? 'great scoring environment' : (g.awayImplied >= 23 ? 'solid environment' : (g.awayImplied <= 18 ? 'tough, low-scoring game expected' : 'average environment'));
+                    lines.push(g.awayTeam + ' @ ' + g.homeTeam + ' | O/U ' + g.ouLine + ', ' + favored +
+                        ' | Vegas projects ' + g.homeTeam + ' to score ~' + g.homeImplied + ' pts (' + envHome + ')' +
+                        ' | Vegas projects ' + g.awayTeam + ' to score ~' + g.awayImplied + ' pts (' + envAway + ')');
                 });
-                // Highlight implied totals for the user's specific players.
+                // Highlight the user's own players' environments.
                 var myTeamV = (allTeamsData||[]).find(function(t){ return String(t.rosterId) === String(askBoomTeamId); });
                 if (myTeamV) {
                     var playerLines = [];
@@ -7907,22 +7909,22 @@ ${allSummaries}`;
                         var vi = teamImplied(p.team);
                         if (!vi) return;
                         var loc = vi.isHome ? 'vs ' + vi.opp : '@ ' + vi.opp;
-                        var env = vi.implied >= 27 ? 'great' : (vi.implied >= 23 ? 'good' : (vi.implied <= 18 ? 'tough' : 'avg'));
-                        playerLines.push(p.name + ' (' + p.position + ', ' + p.team + ' ' + loc + '): implied ' + vi.implied + ' pts — ' + env + ' environment');
+                        var env = vi.implied >= 27 ? 'great game script' : (vi.implied >= 23 ? 'solid game script' : (vi.implied <= 18 ? 'tough low-scoring spot' : 'average game script'));
+                        playerLines.push(p.name + ' (' + p.position + ', ' + p.team + ' ' + loc + '): Vegas projects ' + p.team + ' to score ~' + vi.implied + ' pts — ' + env);
                     });
                     if (playerLines.length) {
-                        lines.push('\nYOUR PLAYERS\' VEGAS ENVIRONMENT (use for lineup/start decisions):');
+                        lines.push('\nYOUR PLAYERS\' GAME ENVIRONMENTS (use when giving lineup/start-sit advice):');
                         playerLines.forEach(function(l){ lines.push('- ' + l); });
                     }
                 }
             } else {
-                lines.push('\nVEGAS LINES: Not available yet — lines post Wednesday/Thursday of game week. Unavailable pre-season.');
+                lines.push('\nVEGAS GAME TOTALS: Not yet available — lines post Wednesday/Thursday of game week. Unavailable pre-season.');
             }
 
             // INJURY REPORT — critical for lineup decisions and player values.
             if (injuryData && injuryData.length) {
                 var STATUS_LABEL = { Q: 'Questionable', D: 'Doubtful', O: 'Out', IR: 'IR (season)', PUP: 'PUP' };
-                lines.push('\nINJURY REPORT (Q=Questionable, D=Doubtful, O=Out — factor into start/sit and trade advice):');
+                lines.push('\nINJURY REPORT (factor into start/sit and trade advice; Q=game-time decision, D=unlikely to play, O=out, IR=done for season):');
                 injuryData.forEach(function(p) {
                     var label = STATUS_LABEL[p.status] || p.status;
                     var practiceNote = p.practice ? ' · ' + p.practice : '';
