@@ -4472,6 +4472,40 @@
         }
         // ===== End Pot Tracker =====
 
+        // ===== Vegas lines + injury data =====
+        let vegasData   = null; // [{ homeTeam, awayTeam, homeImplied, awayImplied, spread, ouLine }]
+        let injuryData  = null; // [{ name, team, position, status, injury, practice }]
+
+        async function loadVegasData() {
+            try {
+                const res = await fetch('/api/get-vegas');
+                if (!res.ok) return;
+                const d = await res.json();
+                vegasData = (d && Array.isArray(d.games) && d.games.length) ? d.games : null;
+            } catch(e) { vegasData = null; }
+        }
+
+        async function loadInjuryData() {
+            try {
+                const res = await fetch('/api/get-injuries?season=2026');
+                if (!res.ok) return;
+                const d = await res.json();
+                injuryData = (d && Array.isArray(d.injuries) && d.injuries.length) ? d.injuries : null;
+            } catch(e) { injuryData = null; }
+        }
+
+        // Look up a team's implied total from vegasData by abbreviation.
+        function teamImplied(abbr) {
+            if (!vegasData || !abbr) return null;
+            for (var i = 0; i < vegasData.length; i++) {
+                var g = vegasData[i];
+                if (g.homeTeam === abbr) return { implied: g.homeImplied, isHome: true,  opp: g.awayTeam, spread: g.spread, ou: g.ouLine };
+                if (g.awayTeam === abbr) return { implied: g.awayImplied, isHome: false, opp: g.homeTeam, spread: -g.spread, ou: g.ouLine };
+            }
+            return null;
+        }
+        // ===== End Vegas / injury data =====
+
         // ===== FantasyPros consensus projection blending =====
         // Fetches FP projections and blends 50/50 with Sleeper's to sharpen accuracy.
 
@@ -6273,6 +6307,9 @@
             // Load FantasyPros consensus projections for blending (slightly delayed so
             // Sleeper projections load first and are immediately useful).
             setTimeout(function(){ if (typeof loadFPProjections === 'function') loadFPProjections(); }, 1500);
+            // Load Vegas lines + injury data in the background.
+            setTimeout(function(){ if (typeof loadVegasData  === 'function') loadVegasData();  }, 2000);
+            setTimeout(function(){ if (typeof loadInjuryData === 'function') loadInjuryData(); }, 2500);
 
             // Load pot settings from Supabase and render the pot tracker.
             if (typeof loadPotSettings === 'function') loadPotSettings();
@@ -7850,7 +7887,48 @@ ${allSummaries}`;
                 }
             }
 
-            // Compact history summary
+            // VEGAS LINES — implied team totals are the sharpest fantasy signal available.
+            // Higher implied total = more expected scoring = better fantasy environment.
+            if (vegasData && vegasData.length) {
+                lines.push('\nVEGAS LINES — CURRENT WEEK (implied pts = projected team scoring; USE THIS for start/sit and waiver advice; higher implied total = better fantasy environment; spread negative = that team favored):');
+                vegasData.forEach(function(g) {
+                    var favTag  = g.spread < 0 ? g.homeTeam + ' favored ' + g.spread : g.awayTeam + ' favored ' + g.spread;
+                    var envHome = g.homeImplied >= 27 ? 'great environment' : (g.homeImplied >= 23 ? 'good environment' : (g.homeImplied <= 18 ? 'tough environment' : 'avg environment'));
+                    var envAway = g.awayImplied >= 27 ? 'great environment' : (g.awayImplied >= 23 ? 'good environment' : (g.awayImplied <= 18 ? 'tough environment' : 'avg environment'));
+                    lines.push(g.awayTeam + ' @ ' + g.homeTeam + ' — O/U ' + g.ouLine + ', ' + favTag + ' | ' +
+                        g.homeTeam + ' implied ' + g.homeImplied + ' (' + envHome + ') | ' +
+                        g.awayTeam + ' implied ' + g.awayImplied + ' (' + envAway + ')');
+                });
+                // Highlight implied totals for the user's specific players.
+                var myTeamV = (allTeamsData||[]).find(function(t){ return String(t.rosterId) === String(askBoomTeamId); });
+                if (myTeamV) {
+                    var playerLines = [];
+                    (myTeamV.players||[]).forEach(function(p) {
+                        var vi = teamImplied(p.team);
+                        if (!vi) return;
+                        var loc = vi.isHome ? 'vs ' + vi.opp : '@ ' + vi.opp;
+                        var env = vi.implied >= 27 ? 'great' : (vi.implied >= 23 ? 'good' : (vi.implied <= 18 ? 'tough' : 'avg'));
+                        playerLines.push(p.name + ' (' + p.position + ', ' + p.team + ' ' + loc + '): implied ' + vi.implied + ' pts — ' + env + ' environment');
+                    });
+                    if (playerLines.length) {
+                        lines.push('\nYOUR PLAYERS\' VEGAS ENVIRONMENT (use for lineup/start decisions):');
+                        playerLines.forEach(function(l){ lines.push('- ' + l); });
+                    }
+                }
+            } else {
+                lines.push('\nVEGAS LINES: Not available yet — lines post Wednesday/Thursday of game week. Unavailable pre-season.');
+            }
+
+            // INJURY REPORT — critical for lineup decisions and player values.
+            if (injuryData && injuryData.length) {
+                var STATUS_LABEL = { Q: 'Questionable', D: 'Doubtful', O: 'Out', IR: 'IR (season)', PUP: 'PUP' };
+                lines.push('\nINJURY REPORT (Q=Questionable, D=Doubtful, O=Out — factor into start/sit and trade advice):');
+                injuryData.forEach(function(p) {
+                    var label = STATUS_LABEL[p.status] || p.status;
+                    var practiceNote = p.practice ? ' · ' + p.practice : '';
+                    lines.push('- ' + p.name + ' (' + p.position + ', ' + p.team + '): ' + label + (p.injury ? ' — ' + p.injury : '') + practiceNote);
+                });
+            }
             if (historyData && typeof computeCareers === 'function') {
                 try {
                     const careers = computeCareers();
