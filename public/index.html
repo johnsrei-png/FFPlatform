@@ -4849,20 +4849,6 @@
             if (pop) pop.style.display = 'none';
         }
 
-        // Delegated click handler for projection chart — more reliable than inline onclick.
-        document.addEventListener('click', function(e) {
-            var el = e.target;
-            while (el && el !== document.body) {
-                if (el.classList && el.classList.contains('proj-total')) {
-                    var pid  = el.getAttribute('data-proj-pid');
-                    var name = el.getAttribute('data-proj-name') || '';
-                    if (pid) showProjectionChart(e, pid, name);
-                    return;
-                }
-                el = el.parentElement;
-            }
-        });
-
         // Close on outside click or Escape.
         document.addEventListener('click', function(e){
             const pop = document.getElementById('projChartPopover');
@@ -6152,6 +6138,17 @@
                     html += '<span class="val-line val-clickable" data-val-player="' + pid + '" onclick="showValueMath(event, \'' + pid + '\')" title="Tap for the math">' + badge + flag + cliff + '</span>';
                 }
                 el.innerHTML = html;
+
+                // Attach click handler directly — more reliable than inline onclick or delegation.
+                var projSpan = el.querySelector('.proj-total');
+                if (projSpan) {
+                    (function(spanPid, spanName) {
+                        projSpan.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            showProjectionChart(e, spanPid, spanName);
+                        });
+                    })(pid, playerNameSafe);
+                }
             });
 
             // Update team-level projected total on each card.
