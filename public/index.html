@@ -7814,6 +7814,23 @@ ${allSummaries}`;
                         if (upcoming.length) lines.push('- ' + p.name + ' (' + p.position + ', ' + nfl + '): ' + upcoming.join(' | '));
                     });
                 }
+
+                // Full 32-team bye week reference — lets B.O.O.M. answer ANY team's bye question,
+                // not just those with rostered players. Grouped by week for compact reading.
+                const byesByWeek = {};
+                Object.keys(scheduleData.schedule).forEach(function(team) {
+                    const sched = scheduleData.schedule[team];
+                    (sched && sched.byes ? sched.byes : []).forEach(function(w) {
+                        (byesByWeek[w] = byesByWeek[w] || []).push(team);
+                    });
+                });
+                const byeWeekNums = Object.keys(byesByWeek).sort(function(a,b){ return parseInt(a)-parseInt(b); });
+                if (byeWeekNums.length) {
+                    lines.push('\nNFL BYE WEEKS ' + (scheduleData.season || '2026') + ' — ALL 32 TEAMS (use this to answer any bye week question about any NFL team or player):');
+                    byeWeekNums.forEach(function(w) {
+                        lines.push('Week ' + w + ': ' + byesByWeek[w].sort().join(', '));
+                    });
+                }
             }
 
             // Compact history summary
