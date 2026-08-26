@@ -7845,7 +7845,7 @@ ${allSummaries}`;
                     });
                 }
                 if (fullScheduleLines.length) {
-                    lines.push('\nNFL REMAINING SCHEDULE (use to answer any matchup question for any player/team; "@"=away, "vs"=home):');
+                    lines.push('\nNFL REMAINING SCHEDULE — ALL TEAMS. Format: TEAM: WN:OPP where OPP is that TEAM\'s opponent. "@OPP" = TEAM is the AWAY team traveling to play at OPP. "vsOPP" = TEAM is the HOME team hosting OPP. CRITICAL: to find a player\'s matchup, look up THEIR team\'s line, not a line that mentions their team as the opponent. Example: "LAC: W9:@HOU" means the Chargers travel to Houston — Justin Herbert plays AT Houston in W9, NOT at LAC. Never say a player plays at their own team.');
                     fullScheduleLines.forEach(function(l){ lines.push(l); });
                 }
             }
