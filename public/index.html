@@ -7816,7 +7816,9 @@ ${allSummaries}`;
             if (scheduleData && scheduleData.schedule) {
                 const myTeam = (allTeamsData || []).find(function(t){ return String(t.rosterId) === String(askBoomTeamId); });
                 if (myTeam) {
-                    const wk = currentNflWeek && currentNflWeek >= 1 ? currentNflWeek : 1;
+                    // Pre-season: Sleeper reports preseason week number, not regular-season week.
+                    // Force week 1 until the regular season actually starts so the full schedule shows.
+                    const wk = (typeof seasonStarted === 'function' && seasonStarted() && currentNflWeek >= 1) ? currentNflWeek : 1;
                     const posKey = function(pos){
                         pos = (pos||'').toUpperCase();
                         if (pos === 'QB') return 'qb';
@@ -7859,7 +7861,7 @@ ${allSummaries}`;
                 // Full 32-team bye week AND weekly opponent schedule — lets B.O.O.M. answer
                 // matchup questions for ANY player on ANY team, not just the user's roster.
                 // Only injects remaining weeks (not past games) to keep context lean.
-                const wkNow = currentNflWeek && currentNflWeek >= 1 ? currentNflWeek : 1;
+                const wkNow = (typeof seasonStarted === 'function' && seasonStarted() && currentNflWeek >= 1) ? currentNflWeek : 1;
                 const byesByWeek = {};
                 const fullScheduleLines = [];
                 Object.keys(scheduleData.schedule).sort().forEach(function(team) {
