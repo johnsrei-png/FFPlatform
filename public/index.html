@@ -4543,7 +4543,7 @@
         // Captures daily projection snapshots + weekly actual scores.
         // Click any player's projected points to see a trend chart.
 
-        let projTrackingData = null; // { snapshots: {"2026-08-24":{pid:pts}}, actuals: {"1":{pid:pts}} }
+        let projTrackingData = { snapshots: {}, actuals: {} }; // populated by captureProjectionData on load
 
         // Capture today's snapshot + any missing weekly actuals. Runs on page load.
         async function captureProjectionData() {
@@ -4769,15 +4769,6 @@
             event.stopPropagation();
             const pop = document.getElementById('projChartPopover');
             if (!pop) return;
-
-            // Load tracking data if not already loaded.
-            if (!projTrackingData) {
-                pop.style.display = 'block';
-                pop.innerHTML = '<div style="color:#829a8c;font-size:0.75rem;padding:0.75rem">Loading history...</div>';
-                var clickedEl = event.target;
-                captureProjectionData().then(function(){ showProjectionChart({ stopPropagation: function(){}, target: clickedEl, currentTarget: clickedEl }, pid, playerName); });
-                return;
-            }
 
             try {
                 const snapCount = Object.keys((projTrackingData && projTrackingData.snapshots)||{}).length;
