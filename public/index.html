@@ -7826,14 +7826,18 @@ ${allSummaries}`;
                         return null;
                     };
                     const rankTxt = function(oppTeam, pk){
-                        // strip @ / vs prefix
                         const t = (oppTeam || '').replace(/^(@|vs)/, '');
                         if (!defenseRatings || !defenseRatings.ranks || !defenseRatings.ranks[t] || !pk) return oppTeam;
                         const r = defenseRatings.ranks[t][pk];
                         if (!r) return oppTeam;
-                        // 1 = toughest (fewest allowed), 32 = softest. Describe it.
-                        var tag = r >= 25 ? 'GREAT matchup' : (r >= 17 ? 'good matchup' : (r <= 8 ? 'TOUGH matchup' : 'avg matchup'));
-                        return oppTeam + '(D#' + r + ' vs ' + pk.toUpperCase() + ', ' + tag + ')';
+                        // Rank 1 = toughest (fewest pts allowed to that position), 32 = softest (most allowed).
+                        // Write the label so the model CANNOT misread: explicitly state what the number means.
+                        var tag;
+                        if (r >= 25)      tag = 'rank ' + r + '/32 vs ' + pk.toUpperCase() + ' — one of the SOFTEST defenses in league, GREAT start matchup';
+                        else if (r >= 17) tag = 'rank ' + r + '/32 vs ' + pk.toUpperCase() + ' — above-average matchup';
+                        else if (r <= 8)  tag = 'rank ' + r + '/32 vs ' + pk.toUpperCase() + ' — one of the TOUGHEST defenses in league, TOUGH start matchup';
+                        else              tag = 'rank ' + r + '/32 vs ' + pk.toUpperCase() + ' — average matchup';
+                        return oppTeam + '(' + tag + ')';
                     };
 
                     lines.push('\nSCHEDULE + MATCHUPS for YOUR players (full remaining season; "@"=away, "vs"=home; BYE=off; defense rank 1=toughest/fewest pts allowed to that position last year, 32=softest; based on 2025 data):');
