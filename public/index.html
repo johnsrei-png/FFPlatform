@@ -4778,7 +4778,7 @@
                 var chart = buildProjectionChartSVG(pid);
                 pop.innerHTML += '<br>' + (chart && chart.svg ? 'SVG OK' : 'NO SVG');
             } catch(err) {
-                pop.innerHTML += '<br>ERROR: ' + err.message;
+                pop.innerHTML += '<br>ERROR: ' + err.message + '<br>LINE: ' + (err.stack || '').split('\n').slice(0,3).join(' | ');
             }
         }
 
