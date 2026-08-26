@@ -4774,66 +4774,74 @@
             if (!projTrackingData) {
                 pop.style.display = 'block';
                 pop.innerHTML = '<div style="color:#829a8c;font-size:0.75rem;padding:0.75rem">Loading history...</div>';
-                captureProjectionData().then(function(){ showProjectionChart(event, pid, playerName); });
+                var clickedEl = event.target;
+                captureProjectionData().then(function(){ showProjectionChart({ stopPropagation: function(){}, target: clickedEl, currentTarget: clickedEl }, pid, playerName); });
                 return;
             }
 
-            const snapCount = Object.keys((projTrackingData && projTrackingData.snapshots)||{}).length;
-            const actCount  = Object.keys((projTrackingData && projTrackingData.actuals)||{}).length;
-            const curProj   = projectedSeasonPoints(pid);
-            const perWk     = curProj ? Math.round(projectedPerGame(pid) * 10) / 10 : null;
+            try {
+                const snapCount = Object.keys((projTrackingData && projTrackingData.snapshots)||{}).length;
+                const actCount  = Object.keys((projTrackingData && projTrackingData.actuals)||{}).length;
+                const curProj   = projectedSeasonPoints(pid);
+                const perWk     = curProj ? Math.round(projectedPerGame(pid) * 10) / 10 : null;
 
-            const chart = buildProjectionChartSVG(pid);
+                const chart = buildProjectionChartSVG(pid);
 
-            // Stats bar — show per-game projection and actual performance once games played.
-            let statsHtml = '<div class="pcp-stats">';
-            if (perWk !== null) {
-                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + perWk + ' pts</span>Proj. per game</div>';
-            }
-            if (curProj !== null) {
-                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + curProj + ' pts</span>Season total</div>';
-            }
-            if (chart.weeksPlayed > 0 && chart.actualTotal > 0) {
-                var actualAvg = Math.round((chart.actualTotal / chart.weeksPlayed) * 10) / 10;
-                var diff = perWk !== null ? Math.round((actualAvg - perWk) * 10) / 10 : null;
-                var cls  = diff !== null ? (diff >= 0 ? 'up' : 'down') : '';
-                var sign = diff !== null && diff >= 0 ? '+' : '';
-                statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + actualAvg + ' pts</span>Actual avg/wk</div>';
-                if (diff !== null) {
-                    statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val ' + cls + '">' + sign + diff + '</span>vs projection</div>';
+                let statsHtml = '<div class="pcp-stats">';
+                if (perWk !== null) {
+                    statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + perWk + ' pts</span>Proj. per game</div>';
                 }
+                if (curProj !== null) {
+                    statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + curProj + ' pts</span>Season total</div>';
+                }
+                if (chart.weeksPlayed > 0 && chart.actualTotal > 0) {
+                    var actualAvg = Math.round((chart.actualTotal / chart.weeksPlayed) * 10) / 10;
+                    var diff = perWk !== null ? Math.round((actualAvg - perWk) * 10) / 10 : null;
+                    var cls  = diff !== null ? (diff >= 0 ? 'up' : 'down') : '';
+                    var sign = diff !== null && diff >= 0 ? '+' : '';
+                    statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + actualAvg + ' pts</span>Actual avg/wk</div>';
+                    if (diff !== null) {
+                        statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val ' + cls + '">' + sign + diff + '</span>vs projection</div>';
+                    }
+                }
+                statsHtml += '</div>';
+
+                pop.innerHTML =
+                    '<div class="pcp-header">' +
+                    '<span class="pcp-name">' + (playerName||'Player') + '</span>' +
+                    '<button class="pcp-close" onclick="hideProjectionChart()">×</button>' +
+                    '</div>' +
+                    statsHtml +
+                    '<div class="pcp-legend">' +
+                    '<span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk (schedule-adjusted)</span>' +
+                    (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual score</span>' : '') +
+                    '</div>' +
+                    (chart.svg || '') +
+                    '<div class="pcp-note">' +
+                    'Green line = week-by-week projection (rises vs soft defenses, dips vs tough ones, gaps = byes). ' +
+                    (actCount === 0 ? 'Gold dots appear once games are played.' : 'Gold dots show actual scores — hover for vs-projection comparison.') +
+                    '</div>';
+
+                // Position near the clicked element.
+                pop.style.display = 'block';
+                var anchor = event.target || event.currentTarget;
+                if (anchor) {
+                    var rect = anchor.getBoundingClientRect();
+                    var popW = 330;
+                    var left = rect.left + window.scrollX;
+                    if (left + popW > window.scrollX + window.innerWidth - 10) left = window.scrollX + window.innerWidth - popW - 10;
+                    if (left < window.scrollX + 10) left = window.scrollX + 10;
+                    var top = rect.bottom + window.scrollY + 6;
+                    pop.style.width = popW + 'px';
+                    var popH = pop.offsetHeight;
+                    if (top + popH > window.scrollY + window.innerHeight - 10) top = rect.top + window.scrollY - popH - 6;
+                    pop.style.left = left + 'px';
+                    pop.style.top = Math.max(window.scrollY + 10, top) + 'px';
+                }
+            } catch(e) {
+                pop.innerHTML = '<div style="color:#829a8c;font-size:0.75rem;padding:0.75rem">Chart error: ' + e.message + '</div>';
+                pop.style.display = 'block';
             }
-            statsHtml += '</div>';
-
-            pop.innerHTML =
-                '<div class="pcp-header">' +
-                '<span class="pcp-name">' + (playerName||'Player') + '</span>' +
-                '<button class="pcp-close" onclick="hideProjectionChart()">×</button>' +
-                '</div>' +
-                statsHtml +
-                '<div class="pcp-legend">' +
-                '<span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk (schedule-adjusted)</span>' +
-                (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual score · hover for details</span>' : '') +
-                '</div>' +
-                (typeof chart.svg === 'string' ? chart.svg : chart) +
-                '<div class="pcp-note">' +
-                'Green line = week-by-week projection (rises vs soft defenses, dips vs tough ones, gaps = byes). ' +
-                (actCount === 0 ? 'Gold dots appear once games are played.' : 'Gold dots show actual scores — hover for vs-projection comparison.') +
-                '</div>';
-
-            // Position near the clicked element.
-            pop.style.display = 'block';
-            const rect = event.currentTarget.getBoundingClientRect();
-            const popW = 330;
-            let left = rect.left + window.scrollX;
-            if (left + popW > window.scrollX + window.innerWidth - 10) left = window.scrollX + window.innerWidth - popW - 10;
-            if (left < window.scrollX + 10) left = window.scrollX + 10;
-            let top = rect.bottom + window.scrollY + 6;
-            pop.style.width = popW + 'px';
-            const popH = pop.offsetHeight;
-            if (top + popH > window.scrollY + window.innerHeight - 10) top = rect.top + window.scrollY - popH - 6;
-            pop.style.left = left + 'px';
-            pop.style.top = Math.max(window.scrollY + 10, top) + 'px';
         }
 
         function hideProjectionChart() {
