@@ -4764,6 +4764,50 @@
             return { svg, startProj, curProj, actualTotal, weeksPlayed };
         }
 
+
+        // Global function for player projection chart — called via inline onclick.
+        function openPlayerChart(pid, playerName) {
+            var pop = document.getElementById('projChartPopover');
+            if (!pop) return;
+            try {
+                var actCount = Object.keys((projTrackingData && projTrackingData.actuals) || {}).length;
+                var curProj  = projectedSeasonPoints(pid);
+                var perWk    = curProj ? Math.round(projectedPerGame(pid) * 10) / 10 : null;
+                var chart    = buildProjectionChartSVG(pid);
+
+                var statsHtml = '<div class="pcp-stats">';
+                if (perWk !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + perWk + ' pts</span>Proj. per game</div>';
+                if (curProj !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + curProj + ' pts</span>Season total</div>';
+                if (chart.weeksPlayed > 0 && chart.actualTotal > 0) {
+                    var aAvg = Math.round((chart.actualTotal / chart.weeksPlayed) * 10) / 10;
+                    var diff = perWk !== null ? Math.round((aAvg - perWk) * 10) / 10 : null;
+                    statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + aAvg + ' pts</span>Actual avg/wk</div>';
+                    if (diff !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val ' + (diff>=0?'up':'down') + '">' + (diff>=0?'+':'') + diff + '</span>vs projection</div>';
+                }
+                statsHtml += '</div>';
+
+                pop.innerHTML =
+                    '<div class="pcp-header"><span class="pcp-name">' + (playerName||'Player') + '</span>' +
+                    '<button class="pcp-close" onclick="hideProjectionChart()">x</button></div>' +
+                    statsHtml +
+                    '<div class="pcp-legend"><span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk</span>' +
+                    (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual</span>' : '') +
+                    '</div>' + (chart.svg || '') +
+                    '<div class="pcp-note">Green = schedule-adjusted weekly projection. Gold dots = actual weekly scores.</div>';
+
+                pop.style.display = 'block';
+                pop.style.left = '50px';
+                pop.style.top = '200px';
+                pop.style.width = '330px';
+            } catch(err) {
+                pop.innerHTML = '<div style="padding:0.75rem;color:#829a8c;font-size:0.75rem">Error: ' + (err && err.message) + '</div>';
+                pop.style.display = 'block';
+                pop.style.left = '50px';
+                pop.style.top = '200px';
+                pop.style.width = '330px';
+            }
+        }
+
         // Show the projection chart popover for a player.
         function showProjectionChart(event, pid, playerName) {
             event.stopPropagation();
@@ -6112,7 +6156,9 @@
                     var nameEl = playerItemEl.querySelector('.player-name');
                     if (nameEl) playerNameSafe = nameEl.textContent.trim();
                 }
-                var html = '<span class="proj-total" data-proj-pid="' + pid + '" data-proj-name="' + playerNameSafe.replace(/"/g,'&quot;') + '" title="Click to see projection trend">' + Math.round(total) + ' pts</span>' +
+                var pidEsc  = String(pid).replace(/'/g, "\\'");
+                var nameEsc = playerNameSafe.replace(/'/g, "\\'");
+                var html = '<span class="proj-total" onclick="event.stopPropagation();openPlayerChart(\'' + pidEsc + '\',\'' + nameEsc + '\')" title="Click to see projection trend">' + Math.round(total) + ' pts</span>' +
                     '<span class="proj-pergame">' + perGame.toFixed(1) + '/gm</span>';
                 // Value badge (tier + VOR + bargain/overpay/cliff) — clickable for math
                 if (val && val.byPlayer[pid]) {
@@ -6129,14 +6175,7 @@
                     html += '<span class="val-line val-clickable" data-val-player="' + pid + '" onclick="showValueMath(event, \'' + pid + '\')" title="Tap for the math">' + badge + flag + cliff + '</span>';
                 }
                 el.innerHTML = html;
-
-                // Attach click handler to the container element directly.
-                // This is more reliable than attaching to innerHTML-created children.
                 el.style.cursor = 'pointer';
-                el.onclick = function(e) {
-                    e.stopPropagation();
-                    showProjectionChart(e, pid, playerNameSafe);
-                };
             });
 
             // Update team-level projected total on each card.
