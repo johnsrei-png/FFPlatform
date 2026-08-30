@@ -2089,6 +2089,57 @@
         .edit-modal.active {
             display: flex;
         }
+        /* Batch salary submit panel */
+        .salary-batch-panel {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background: #111;
+            border-top: 2px solid var(--accent-primary);
+            z-index: 1500;
+            padding: 0.75rem 1.25rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.4);
+        }
+        .salary-batch-panel.active { display: flex; }
+        .salary-batch-label { font-family: var(--font-display); font-size: 0.78rem; color: var(--accent-primary); letter-spacing: 0.05em; white-space: nowrap; }
+        .salary-batch-list { display: flex; gap: 0.5rem; flex-wrap: wrap; flex: 1; }
+        .salary-batch-chip {
+            background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 20px; padding: 0.2rem 0.6rem;
+            font-size: 0.72rem; color: #e0e0e0; display: flex; align-items: center; gap: 0.35rem;
+        }
+        .salary-batch-chip button {
+            background: none; border: none; color: #aaa; cursor: pointer;
+            font-size: 0.8rem; padding: 0; line-height: 1;
+        }
+        .salary-batch-chip button:hover { color: #fff; }
+        .salary-batch-actions { display: flex; gap: 0.6rem; }
+        .batch-submit-btn {
+            background: #111; color: #fff; border: 2px solid #fff;
+            border-radius: 8px; padding: 0.5rem 1.25rem;
+            font-family: var(--font-display); font-size: 0.8rem; font-weight: 700;
+            cursor: pointer; letter-spacing: 0.05em; white-space: nowrap;
+        }
+        .batch-submit-btn:hover { background: #222; }
+        .batch-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .batch-clear-btn {
+            background: none; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px; padding: 0.5rem 0.9rem;
+            color: #aaa; font-size: 0.78rem; cursor: pointer;
+        }
+        .batch-clear-btn:hover { background: rgba(255,255,255,0.08); color: #fff; }
+        /* Make modal buttons black and visible */
+        .edit-modal-content button:not(.btn-secondary) {
+            background: #111 !important;
+            color: #fff !important;
+            border: 2px solid #fff !important;
+        }
+        .edit-modal-content button:not(.btn-secondary):hover {
+            background: #333 !important;
+        }
 
         .edit-modal-content {
             background: var(--bg-card);
@@ -3872,11 +3923,21 @@
                     <option value="waiver">Waiver (Orange)</option>
                 </select>
             </div>
-            <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                <button onclick="savePlayerSalary()">Save</button>
+            <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem; flex-wrap: wrap;">
+                <button onclick="savePlayerSalary()">Save Now</button>
+                <button onclick="queuePlayerSalary()" style="background:#1a4d3a!important;border-color:var(--accent-primary)!important;color:#fff!important;">+ Add to Queue</button>
                 <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
             </div>
             <div id="editError" style="display: none;" class="error"></div>
+        </div>
+    </div>
+
+    <div class="salary-batch-panel" id="salaryBatchPanel">
+        <span class="salary-batch-label">📋 QUEUED CHANGES</span>
+        <div class="salary-batch-list" id="salaryBatchList"></div>
+        <div class="salary-batch-actions">
+            <button class="batch-clear-btn" onclick="clearSalaryBatch()">Clear</button>
+            <button class="batch-submit-btn" id="batchSubmitBtn" onclick="submitSalaryBatch()">Submit All (<span id="batchCount">0</span>)</button>
         </div>
     </div>
 
@@ -4187,6 +4248,94 @@
         ].join('\\n');
         let commissionerMode = false;
         let editingPlayer = null;
+        let pendingChanges = []; // batch salary edits: [{ playerId, playerName, salary, customEscalation, acquisitionType }]
+
+        function queuePlayerSalary() {
+            const newSalary = parseInt(document.getElementById('editPlayerSalary').value);
+            const customEscalation = document.getElementById('customEscalation').value;
+            const acquisitionType = document.getElementById('acquisitionType').value;
+            if (isNaN(newSalary) || newSalary < 1 || newSalary > 200) {
+                document.getElementById('editError').textContent = 'Salary must be between $1 and $200';
+                document.getElementById('editError').style.display = 'block';
+                return;
+            }
+            // Remove any existing pending change for this player, then add updated one.
+            pendingChanges = pendingChanges.filter(function(c){ return c.playerId !== editingPlayer.playerId; });
+            pendingChanges.push({
+                playerId: editingPlayer.playerId,
+                playerName: editingPlayer.playerName,
+                salary: newSalary,
+                customEscalation: customEscalation,
+                acquisitionType: acquisitionType
+            });
+            closeEditModal();
+            renderSalaryBatch();
+        }
+
+        function renderSalaryBatch() {
+            const panel = document.getElementById('salaryBatchPanel');
+            const list  = document.getElementById('salaryBatchList');
+            const count = document.getElementById('batchCount');
+            if (!panel || !list || !count) return;
+            if (!pendingChanges.length) { panel.classList.remove('active'); return; }
+            panel.classList.add('active');
+            count.textContent = pendingChanges.length;
+            list.innerHTML = pendingChanges.map(function(c, i) {
+                var typeLabel = c.acquisitionType ? ' [' + c.acquisitionType + ']' : '';
+                return '<span class="salary-batch-chip">' +
+                    c.playerName + ' → $' + c.salary + typeLabel +
+                    '<button onclick="removeBatchChange(' + i + ')" title="Remove">×</button>' +
+                    '</span>';
+            }).join('');
+        }
+
+        function removeBatchChange(idx) {
+            pendingChanges.splice(idx, 1);
+            renderSalaryBatch();
+        }
+
+        function clearSalaryBatch() {
+            pendingChanges = [];
+            renderSalaryBatch();
+        }
+
+        async function submitSalaryBatch() {
+            if (!pendingChanges.length) return;
+            const btn = document.getElementById('batchSubmitBtn');
+            if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+            let successCount = 0, errors = [];
+            for (const c of pendingChanges) {
+                try {
+                    const res = await fetch('/api/update-salary', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            playerId: c.playerId, playerName: c.playerName,
+                            newSalary: c.salary, leagueId: leagueId,
+                            customEscalation: c.customEscalation,
+                            acquisitionType: c.acquisitionType
+                        })
+                    });
+                    if (!res.ok) { const d = await res.json(); errors.push(c.playerName + ': ' + (d.error || 'failed')); continue; }
+                    // Update DOM immediately for this player.
+                    const playerEl = document.querySelector('[data-player-id="' + c.playerId + '"]');
+                    if (playerEl) {
+                        const salEl = playerEl.querySelector('.player-salary');
+                        if (salEl) salEl.textContent = '$' + c.salary;
+                        const customEsc = c.customEscalation !== '' ? parseInt(c.customEscalation) : null;
+                        const esc = getKeeperEscalation(c.salary, customEsc);
+                        const keeperEl = playerEl.querySelector('.keeper-cost');
+                        if (keeperEl) keeperEl.textContent = 'Next: $' + (c.salary + esc);
+                        playerEl.classList.remove('trade', 'waiver');
+                        if (c.acquisitionType) playerEl.classList.add(c.acquisitionType);
+                    }
+                    successCount++;
+                } catch(e) { errors.push(c.playerName + ': ' + e.message); }
+            }
+            pendingChanges = [];
+            renderSalaryBatch();
+            if (errors.length) alert('Saved ' + successCount + ' players. Errors:\n' + errors.join('\n'));
+        }
         let leagueId = null;
         let allTeamsData = [];
 
