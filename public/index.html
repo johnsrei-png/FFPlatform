@@ -4659,7 +4659,7 @@
             const curProj     = seasonPts;
             const actualWks   = weeks.filter(function(x){ return x.actual !== null; });
             const actualTotal = actualWks.reduce(function(s,x){ return s + x.actual; }, 0);
-            const weeksPlayed = actualPts.length;
+            const weeksPlayed = actualWks.length;
             const startProj   = seasonPts; // no longer tracking historical snapshots as primary display
 
             const hasAnyProj = weeks.some(function(x){ return x.proj !== null; });
@@ -4768,17 +4768,51 @@
         // Global function for player projection chart — called via inline onclick.
         function openPlayerChart(pid, playerName) {
             var pop = document.getElementById('projChartPopover');
-            if (!pop) { 
-                document.body.insertAdjacentHTML('beforeend', '<div style="position:fixed;top:10px;left:10px;background:red;color:white;z-index:99999;padding:10px">NO POP ELEMENT</div>');
-                return; 
-            }
-            pop.style.cssText = 'display:block!important;position:fixed!important;top:100px!important;left:50px!important;width:330px!important;background:#12160f!important;border:2px solid #00ff88!important;padding:1rem!important;z-index:99999!important;color:white!important;';
-            pop.innerHTML = '<b style="color:#00ff88">CHART CLICKED: ' + pid + ' / ' + (playerName||'?') + '</b><br>Building chart...<button onclick="this.parentElement.style.display=\'none\'">close</button>';
+            if (!pop) return;
             try {
-                var chart = buildProjectionChartSVG(pid);
-                pop.innerHTML += '<br>' + (chart && chart.svg ? 'SVG OK' : 'NO SVG');
+                var actCount = Object.keys((projTrackingData && projTrackingData.actuals) || {}).length;
+                var curProj  = projectedSeasonPoints(pid);
+                var perWk    = curProj ? Math.round(projectedPerGame(pid) * 10) / 10 : null;
+                var chart    = buildProjectionChartSVG(pid);
+
+                var statsHtml = '<div class="pcp-stats">';
+                if (perWk !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + perWk + ' pts</span>Proj. per game</div>';
+                if (curProj !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + curProj + ' pts</span>Season total</div>';
+                if (chart.weeksPlayed > 0 && chart.actualTotal > 0) {
+                    var aAvg = Math.round((chart.actualTotal / chart.weeksPlayed) * 10) / 10;
+                    var diff = perWk !== null ? Math.round((aAvg - perWk) * 10) / 10 : null;
+                    statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val">' + aAvg + ' pts</span>Actual avg/wk</div>';
+                    if (diff !== null) statsHtml += '<div class="pcp-stat"><span class="pcp-stat-val ' + (diff>=0?'up':'down') + '">' + (diff>=0?'+':'') + diff + '</span>vs projection</div>';
+                }
+                statsHtml += '</div>';
+
+                pop.innerHTML =
+                    '<div class="pcp-header"><span class="pcp-name">' + (playerName||'Player') + '</span>' +
+                    '<button class="pcp-close" onclick="hideProjectionChart()">×</button></div>' +
+                    statsHtml +
+                    '<div class="pcp-legend"><span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk (schedule-adjusted)</span>' +
+                    (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual score</span>' : '') +
+                    '</div>' + (chart.svg || '') +
+                    '<div class="pcp-note">Green line = schedule-adjusted weekly projection — rises vs soft defenses, dips vs tough ones, gaps = byes. Gold dots = actual weekly scores once games are played.</div>';
+
+                pop.style.cssText = 'display:block;position:absolute;z-index:9999;background:#12160f;border:1px solid rgba(0,255,136,0.35);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.6);padding:0.85rem 0.95rem;width:330px;';
+
+                // Position near the player row.
+                var anchor = document.querySelector('.proj-total[data-pid="' + pid + '"]');
+                if (anchor) {
+                    var rect = anchor.getBoundingClientRect();
+                    var left = Math.min(Math.max(rect.left + window.scrollX, 10), window.innerWidth + window.scrollX - 340);
+                    var top  = rect.bottom + window.scrollY + 6;
+                    if (top + 300 > window.scrollY + window.innerHeight) top = rect.top + window.scrollY - 310;
+                    pop.style.left = left + 'px';
+                    pop.style.top  = Math.max(window.scrollY + 10, top) + 'px';
+                } else {
+                    pop.style.left = '20px';
+                    pop.style.top  = (window.scrollY + 100) + 'px';
+                }
             } catch(err) {
-                pop.innerHTML += '<br>ERROR: ' + err.message + '<br>LINE: ' + (err.stack || '').split('\n').slice(0,3).join(' | ');
+                pop.innerHTML = '<div style="padding:0.75rem;color:#829a8c;font-size:0.75rem">Error building chart: ' + (err && err.message) + '</div>';
+                pop.style.cssText = 'display:block;position:fixed;top:100px;left:20px;width:330px;z-index:9999;background:#12160f;border:1px solid rgba(0,255,136,0.35);border-radius:10px;padding:1rem;';
             }
         }
 
