@@ -4773,6 +4773,7 @@
             var pop = document.getElementById('projChartPopover');
             if (!pop) return;
             try {
+                var outerDebug = 'outerSched:' + !!scheduleData + ' outerDR:' + !!defenseRatings + ' outerPL:' + !!(playersLookup && playersLookup[pid]) + ' outerPLtype:' + typeof pid;
                 var actCount = Object.keys((projTrackingData && projTrackingData.actuals) || {}).length;
                 var curProj  = projectedSeasonPoints(pid);
                 var perWk    = curProj ? Math.round(projectedPerGame(pid) * 10) / 10 : null;
@@ -4796,7 +4797,7 @@
                     '<div class="pcp-legend"><span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk (schedule-adjusted)</span>' +
                     (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual score</span>' : '') +
                     '</div>' + (chart.svg || '') +
-                    '<div class="pcp-note">DEBUG: ' + (chart.debug||'n/a') + '</div>';
+                    '<div class="pcp-note">OUTER: ' + outerDebug + '<br>INNER: ' + (chart.debug||'n/a') + '</div>';
 
                 pop.style.cssText = 'display:block;position:absolute;z-index:9999;background:#12160f;border:1px solid rgba(0,255,136,0.35);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.6);padding:0.85rem 0.95rem;width:330px;';
 
