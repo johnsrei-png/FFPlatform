@@ -4637,6 +4637,7 @@
 
             // Build week-by-week projected and actual series.
             const weeks = []; // { w, proj: float|null, actual: float|null, isBye: bool, opp: string }
+            var debugInfo = { hasSchedule: !!sched, hasWeekly: !!(sched && sched.weekly), hasDR: !!defenseRatings, sampleW1: null, sampleRank: null };
             for (var w = 1; w <= totalWks; w++) {
                 var isBye = sched && sched.byes && sched.byes.indexOf(w) !== -1;
                 var proj = null;
@@ -4649,11 +4650,13 @@
                                ? defenseRatings.ranks[oppTeam][posKey] : null;
                     var mult = rank ? (0.82 + (rank - 1) * (0.36 / 31)) : 1.0;
                     proj = Math.round(basePpg * mult * 10) / 10;
+                    if (w === 1) { debugInfo.sampleW1 = rawOpp; debugInfo.sampleRank = rank; }
                 }
                 var actualPts = acts[String(w)] && acts[String(w)][pid] != null
                     ? Math.round(acts[String(w)][pid] * 10) / 10 : null;
                 weeks.push({ w, proj, actual: actualPts, isBye, opp });
             }
+            var debugStr = 'sched:' + debugInfo.hasSchedule + ' weekly:' + debugInfo.hasWeekly + ' DR:' + debugInfo.hasDR + ' W1opp:' + debugInfo.sampleW1 + ' W1rank:' + debugInfo.sampleRank;
 
             // Stats for summary bar.
             const curProj     = seasonPts;
@@ -4793,7 +4796,7 @@
                     '<div class="pcp-legend"><span><span class="pcp-legend-dot" style="background:#00ff88"></span>Proj pts/wk (schedule-adjusted)</span>' +
                     (actCount > 0 ? '<span><span class="pcp-legend-dot" style="background:#f0c77e"></span>Actual score</span>' : '') +
                     '</div>' + (chart.svg || '') +
-                    '<div class="pcp-note">Green line = schedule-adjusted weekly projection — rises vs soft defenses, dips vs tough ones, gaps = byes. Gold dots = actual weekly scores once games are played.</div>';
+                    '<div class="pcp-note">DEBUG: ' + debugStr + '</div>';
 
                 pop.style.cssText = 'display:block;position:absolute;z-index:9999;background:#12160f;border:1px solid rgba(0,255,136,0.35);border-radius:10px;box-shadow:0 12px 40px rgba(0,0,0,0.6);padding:0.85rem 0.95rem;width:330px;';
 
