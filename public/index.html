@@ -1346,6 +1346,27 @@
 
         .askboom-msg.user { justify-content: flex-end; }
         .askboom-msg.boom { justify-content: flex-start; }
+        .askboom-bubble-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.3rem;
+            max-width: 90%;
+        }
+        .boom-copy-btn {
+            background: none;
+            border: 1px solid rgba(0,255,136,0.2);
+            border-radius: 4px;
+            color: rgba(0,255,136,0.5);
+            font-size: 0.7rem;
+            padding: 0.15rem 0.45rem;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.15s, color 0.15s;
+            align-self: flex-end;
+        }
+        .askboom-bubble-wrap:hover .boom-copy-btn { opacity: 1; }
+        .boom-copy-btn:hover { color: #00ff88; border-color: rgba(0,255,136,0.5); }
 
         .askboom-bubble {
             max-width: 85%;
@@ -8260,15 +8281,29 @@ ${allSummaries}`;
             if (askBoomHistory.length === 0) {
                 html = '<div class="askboom-intro">Ask about start/sit, trades, player values, roster construction — anything about your league. B.O.O.M. sees every roster, salary, projection, and 19 years of history.</div>';
             }
-            askBoomHistory.forEach(function(turn) {
+            askBoomHistory.forEach(function(turn, idx) {
                 if (turn.role === 'user') {
                     html += '<div class="askboom-msg user"><div class="askboom-bubble">' + escapeHtml(turn.content) + '</div></div>';
                 } else {
-                    html += '<div class="askboom-msg boom"><div class="askboom-bubble">' + turn.content.replace(/\n/g, '<br>') + '</div></div>';
+                    var escapedForAttr = turn.content.replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,'\\n');
+                    html += '<div class="askboom-msg boom">' +
+                        '<div class="askboom-bubble-wrap">' +
+                        '<div class="askboom-bubble">' + turn.content.replace(/\n/g, '<br>') + '</div>' +
+                        '<button class="boom-copy-btn" onclick="copyBoomMsg(this,\'' + escapedForAttr + '\')" title="Copy message">⧉</button>' +
+                        '</div>' +
+                        '</div>';
                 }
             });
             thread.innerHTML = html;
             thread.scrollTop = thread.scrollHeight;
+        }
+
+        function copyBoomMsg(btn, text) {
+            var decoded = text.replace(/\\n/g, '\n');
+            var done = function() { var o = btn.textContent; btn.textContent = '✓'; setTimeout(function(){ btn.textContent = o; }, 1200); };
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(decoded).then(done).catch(function(){ fallbackCopy(decoded); done(); });
+            } else { fallbackCopy(decoded); done(); }
         }
 
         function escapeHtml(s) {
