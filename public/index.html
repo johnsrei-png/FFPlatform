@@ -3721,6 +3721,7 @@
                 <button id="escalationBtn" class="escalation-btn" style="display: none;" onclick="openEscalationModal()">Settings</button>
                 <button id="boomsdayBtn" class="escalation-btn" style="display: none;" onclick="openBoomsdayModal()">Set BoomsDay</button>
                 <button id="resetProjBaselineBtn" class="escalation-btn" style="display: none;" onclick="resetProjectionBaseline()">Reset Proj. Baseline</button>
+                <button id="toggleBriefingBtn" class="escalation-btn" style="display: none;" onclick="toggleBriefingVisibility()">Hide Briefing</button>
             </div>
         </div>
     </div>
@@ -6672,6 +6673,8 @@
             // Load pot settings from Supabase and render the pot tracker.
             if (typeof loadPotSettings === 'function') loadPotSettings();
             else if (typeof renderPotTracker === 'function') renderPotTracker();
+            // Apply commissioner briefing visibility preference.
+            if (typeof applyBriefingVisibility === 'function') applyBriefingVisibility();
 
             // Start capturing projection snapshots (plant now, harvest later as season progresses).
             if (typeof captureProjectionData === 'function') setTimeout(captureProjectionData, 2000);
@@ -6836,6 +6839,8 @@
             if (boomsdayBtn) boomsdayBtn.style.display = commissionerMode ? 'block' : 'none';
             const resetProjBtn = document.getElementById('resetProjBaselineBtn');
             if (resetProjBtn) resetProjBtn.style.display = commissionerMode ? 'block' : 'none';
+            const toggleBriefingBtn = document.getElementById('toggleBriefingBtn');
+            if (toggleBriefingBtn) toggleBriefingBtn.style.display = commissionerMode ? 'block' : 'none';
             
             // Reload to show/hide edit functionality
             loadPublicData();
@@ -7450,7 +7455,36 @@
             toggle.textContent = open ? 'Hide' : 'Read';
         }
 
-        async function resetProjectionBaseline() {
+        async function toggleBriefingVisibility() {
+            const briefing = document.getElementById('boomBriefing');
+            const btn = document.getElementById('toggleBriefingBtn');
+            if (!briefing) return;
+            const isHidden = briefing.style.display === 'none';
+            briefing.style.display = isHidden ? '' : 'none';
+            if (btn) btn.textContent = isHidden ? 'Hide Briefing' : 'Show Briefing';
+            // Persist to Supabase so all users see the same state.
+            try {
+                await fetch('/api/app-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'briefing_hidden', value: isHidden ? 'false' : 'true' })
+                });
+            } catch(e) {}
+        }
+
+        // Apply briefing visibility on page load.
+        async function applyBriefingVisibility() {
+            try {
+                const res = await fetch('/api/app-settings?key=briefing_hidden');
+                const d = await res.json();
+                if (d && d.value === 'true') {
+                    const briefing = document.getElementById('boomBriefing');
+                    if (briefing) briefing.style.display = 'none';
+                    const btn = document.getElementById('toggleBriefingBtn');
+                    if (btn) btn.textContent = 'Show Briefing';
+                }
+            } catch(e) {}
+        }
             if (!confirm('Reset the projection baseline? This clears all stored snapshots and captures today\'s blended projections as the new starting point. There is no undo.')) return;
             try {
                 // Clear the stored tracking data.
