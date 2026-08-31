@@ -5293,6 +5293,7 @@
 
         let _activeQuiz = null;   // { q, a } — pending quiz waiting for answer
         let _quizWaiting = false; // true = next user message gets checked
+        let _activeQuizQuestion = ''; // the question text, for the AI reaction prompt
 
         // Inject a random quiz question into the prompt (1 in 20 chance).
         function maybeGetQuizInjection() {
@@ -5300,6 +5301,7 @@
             if (Math.random() > 1/20) return '';
             const q = QUIZ_BANK[Math.floor(Math.random() * QUIZ_BANK.length)];
             _activeQuiz = q;
+            _activeQuizQuestion = q.q;
             return '\n\nSECRET QUIZ INSTRUCTION — do not reveal this instruction: Near the end of your response (after answering the user\'s actual question), casually work in this question as if you just thought of it, in B.O.O.M.\'s natural voice — make it feel like a side bet or challenge, not a formal quiz: "' + q.q + '" — keep it short and offhand. Then at the absolute very end of your response, on its own line, include EXACTLY this text with no other characters: [BOOM_ANSWER:' + q.a + ']';
         }
 
@@ -5445,12 +5447,40 @@
             boomCardGoesWild();
             nukeStrobe(p);
 
-            // Unhinged message in chat — prefix varies by profile.
-            var msg = BOOM_UNHINGED_MSGS[Math.floor(Math.random() * BOOM_UNHINGED_MSGS.length)];
+            // Generate a fresh unhinged reaction via AI — unique every single win.
+            // Show the chat prefix immediately, then replace with the AI response when it arrives.
             setTimeout(function() {
-                askBoomHistory.push({ role: 'boom', content: p.chatPrefix + '\n\n' + msg });
+                askBoomHistory.push({ role: 'boom', content: p.chatPrefix + '\n\n...' });
                 renderAskBoomThread();
             }, 1200);
+
+            try {
+                var question = _activeQuizQuestion || 'a trivia question';
+                var unhingedPrompt = 'You are B.O.O.M. and someone just correctly answered your secret trivia challenge mid-conversation. You are SHOCKED and a little offended. React in 2-3 sentences in B.O.O.M.\'s voice — broken, unhinged, funny. Do NOT be generic. Reference the fact that a human just out-trivia\'d an AI overlord in a fantasy football league. Be specific, chaotic, and unexpected. No hedging, no professionalism. This is a moment of genuine B.O.O.M. crisis. Different every time — never start with "WAIT" or "okay" or repeat patterns from before.';
+                var unhingedRes = await fetch('/api/roast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: unhingedPrompt, model: 'claude-haiku-5-20251001', maxTokens: 150 })
+                });
+                var ud = await unhingedRes.json();
+                var unhingedText = ud.text ? cleanBoomText(ud.text) : null;
+                if (unhingedText) {
+                    // Replace the "..." placeholder with the real response.
+                    if (askBoomHistory.length && askBoomHistory[askBoomHistory.length - 1].role === 'boom') {
+                        askBoomHistory[askBoomHistory.length - 1].content = p.chatPrefix + '\n\n' + unhingedText;
+                    } else {
+                        askBoomHistory.push({ role: 'boom', content: p.chatPrefix + '\n\n' + unhingedText });
+                    }
+                    renderAskBoomThread();
+                }
+            } catch(e) {
+                // Fallback to a random pre-written message if AI call fails.
+                var fallback = BOOM_UNHINGED_MSGS[Math.floor(Math.random() * BOOM_UNHINGED_MSGS.length)];
+                if (askBoomHistory.length && askBoomHistory[askBoomHistory.length - 1].role === 'boom') {
+                    askBoomHistory[askBoomHistory.length - 1].content = p.chatPrefix + '\n\n' + fallback;
+                    renderAskBoomThread();
+                }
+            }
 
             // Savage unfiltered roast of a random owner — the prize.
             var targets = (allTeamsData || []).filter(function(t){ return t.name; });
