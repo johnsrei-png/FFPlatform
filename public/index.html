@@ -1934,6 +1934,18 @@
             font-size: 0.875rem;
         }
 
+        .clickable-salary {
+            background: #111;
+            color: #fff !important;
+            border: 1.5px solid #fff;
+            border-radius: 6px;
+            padding: 0.15rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+            display: inline-block;
+        }
+        .clickable-salary:hover { background: #333; }
+
         .keeper-cost {
             font-family: var(--font-mono);
             font-size: 0.6875rem;
@@ -6732,7 +6744,7 @@
                                     <div class="player-proj" data-proj-player="${p.id}"></div>
                                 </div>
                                 <div style="text-align: right;">
-                                    <div class="player-salary">$${p.salary}</div>
+                                    <div class="player-salary${commissionerMode ? ' clickable-salary' : ''}">$${p.salary}</div>
                                     <div class="keeper-cost">Next: $${p.keeperCost}</div>
                                 </div>
                             </div>
