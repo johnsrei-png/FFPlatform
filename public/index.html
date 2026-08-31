@@ -3721,6 +3721,7 @@
                 <button id="escalationBtn" class="escalation-btn" style="display: none;" onclick="openEscalationModal()">Settings</button>
                 <button id="boomsdayBtn" class="escalation-btn" style="display: none;" onclick="openBoomsdayModal()">Set BoomsDay</button>
                 <button id="resetProjBaselineBtn" class="escalation-btn" style="display: none;" onclick="resetProjectionBaseline()">Reset Proj. Baseline</button>
+                <button id="toggleBriefingBtn" class="escalation-btn" style="display: none;" onclick="toggleBriefingVisibility()">Hide Briefing</button>
             </div>
         </div>
     </div>
@@ -6672,6 +6673,8 @@
             // Load pot settings from Supabase and render the pot tracker.
             if (typeof loadPotSettings === 'function') loadPotSettings();
             else if (typeof renderPotTracker === 'function') renderPotTracker();
+            // Apply commissioner briefing visibility preference.
+            if (typeof applyBriefingVisibility === 'function') applyBriefingVisibility();
 
             // Start capturing projection snapshots (plant now, harvest later as season progresses).
             if (typeof captureProjectionData === 'function') setTimeout(captureProjectionData, 2000);
@@ -6836,6 +6839,8 @@
             if (boomsdayBtn) boomsdayBtn.style.display = commissionerMode ? 'block' : 'none';
             const resetProjBtn = document.getElementById('resetProjBaselineBtn');
             if (resetProjBtn) resetProjBtn.style.display = commissionerMode ? 'block' : 'none';
+            const toggleBriefingBtn = document.getElementById('toggleBriefingBtn');
+            if (toggleBriefingBtn) toggleBriefingBtn.style.display = commissionerMode ? 'block' : 'none';
             
             // Reload to show/hide edit functionality
             loadPublicData();
@@ -7450,7 +7455,36 @@
             toggle.textContent = open ? 'Hide' : 'Read';
         }
 
-        async function resetProjectionBaseline() {
+        async function toggleBriefingVisibility() {
+            const briefing = document.getElementById('boomBriefing');
+            const btn = document.getElementById('toggleBriefingBtn');
+            if (!briefing) return;
+            const isHidden = briefing.style.display === 'none';
+            briefing.style.display = isHidden ? '' : 'none';
+            if (btn) btn.textContent = isHidden ? 'Hide Briefing' : 'Show Briefing';
+            // Persist to Supabase so all users see the same state.
+            try {
+                await fetch('/api/app-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key: 'briefing_hidden', value: isHidden ? 'false' : 'true' })
+                });
+            } catch(e) {}
+        }
+
+        // Apply briefing visibility on page load.
+        async function applyBriefingVisibility() {
+            try {
+                const res = await fetch('/api/app-settings?key=briefing_hidden');
+                const d = await res.json();
+                if (d && d.value === 'true') {
+                    const briefing = document.getElementById('boomBriefing');
+                    if (briefing) briefing.style.display = 'none';
+                    const btn = document.getElementById('toggleBriefingBtn');
+                    if (btn) btn.textContent = 'Show Briefing';
+                }
+            } catch(e) {}
+        }
             if (!confirm('Reset the projection baseline? This clears all stored snapshots and captures today\'s blended projections as the new starting point. There is no undo.')) return;
             try {
                 // Clear the stored tracking data.
@@ -7478,7 +7512,7 @@
             try {
                 const context = (typeof buildLeagueContext === 'function') ? buildLeagueContext({ skipTradeHistory: true }) : '';
                 const personaBlock = (typeof buildOwnerPersonas === 'function') ? buildOwnerPersonas('') : '';
-                const prompt = 'You are B.O.O.M. — a sharp, confident, slightly menacing AI fantasy football overlord for the "Boom Boom Room" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING: a punchy league-wide digest with pointed trash talk aimed at specific owners using their personas. IMPORTANT: read the LEAGUE PHASE note in the data and follow its framing EXACTLY. If it is the pre-draft keeper window, the keeper lists are a LIVE SNAPSHOT STILL IN FLUX — teams can still trade, drop players, free up cap, and then draft before rosters are final. So do NOT declare who is "dangerous," "done building," "immobile," "locked in," "out of ammo," "set," "eliminated," or "the best/worst" as if anything were final — none of it is, because trades, drops, and the draft are all still coming. Instead, cover who is currently keeping well vs. questionably (using the value tags), who is sitting on the most cap and open spots, obvious keeper bargains or head-scratchers, and what owners might still DO before or during the draft (trade, drop, target) — always framing it as a situation IN MOTION heading toward Aug 27. Roast keeper decisions and personas freely, but never pretend the rosters are settled. Use real player names, salaries, and the value tags. Be entertaining and a little savage, but grounded in the data. Keep it tight and COMPLETE — a headline plus exactly 3 short paragraphs (roughly 4-5 sentences each). Finish every thought; do not trail off. Do not exceed 3 paragraphs.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~18 words, that would make owners click to read more>\nBRIEFING: <the full digest, 3 tight paragraphs of plain prose — no markdown headers, bullet lists, or ** bold ** asterisks; write team and owner names as plain text>\n\n' + GROUNDING_RULES + '\n\n' + VOICE_RULES + '\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
+                const prompt = 'You are B.O.O.M. \u2014 a sharp, savage AI fantasy football overlord for the \"Boom Boom Room\" keeper/dynasty salary-cap league. Write this week\'s B.O.O.M. BRIEFING. TONE: direct, a little mean, funny \u2014 bash the ROSTERS freely. Attack salary decisions, player values, cap situations, terrible keepers, and wasted spots. Personal owner details are secondary \u2014 the rosters are the story. IMPORTANT: read the LEAGUE PHASE note and follow its framing EXACTLY. If pre-draft, rosters are still in flux \u2014 do NOT declare anyone set or done, frame everything as heading into the draft. KEEP IT SHORT: one punchy headline, then exactly 2 short paragraphs (3-4 sentences each). Do not trail off. Cover: who has the best/worst roster value, obvious keeper disasters, cap traps, and one or two teams to watch. Use real player names, salaries, and value tags. No markdown, no headers, no bullets \u2014 plain punchy prose only.' + personaBlock + '\n\nRESPOND IN EXACTLY THIS FORMAT:\nHEADLINE: <one punchy sentence, max ~15 words>\nBRIEFING: <2 tight paragraphs of plain prose>\n\n' + GROUNDING_RULES + '\n\n' + VOICE_RULES + '\n\n=== LEAGUE DATA ===\n' + context + '\n=== END LEAGUE DATA ===';
 
                 // Try Sonnet first; if it comes back empty (token/timeout), fall back to Haiku.
                 async function genBriefing(modelId, tokens){
