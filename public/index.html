@@ -5696,7 +5696,36 @@
                     const rv = ws.getCell(remRow, scol); rv.value = { formula: `200-${colL}${totRow}` };
                     [tl,tv,rl,rv].forEach(cx => { cx.font = { name:FONT, size:9, bold:true, color:{argb:WHITE} }; cx.fill = fill(GRAY); cx.alignment = center; });
                 });
-                return remRow;
+
+                // Draft picks — list each team's picks below Remaining.
+                let maxPickRows = 0;
+                bandTeams.forEach(tm => { maxPickRows = Math.max(maxPickRows, (tm.draftPicks||[]).length); });
+                if (maxPickRows > 0) {
+                    // "Draft Picks" label row
+                    const picksHeaderRow = remRow + 1;
+                    bandTeams.forEach((tm, slot) => {
+                        const [pcol, ncol, scol] = teamCols[slot];
+                        ws.mergeCells(picksHeaderRow, pcol, picksHeaderRow, scol);
+                        const ph = ws.getCell(picksHeaderRow, pcol);
+                        ph.value = 'Draft Picks';
+                        ph.font = { name:FONT, size:9, bold:true, color:{argb:WHITE} };
+                        ph.fill = fill(BLACK); ph.alignment = center;
+                    });
+                    // One row per pick
+                    (tm => {})(null); // noop to avoid lint
+                    bandTeams.forEach((tm, slot) => {
+                        const [pcol, ncol, scol] = teamCols[slot];
+                        (tm.draftPicks||[]).forEach((pick, i) => {
+                            const r = picksHeaderRow + 1 + i;
+                            ws.mergeCells(r, pcol, r, scol);
+                            const pc = ws.getCell(r, pcol);
+                            pc.value = pick.label || (pick.year + ' R' + pick.round);
+                            pc.font = { name:FONT, size:9, bold:true };
+                            pc.border = border; pc.alignment = center;
+                        });
+                    });
+                }
+                return maxPickRows > 0 ? remRow + 1 + maxPickRows : remRow;
             }
 
             const band1 = allTeamsData.slice(0,5);
