@@ -4599,7 +4599,7 @@
             }
             var clearBtn = document.getElementById('potClearOverridesBtn');
             if (clearBtn) {
-                var hasOverrides = potSettings.adjustments && Object.keys(potSettings.adjustments).some(function(o) {
+                var hasOverrides = commissionerMode && potSettings.adjustments && Object.keys(potSettings.adjustments).some(function(o) {
                     var adj = potSettings.adjustments[o];
                     return (adj.waiver !== null && adj.waiver !== undefined) || (adj.trade !== null && adj.trade !== undefined);
                 });
