@@ -4498,8 +4498,9 @@
                 // Baseline + auto: manual entries are a starting baseline that new
                 // auto-counted transactions add on top of. So if you enter 10 and
                 // 3 more waivers happen, it shows 13 automatically.
-                var waiverCount = (ov.waiver !== null && ov.waiver !== undefined) ? (ov.waiver + a.waiver) : a.waiver;
-                var tradeCount  = (ov.trade  !== null && ov.trade  !== undefined) ? (ov.trade  + a.trade)  : a.trade;
+                // Override replaces auto; clear field to revert to auto-updating count.
+                var waiverCount = (ov.waiver !== null && ov.waiver !== undefined) ? ov.waiver : a.waiver;
+                var tradeCount  = (ov.trade  !== null && ov.trade  !== undefined) ? ov.trade  : a.trade;
                 var teamTotal = waiverCount + tradeCount;
                 perTeam[t.owner] = {
                     waiver: waiverCount, autoWaiver: a.waiver,
@@ -4619,10 +4620,10 @@
                 var esc = function(s){ return (s||'').replace(/'/g,"\\'"); };
 
                 if (commissionerMode) {
-                    var waiverHint = pd.waiverOverridden ? '<span style="font-size:0.6rem;color:#6effa8" title="Baseline set — new transactions auto-add on top">+' + pd.autoWaiver + ' auto</span>' : '<span style="font-size:0.6rem;opacity:0.4">auto</span>';
-                    var tradeHint  = pd.tradeOverridden  ? '<span style="font-size:0.6rem;color:#6effa8" title="Baseline set — new transactions auto-add on top">+' + pd.autoTrade  + ' auto</span>' : '<span style="font-size:0.6rem;opacity:0.4">auto</span>';
-                    var waiverVal  = pd.waiverOverridden ? pd.waiver - pd.autoWaiver : 0;
-                    var tradeVal   = pd.tradeOverridden  ? pd.trade  - pd.autoTrade  : 0;
+                    var waiverHint = pd.waiverOverridden ? '<span style="font-size:0.6rem;color:#f0c77e">locked</span>' : '<span style="font-size:0.6rem;opacity:0.4">auto</span>';
+                    var tradeHint  = pd.tradeOverridden  ? '<span style="font-size:0.6rem;color:#f0c77e">locked</span>' : '<span style="font-size:0.6rem;opacity:0.4">auto</span>';
+                    var waiverVal  = pd.waiver;
+                    var tradeVal   = pd.trade;
                     rows += '<tr>' +
                         '<td>' + (t.name||t.owner) + '</td>' +
                         '<td>' +
