@@ -3812,6 +3812,7 @@
                                         <th>Team</th>
                                         <th>Waivers</th>
                                         <th>Trades</th>
+                                        <th></th>
                                         <th>Fees</th>
                                     </tr>
                                 </thead>
@@ -4627,6 +4628,10 @@
                     var tradeHint  = '<span style="font-size:0.65rem;color:rgba(0,255,136,0.6)" title="Auto-detected from transaction log">+' + pd.autoTrade  + ' auto = ' + pd.trade  + ' total</span>';
                     var waiverVal  = wBaseline;
                     var tradeVal   = tBaseline;
+                    var hasBaseline = pd.waiverOverridden || pd.tradeOverridden;
+                    var clearCell = hasBaseline
+                        ? '<button onclick="clearTeamPotBaseline(\'' + esc(t.owner) + '\')" style="background:none;border:1px solid rgba(255,100,100,0.4);border-radius:4px;color:rgba(255,100,100,0.8);font-size:0.65rem;padding:0.1rem 0.45rem;cursor:pointer">✕</button>'
+                        : '';
                     rows += '<tr>' +
                         '<td>' + (t.name||t.owner) + '</td>' +
                         '<td>' +
@@ -4639,6 +4644,7 @@
                             'onchange="savePotFieldOverride(\'' + esc(t.owner) + '\',\'trade\',this.value)" ' +
                             'title="Auto: ' + pd.autoTrade + '">' + tradeHint +
                         '</td>' +
+                        '<td style="text-align:center">' + clearCell + '</td>' +
                         '<td style="color:#00ff88">$' + Math.max(0, pd.total) + '</td>' +
                         '</tr>';
                 } else {
@@ -4714,6 +4720,12 @@
 
         function toggleSeasonHigh() {
             potSettings.seasonHighPaid = !potSettings.seasonHighPaid;
+            savePotSettings(); renderPotTracker();
+        }
+
+        function clearTeamPotBaseline(owner) {
+            if (!potSettings.adjustments) potSettings.adjustments = {};
+            delete potSettings.adjustments[owner];
             savePotSettings(); renderPotTracker();
         }
 
