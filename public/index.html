@@ -5254,7 +5254,10 @@
             var el = document.getElementById('boomTicker');
             if (!el || !wrap) return;
             var txns = (typeof transactionData !== 'undefined' && transactionData && transactionData.transactions)
-                ? transactionData.transactions.filter(function(t){ return String(t.season) === '2026'; }).slice(-40)
+                ? transactionData.transactions
+                    .filter(function(t){ return String(t.season) === '2026'; })
+                    .sort(function(a,b){ return (b.created||0) - (a.created||0); })
+                    .slice(0, 20)
                 : [];
             if (!txns.length) { wrap.style.display = 'none'; return; }
 
