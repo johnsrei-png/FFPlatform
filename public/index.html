@@ -3003,11 +3003,28 @@
                 display: flex;
             }
 
-            .header-right button {
+            .comm-tools-toggle {
                 width: 100%;
-                font-size: 0.875rem;
-                padding: 0.6875rem 1rem;
+                font-size: 0.8rem;
+                padding: 0.5rem 1rem;
+                background: rgba(26, 77, 58, 0.5);
+                border: 1px solid rgba(0,255,136,0.2);
+                border-radius: 6px;
+                color: rgba(0,255,136,0.8);
+                cursor: pointer;
                 text-align: center;
+            }
+            .comm-tools-inner {
+                display: flex;
+                flex-direction: column;
+                gap: 0.4rem;
+                margin-top: 0.4rem;
+            }
+            /* On desktop the group wrapper is invisible — buttons show normally */
+            @media (min-width: 641px) {
+                #commissionerToolsGroup { display: contents !important; }
+                .comm-tools-toggle { display: none !important; }
+                #commToolsInner { display: contents !important; }
             }
 
             .header-divider {
@@ -3717,11 +3734,17 @@
                 <div class="header-divider"></div>
                 <span class="header-label">Commissioner</span>
                 <button id="commissionerModeBtn" onclick="toggleCommissionerMode()">Commissioner Mode</button>
-                <button id="advanceSeasonBtn" class="advance-season-btn" style="display: none;" onclick="openAdvanceSeasonModal()">Advance Season</button>
-                <button id="escalationBtn" class="escalation-btn" style="display: none;" onclick="openEscalationModal()">Settings</button>
-                <button id="boomsdayBtn" class="escalation-btn" style="display: none;" onclick="openBoomsdayModal()">Set BoomsDay</button>
-                <button id="resetProjBaselineBtn" class="escalation-btn" style="display: none;" onclick="resetProjectionBaseline()">Reset Proj. Baseline</button>
-                <button id="toggleBriefingBtn" class="escalation-btn" style="display: none;" onclick="toggleBriefingVisibility()">Hide Briefing</button>
+                <!-- Commissioner tools wrapped in collapsible group for mobile -->
+                <div id="commissionerToolsGroup" style="display:none;">
+                    <button class="comm-tools-toggle" onclick="toggleCommToolsGroup(this)">Commissioner Tools ▼</button>
+                    <div class="comm-tools-inner" id="commToolsInner" style="display:none;">
+                        <button id="advanceSeasonBtn" class="advance-season-btn" style="display: none;" onclick="openAdvanceSeasonModal()">Advance Season</button>
+                        <button id="escalationBtn" class="escalation-btn" style="display: none;" onclick="openEscalationModal()">Settings</button>
+                        <button id="boomsdayBtn" class="escalation-btn" style="display: none;" onclick="openBoomsdayModal()">Set BoomsDay</button>
+                        <button id="resetProjBaselineBtn" class="escalation-btn" style="display: none;" onclick="resetProjectionBaseline()">Reset Proj. Baseline</button>
+                        <button id="toggleBriefingBtn" class="escalation-btn" style="display: none;" onclick="toggleBriefingVisibility()">Hide Briefing</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -4214,6 +4237,14 @@
                 if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
             } catch (e) {}
         })();
+        function toggleCommToolsGroup(btn) {
+            var inner = document.getElementById('commToolsInner');
+            if (!inner) return;
+            var open = inner.style.display !== 'none';
+            inner.style.display = open ? 'none' : 'flex';
+            if (btn) btn.textContent = open ? 'Commissioner Tools ▼' : 'Commissioner Tools ▲';
+        }
+
         function toggleTheme() {
             var el = document.documentElement;
             var isDark = el.getAttribute('data-theme') === 'dark';
@@ -7004,6 +7035,16 @@
             if (resetProjBtn) resetProjBtn.style.display = commissionerMode ? 'block' : 'none';
             const toggleBriefingBtn = document.getElementById('toggleBriefingBtn');
             if (toggleBriefingBtn) toggleBriefingBtn.style.display = commissionerMode ? 'block' : 'none';
+            // Show/hide the mobile commissioner tools group wrapper.
+            var ctGroup = document.getElementById('commissionerToolsGroup');
+            if (ctGroup) ctGroup.style.display = commissionerMode ? '' : 'none';
+            // Collapse the inner tools when turning commissioner mode off.
+            if (!commissionerMode) {
+                var inner = document.getElementById('commToolsInner');
+                if (inner) inner.style.display = 'none';
+                var togBtn = document.querySelector('.comm-tools-toggle');
+                if (togBtn) togBtn.textContent = 'Commissioner Tools ▼';
+            }
             
             // Reload to show/hide edit functionality
             loadPublicData();
