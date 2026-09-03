@@ -4362,9 +4362,8 @@
 
         async function loadTransactions() {
             try {
-                // Cache-buster rotates every 5 min: fresh enough for a txn log,
-                // but repeat views within the window still hit the CDN cache.
-                const bucket = Math.floor(Date.now() / 300000);
+                // Cache-buster rotates every 1 min so pot tracker fees stay current.
+                const bucket = Math.floor(Date.now() / 60000);
                 const res = await fetch('/api/get-transactions?v=' + bucket);
                 transactionData = await res.json();
             } catch (e) {
@@ -6732,6 +6731,15 @@
             // Load pot settings from Supabase and render the pot tracker.
             if (typeof loadPotSettings === 'function') loadPotSettings();
             else if (typeof renderPotTracker === 'function') renderPotTracker();
+            // Load transactions in the background so the pot tracker fee count is
+            // always current without needing to open the Transaction Log first.
+            setTimeout(async function() {
+                if (typeof loadTransactions === 'function') {
+                    await loadTransactions();
+                    if (typeof renderPotTracker === 'function') renderPotTracker();
+                    if (typeof buildTicker === 'function') buildTicker();
+                }
+            }, 800);
             // Apply commissioner briefing visibility preference.
             if (typeof applyBriefingVisibility === 'function') applyBriefingVisibility();
 
