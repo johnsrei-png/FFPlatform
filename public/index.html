@@ -3750,7 +3750,11 @@
                 <div class="pot-tracker" id="potTracker">
                     <div class="pot-label">💰 The Pot 💰</div>
                     <div class="pot-number" id="potNumber" onclick="togglePotBreakdown()">$—</div>
-                    <div class="pot-toggle-hint" onclick="togglePotBreakdown()">▼ breakdown</div>
+                    <div class="pot-toggle-hint">
+                    <span onclick="togglePotBreakdown()">▼ breakdown</span>
+                    &nbsp;·&nbsp;
+                    <span onclick="refreshPotTransactions()" title="Force-refresh transaction fees">↻ refresh fees</span>
+                </div>
                     <div class="pot-breakdown" id="potBreakdown">
                         <div class="pot-section-title">Collected</div>
                         <div class="pot-row"><span>Buy-ins (10 × $100)</span><span class="pot-val pos" id="potBuyins">$1,000</span></div>
@@ -3796,6 +3800,9 @@
                         </div>
 
                         <button class="pot-ledger-toggle" onclick="togglePotLedger()">▼ Transaction Ledger (per team)</button>
+                        <div id="potClearOverridesBtn" style="display:none;margin-top:0.4rem">
+                            <button onclick="clearAllPotOverrides()" style="background:none;border:1px solid rgba(240,199,126,0.4);border-radius:4px;color:#f0c77e;font-size:0.7rem;padding:0.25rem 0.6rem;cursor:pointer;width:100%">⚠ Overrides active — clear all and use auto-count</button>
+                        </div>
                         <div class="pot-ledger" id="potLedger">
                             <table class="pot-ledger-table">
                                 <thead>
@@ -4556,6 +4563,16 @@
                 }
             }
 
+            // Show override warning if any adjustments are set.
+            var clearBtn = document.getElementById('potClearOverridesBtn');
+            if (clearBtn) {
+                var hasOverrides = potSettings.adjustments && Object.keys(potSettings.adjustments).some(function(o) {
+                    var adj = potSettings.adjustments[o];
+                    return (adj.waiver !== null && adj.waiver !== undefined) || (adj.trade !== null && adj.trade !== undefined);
+                });
+                clearBtn.style.display = hasOverrides ? 'block' : 'none';
+            }
+
             // Ledger
             renderPotLedger(d.perTeam);
         }
@@ -4569,10 +4586,8 @@
                 var esc = function(s){ return (s||'').replace(/'/g,"\\'"); };
 
                 if (commissionerMode) {
-                    // Editable inputs for each field; shows auto value as placeholder so
-                    // commissioner knows what the auto count is before overriding.
-                    var waiverHint = pd.waiverOverridden ? '<span style="font-size:0.65rem;opacity:0.45">auto:'+pd.autoWaiver+'</span>' : '';
-                    var tradeHint  = pd.tradeOverridden  ? '<span style="font-size:0.65rem;opacity:0.45">auto:'+pd.autoTrade+'</span>'  : '';
+                    var waiverHint = pd.waiverOverridden ? '<span style="font-size:0.6rem;color:#f0c77e" title="Override active — new transactions won\'t auto-update this number">⚠ override</span>' : '<span style="font-size:0.6rem;opacity:0.4">auto</span>';
+                    var tradeHint  = pd.tradeOverridden  ? '<span style="font-size:0.6rem;color:#f0c77e" title="Override active">⚠ override</span>' : '<span style="font-size:0.6rem;opacity:0.4">auto</span>';
                     var waiverVal  = pd.waiverOverridden ? pd.waiver : pd.autoWaiver;
                     var tradeVal   = pd.tradeOverridden  ? pd.trade  : pd.autoTrade;
                     rows += '<tr>' +
@@ -4604,6 +4619,16 @@
             tbody.innerHTML = rows || '<tr><td colspan="4" style="opacity:0.5;text-align:center">No transaction data yet</td></tr>';
         }
 
+        async function refreshPotTransactions() {
+            // Force-fetch fresh transaction data (bypass cache) then recompute pot.
+            try {
+                const res = await fetch('/api/get-transactions?force=' + Date.now());
+                transactionData = await res.json();
+            } catch(e) {}
+            renderPotTracker();
+            if (typeof buildTicker === 'function') buildTicker();
+        }
+
         function togglePotBreakdown() {
             _potOpen = !_potOpen;
             var bd = document.getElementById('potBreakdown');
@@ -4630,6 +4655,13 @@
             var btn = document.querySelector('.pot-ledger-toggle');
             if (el) el.classList.toggle('open', _ledgerOpen);
             if (btn) btn.textContent = (_ledgerOpen ? '▲ Hide ledger' : '▼ Transaction Ledger (per team)');
+        }
+
+        function clearAllPotOverrides() {
+            if (!confirm('Clear all manual overrides and revert to auto-calculated transaction counts? This lets new transactions update automatically.')) return;
+            potSettings.adjustments = {};
+            savePotSettings();
+            renderPotTracker();
         }
 
         function adjustWeeksPaid(delta) {
