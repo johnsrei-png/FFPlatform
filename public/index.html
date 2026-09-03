@@ -4624,10 +4624,16 @@
                     // Show baseline in input + auto-count separately so total is obvious.
                     var wBaseline = pd.waiverOverridden ? (pd.waiver - pd.autoWaiver) : 0;
                     var tBaseline = pd.tradeOverridden  ? (pd.trade  - pd.autoTrade)  : 0;
-                    var waiverHint = '<span style="font-size:0.65rem;color:rgba(0,255,136,0.6)" title="Auto-detected from transaction log">+' + pd.autoWaiver + ' auto = ' + pd.waiver + ' total</span>';
-                    var tradeHint  = '<span style="font-size:0.65rem;color:rgba(0,255,136,0.6)" title="Auto-detected from transaction log">+' + pd.autoTrade  + ' auto = ' + pd.trade  + ' total</span>';
-                    var waiverVal  = wBaseline;
-                    var tradeVal   = tBaseline;
+                    // No baseline: show auto count in input (so user sees why fees exist).
+                    // Baseline set: show baseline in input + auto addition in label.
+                    var waiverHint = pd.waiverOverridden
+                        ? '<span style="font-size:0.65rem;color:rgba(0,255,136,0.6)">+' + pd.autoWaiver + ' auto = ' + pd.waiver + ' total</span>'
+                        : '<span style="font-size:0.65rem;opacity:0.4">auto</span>';
+                    var tradeHint  = pd.tradeOverridden
+                        ? '<span style="font-size:0.65rem;color:rgba(0,255,136,0.6)">+' + pd.autoTrade + ' auto = ' + pd.trade + ' total</span>'
+                        : '<span style="font-size:0.65rem;opacity:0.4">auto</span>';
+                    var waiverVal  = pd.waiverOverridden ? wBaseline : pd.autoWaiver;
+                    var tradeVal   = pd.tradeOverridden  ? tBaseline : pd.autoTrade;
                     var hasBaseline = pd.waiverOverridden || pd.tradeOverridden;
                     var clearCell = hasBaseline
                         ? '<button onclick="clearTeamPotBaseline(\'' + esc(t.owner) + '\')" style="background:none;border:1px solid rgba(255,100,100,0.4);border-radius:4px;color:rgba(255,100,100,0.8);font-size:0.65rem;padding:0.1rem 0.45rem;cursor:pointer">✕</button>'
