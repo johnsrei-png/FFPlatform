@@ -3799,6 +3799,8 @@
                             </div>
                         </div>
 
+                        <div id="potFeeStartCtrl"></div>
+
                         <button class="pot-ledger-toggle" onclick="togglePotLedger()">▼ Transaction Ledger (per team)</button>
                         <div id="potClearOverridesBtn" style="display:none;margin-top:0.4rem">
                             <button onclick="clearAllPotOverrides()" style="background:none;border:1px solid rgba(240,199,126,0.4);border-radius:4px;color:#f0c77e;font-size:0.7rem;padding:0.25rem 0.6rem;cursor:pointer;width:100%">⚠ Overrides active — clear all and use auto-count</button>
@@ -4413,7 +4415,7 @@
         const POT_REG_WEEKS   = 13;    // regular season weeks
         const POT_SPLITS      = [0.55, 0.35, 0.10];
 
-        let potSettings = { weeksPaid: 0, seasonHighPaid: false, adjustments: {} };
+        let potSettings = { weeksPaid: 0, seasonHighPaid: false, adjustments: {}, feeStartDate: null };
         let _potOpen = false, _ledgerOpen = false;
 
         async function loadPotSettings() {
@@ -4448,8 +4450,14 @@
                 if (t.owner) lookup[(t.owner||'').toLowerCase()] = t.name;
             });
 
+            const startMs = potSettings.feeStartDate ? new Date(potSettings.feeStartDate).getTime() : null;
+
             const txns = (typeof transactionData !== 'undefined' && transactionData && transactionData.transactions)
-                ? transactionData.transactions.filter(function(t){ return !t.season || String(t.season) === '2026'; })
+                ? transactionData.transactions.filter(function(t){
+                    if (!t.season || String(t.season) !== '2026') return false;
+                    if (startMs && t.created && t.created < startMs) return false;
+                    return true;
+                  })
                 : [];
 
             const tradeSeen = {};
@@ -4576,7 +4584,17 @@
                 }
             }
 
-            // Show override warning if any adjustments are set.
+            // Fee start date control (commissioner only)
+            var feeStartEl = document.getElementById('potFeeStartCtrl');
+            if (feeStartEl) {
+                if (commissionerMode) {
+                    feeStartEl.innerHTML = '<div style="font-size:0.7rem;color:rgba(0,255,136,0.5);margin-top:0.5rem">Count fees from: <input type="date" id="feeStartDate" value="' + (potSettings.feeStartDate || '') + '" onchange="saveFeeStartDate(this.value)" style="background:#0a1a0f;border:1px solid rgba(0,255,136,0.3);border-radius:4px;color:#00ff88;font-size:0.7rem;padding:0.15rem 0.3rem;"> <button onclick="saveFeeStartDate(\'\')" style="background:none;border:none;color:rgba(0,255,136,0.4);font-size:0.7rem;cursor:pointer" title="Clear date filter">✕ clear</button></div>';
+                } else if (potSettings.feeStartDate) {
+                    feeStartEl.innerHTML = '<div style="font-size:0.65rem;color:rgba(0,255,136,0.4);margin-top:0.4rem">Counting fees from ' + potSettings.feeStartDate + '</div>';
+                } else {
+                    feeStartEl.innerHTML = '';
+                }
+            }
             var clearBtn = document.getElementById('potClearOverridesBtn');
             if (clearBtn) {
                 var hasOverrides = potSettings.adjustments && Object.keys(potSettings.adjustments).some(function(o) {
@@ -4673,6 +4691,12 @@
         function clearAllPotOverrides() {
             if (!confirm('Clear all manual overrides and revert to auto-calculated transaction counts? This lets new transactions update automatically.')) return;
             potSettings.adjustments = {};
+            savePotSettings();
+            renderPotTracker();
+        }
+
+        function saveFeeStartDate(val) {
+            potSettings.feeStartDate = val || null;
             savePotSettings();
             renderPotTracker();
         }
