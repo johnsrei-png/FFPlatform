@@ -7001,13 +7001,17 @@
 
         function toggleMobileMenu() {
             const menu = document.getElementById('headerRight');
-            menu.classList.toggle('open');
+            const btn  = document.getElementById('menuToggle');
+            const isOpen = menu.classList.toggle('open');
+            if (btn) btn.textContent = isOpen ? '✕ Close' : 'Menu';
         }
 
         // Close the mobile menu if the window grows back to desktop width
         window.addEventListener('resize', () => {
             if (window.innerWidth > 768) {
                 document.getElementById('headerRight').classList.remove('open');
+                var btn = document.getElementById('menuToggle');
+                if (btn) btn.textContent = 'Menu';
             }
         });
 
