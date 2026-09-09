@@ -5874,9 +5874,12 @@
             document.getElementById('matchupsModal').classList.add('active');
             const list = document.getElementById('matchupsList');
 
-            if (!seasonStarted()) {
+            // Show matchups as long as we have an NFL week to load — Sleeper publishes
+            // pairings at the start of each week even before games are played.
+            const nflWeek = currentNflWeek && currentNflWeek >= 1 ? currentNflWeek : 1;
+            if (nflWeek < 1) {
                 document.getElementById('matchupWeekSelect').innerHTML = '';
-                list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">Head-to-head matchups appear once the season kicks off. Check back in Week 1.</div>';
+                list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">Matchup schedule posts once the NFL season begins.</div>';
                 return;
             }
 
@@ -5886,7 +5889,7 @@
                 let opts = '';
                 for (let w = 1; w <= 18; w++) opts += '<option value="' + w + '">Week ' + w + '</option>';
                 sel.innerHTML = opts;
-                sel.value = String(activeLeagueWeek());
+                sel.value = String(nflWeek);
             }
             list.innerHTML = '<div class="roast-loading" style="padding:2rem;text-align:center;">Loading matchups…</div>';
             await loadMatchups(parseInt(sel.value, 10));
@@ -8188,7 +8191,7 @@ ${allSummaries}`;
             if (!scheduleData) loadSchedule();
             if (!defenseRatings) loadDefenseRatings();
             if (!transactionData) loadTransactions();
-            if (!matchupData && seasonStarted()) loadMatchups();
+            if (!matchupData && currentNflWeek >= 1) loadMatchups();
             if (!historyData) {
                 fetch('/api/get-history').then(function(r){return r.json();}).then(function(d){ historyData = d; }).catch(function(){});
             }
