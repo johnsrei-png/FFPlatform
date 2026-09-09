@@ -5935,14 +5935,15 @@
             };
 
             let html = '';
-            matchupData.matchups.forEach(function(m){
+            matchupData.matchups.forEach(function(m, idx){
                 const sides = m.sides || [];
                 if (sides.length < 2) return;
                 const a = sides[0], b = sides[1];
                 const aProj = projFor(a.rosterId), bProj = projFor(b.rosterId);
                 const aScore = (a.points || 0), bScore = (b.points || 0);
                 const played = (aScore + bScore) > 0;
-                html += '<div class="txn-item">' +
+                const cardId = 'matchup-card-' + idx;
+                html += '<div class="txn-item" id="' + cardId + '">' +
                     '<div class="txn-detail" style="display:flex;justify-content:space-between;gap:1rem;align-items:center;">' +
                         '<div><strong>' + a.team + '</strong> <span style="color:var(--text-secondary);">[' + canon(a.team) + ']</span>' +
                             (played ? ' — ' + aScore + ' pts' : (aProj !== null ? ' — proj ~' + aProj : '')) + '</div>' +
@@ -5951,11 +5952,66 @@
                             (played ? ' — ' + bScore + ' pts' : (bProj !== null ? ' — proj ~' + bProj : '')) + '</div>' +
                     '</div>' +
                     '<div style="margin-top:0.5rem;text-align:center;">' +
-                        '<button class="btn-small" onclick="askBoomAboutMatchup(\'' + encodeURIComponent(a.team) + '\',\'' + encodeURIComponent(b.team) + '\',' + (matchupData.week || activeLeagueWeek()) + ')">B.O.O.M.\'s take</button>' +
+                        '<button class="btn-small" id="' + cardId + '-btn" onclick="getBoomMatchupTake(\'' + cardId + '\',\'' + encodeURIComponent(a.team) + '\',\'' + encodeURIComponent(b.team) + '\',' + (matchupData.week || activeLeagueWeek()) + ')">B.O.O.M.\'s take</button>' +
                     '</div>' +
+                    '<div id="' + cardId + '-take" style="display:none;margin-top:0.75rem;padding:0.75rem;background:var(--bg-sunken);border-radius:6px;font-size:0.82rem;line-height:1.5;color:var(--text-primary);"></div>' +
                 '</div>';
             });
             list.innerHTML = html || '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">No matchups posted for this week yet.</div>';
+        }
+
+        // Get B.O.O.M.'s take on a matchup inline — no need to open chat.
+        async function getBoomMatchupTake(cardId, teamAEnc, teamBEnc, week) {
+            const teamA = decodeURIComponent(teamAEnc), teamB = decodeURIComponent(teamBEnc);
+            const btn  = document.getElementById(cardId + '-btn');
+            const take = document.getElementById(cardId + '-take');
+            if (!btn || !take) return;
+
+            btn.disabled = true;
+            btn.textContent = 'Asking B.O.O.M…';
+            take.style.display = 'block';
+            take.innerHTML = '<span style="color:var(--text-secondary);font-style:italic">B.O.O.M. is studying the tape…</span>';
+
+            try {
+                // Build a focused context: the two teams' rosters + projections + vegas if available.
+                var aTeam = (allTeamsData||[]).find(function(t){ return t.name === teamA; });
+                var bTeam = (allTeamsData||[]).find(function(t){ return t.name === teamB; });
+                var rosterSummary = function(team) {
+                    if (!team) return '';
+                    var starters = (team.players||[]).slice(0,8).map(function(p){
+                        var proj = projectedSeasonPoints(p.id);
+                        return p.name + ' (' + p.position + ', ~' + (proj ? Math.round(proj/17) : '?') + ' pts/wk)';
+                    }).join(', ');
+                    return team.name + ' [' + team.owner + ']: ' + starters;
+                };
+                var ctx = 'WEEK ' + week + ' MATCHUP: ' + teamA + ' vs ' + teamB + '.\n' +
+                    rosterSummary(aTeam) + '\n' +
+                    rosterSummary(bTeam) + '\n' +
+                    VOICE_RULES;
+
+                var prompt = 'You are B.O.O.M. Give a sharp 3-4 sentence take on this fantasy matchup. ' +
+                    'Call a winner, name the key player who decides it, and give the loser some grief. ' +
+                    'Be direct and a little savage — no hedging, no bullet points, just punchy prose.\n\n' + ctx;
+
+                var res = await fetch('/api/roast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: prompt, model: 'claude-haiku-5-20251001', maxTokens: 250 })
+                });
+                var d = await res.json();
+                var text = d.text ? cleanBoomText(d.text) : 'B.O.O.M. is unavailable right now.';
+                take.innerHTML = text.replace(/\n/g,'<br>') +
+                    '<div style="margin-top:0.5rem;text-align:right;">' +
+                    '<button onclick="this.closest(\'.txn-item\').querySelector(\'[id$=-take]\').style.display=\'none\';var b=this.closest(\'.txn-item\').querySelector(\'[id$=-btn]\');b.disabled=false;b.textContent=\'B.O.O.M.\\\'s take\';" ' +
+                    'style="background:none;border:none;color:var(--text-secondary);font-size:0.7rem;cursor:pointer;">✕ dismiss</button>' +
+                    '</div>';
+                btn.textContent = '↻ new take';
+                btn.disabled = false;
+            } catch(e) {
+                take.innerHTML = '<span style="color:var(--text-secondary)">Could not reach B.O.O.M. right now.</span>';
+                btn.textContent = 'B.O.O.M.\'s take';
+                btn.disabled = false;
+            }
         }
 
         // Jump into the chat pre-loaded with a matchup question.
