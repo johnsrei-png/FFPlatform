@@ -151,13 +151,17 @@ exports.handler = async (event) => {
     // Balanced cap: keep up to PER_SEASON_CAP newest txns per season so older
     // seasons (2022-2024) aren't crowded out of the payload by recent activity.
     // Then re-sort the kept set newest-first for display.
+    // The CURRENT season is never capped -- the pot tracker counts every
+    // current-season transaction as a fee, so dropping any of them would
+    // freeze the pot once the season passes the cap.
     const PER_SEASON_CAP = 120;
+    const currentSeason = chain.length ? String(chain[0].season) : null;
     const perSeasonCount = {};
     const capped = [];
     for (const t of allTxns) { // already newest-first, so we keep the newest per season
       const key = String(t.season);
       perSeasonCount[key] = (perSeasonCount[key] || 0) + 1;
-      if (perSeasonCount[key] <= PER_SEASON_CAP) capped.push(t);
+      if (key === currentSeason || perSeasonCount[key] <= PER_SEASON_CAP) capped.push(t);
     }
     capped.sort((a, b) => (b.created || 0) - (a.created || 0));
 
