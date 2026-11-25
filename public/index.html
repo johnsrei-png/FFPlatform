@@ -6363,10 +6363,21 @@
                 return '"' + s.replace(/"/g, '""') + '"';
             };
             const typeLabel = { trade: 'Trade', waiver: 'Waiver', free_agent: 'Free Agent' };
-            const headers = ['Season', 'Week', 'Date', 'Time', 'Type', 'Team(s)', 'Added', 'Dropped', 'Draft Picks'];
+            const headers = ['User(s)', 'Team Name(s) at the Time', 'Season', 'Week', 'Date', 'Time', 'Type', 'Added', 'Dropped', 'Draft Picks'];
             const rows = [headers.map(esc).join(',')];
+            // Stable person name for a transaction (falls back to team names if the
+            // server hasn't been redeployed yet and doesn't send `users`).
+            const usersOf = function(t) { return (t.users && t.users.length) ? t.users : (t.owners || []); };
 
-            txns.forEach(function(t) {
+            // Group by user (alphabetical), newest first within each user.
+            const sorted = txns.slice().sort(function(a, b) {
+                const ua = (usersOf(a)[0] || '').toLowerCase();
+                const ub = (usersOf(b)[0] || '').toLowerCase();
+                if (ua !== ub) return ua < ub ? -1 : 1;
+                return (b.created || 0) - (a.created || 0);
+            });
+
+            sorted.forEach(function(t) {
                 const d = t.created ? new Date(t.created) : null;
                 const dateTxt = d ? d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
                 const timeTxt = d ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
@@ -6374,19 +6385,23 @@
                 // For trades, show who received each player; for adds/drops the team column covers it.
                 const added = (t.adds || []).map(function(a) {
                     const nm = playerName(a.pid, a.name);
-                    return isTrade && a.owner ? nm + ' → ' + a.owner : nm;
+                    const who = a.user || a.owner;
+                    return isTrade && who ? nm + ' → ' + who : nm;
                 }).join('; ');
                 const dropped = (t.drops || []).map(function(x) {
                     const nm = playerName(x.pid, x.name);
-                    return isTrade && x.owner ? nm + ' (from ' + x.owner + ')' : nm;
+                    const who = x.user || x.owner;
+                    return isTrade && who ? nm + ' (from ' + who + ')' : nm;
                 }).join('; ');
                 const picks = (t.picks || []).map(function(pk) {
-                    return pk.season + ' R' + pk.round + (pk.to ? ' → ' + pk.to : '') + (pk.from ? ' (from ' + pk.from + ')' : '');
+                    const to = pk.toUser || pk.to, from = pk.fromUser || pk.from;
+                    return pk.season + ' R' + pk.round + (to ? ' → ' + to : '') + (from ? ' (from ' + from + ')' : '');
                 }).join('; ');
                 rows.push([
+                    esc(usersOf(t).join(' / ')),
+                    esc((t.owners || []).join(' / ')),
                     esc(t.season), esc(t.week), esc(dateTxt), esc(timeTxt),
                     esc(typeLabel[t.type] || t.type),
-                    esc((t.owners || []).join(' / ')),
                     esc(added), esc(dropped), esc(picks)
                 ].join(','));
             });
