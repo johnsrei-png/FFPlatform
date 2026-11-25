@@ -4223,6 +4223,7 @@
                         <option value="waiver">Waivers</option>
                         <option value="free_agent">Free agents</option>
                     </select>
+                    <button class="trade-team-select" style="max-width:140px;cursor:pointer;margin-left:auto;" onclick="exportTxnLogCSV()" title="Download the transactions currently shown (respects filters)">⬇ Export CSV</button>
                 </div>
                 <div class="txn-list" id="txnList"></div>
             </div>
@@ -6336,20 +6337,84 @@
             }
         }
 
+        // Transactions matching the Transaction Log's current season/type filters.
+        function getFilteredTxns() {
+            if (!transactionData || !Array.isArray(transactionData.transactions)) return [];
+            const seasonEl = document.getElementById('txnSeasonFilter');
+            const typeEl = document.getElementById('txnTypeFilter');
+            const seasonF = seasonEl ? seasonEl.value : '';
+            const typeF = typeEl ? typeEl.value : '';
+            return transactionData.transactions.filter(function(t){
+                if (seasonF && String(t.season) !== seasonF) return false;
+                if (typeF && t.type !== typeF) return false;
+                return true;
+            });
+        }
+
+        // Download the Transaction Log (with current filters applied) as a CSV.
+        function exportTxnLogCSV() {
+            const txns = getFilteredTxns();
+            if (!txns.length) {
+                alert('No transactions to export.');
+                return;
+            }
+            const esc = function(val) {
+                const s = String(val == null ? '' : val);
+                return '"' + s.replace(/"/g, '""') + '"';
+            };
+            const typeLabel = { trade: 'Trade', waiver: 'Waiver', free_agent: 'Free Agent' };
+            const headers = ['Season', 'Week', 'Date', 'Time', 'Type', 'Team(s)', 'Added', 'Dropped', 'Draft Picks'];
+            const rows = [headers.map(esc).join(',')];
+
+            txns.forEach(function(t) {
+                const d = t.created ? new Date(t.created) : null;
+                const dateTxt = d ? d.toLocaleDateString('en-US', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '';
+                const timeTxt = d ? d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+                const isTrade = t.type === 'trade';
+                // For trades, show who received each player; for adds/drops the team column covers it.
+                const added = (t.adds || []).map(function(a) {
+                    const nm = playerName(a.pid, a.name);
+                    return isTrade && a.owner ? nm + ' → ' + a.owner : nm;
+                }).join('; ');
+                const dropped = (t.drops || []).map(function(x) {
+                    const nm = playerName(x.pid, x.name);
+                    return isTrade && x.owner ? nm + ' (from ' + x.owner + ')' : nm;
+                }).join('; ');
+                const picks = (t.picks || []).map(function(pk) {
+                    return pk.season + ' R' + pk.round + (pk.to ? ' → ' + pk.to : '') + (pk.from ? ' (from ' + pk.from + ')' : '');
+                }).join('; ');
+                rows.push([
+                    esc(t.season), esc(t.week), esc(dateTxt), esc(timeTxt),
+                    esc(typeLabel[t.type] || t.type),
+                    esc((t.owners || []).join(' / ')),
+                    esc(added), esc(dropped), esc(picks)
+                ].join(','));
+            });
+
+            const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const seasonEl = document.getElementById('txnSeasonFilter');
+            const typeEl = document.getElementById('txnTypeFilter');
+            const parts = ['BBR_Transactions'];
+            if (seasonEl && seasonEl.value) parts.push(seasonEl.value);
+            if (typeEl && typeEl.value) parts.push(typeEl.value);
+            parts.push(new Date().toISOString().split('T')[0]);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = parts.join('_') + '.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
         function renderTxnLog() {
             const list = document.getElementById('txnList');
             if (!transactionData || !Array.isArray(transactionData.transactions)) {
                 list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">No transactions found.</div>';
                 return;
             }
-            const seasonF = document.getElementById('txnSeasonFilter').value;
-            const typeF = document.getElementById('txnTypeFilter').value;
-
-            const filtered = transactionData.transactions.filter(function(t){
-                if (seasonF && String(t.season) !== seasonF) return false;
-                if (typeF && t.type !== typeF) return false;
-                return true;
-            });
+            const filtered = getFilteredTxns();
 
             if (!filtered.length) {
                 list.innerHTML = '<div style="padding:2rem;text-align:center;color:var(--text-secondary);">No transactions match that filter.</div>';
