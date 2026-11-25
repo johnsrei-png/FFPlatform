@@ -4812,6 +4812,9 @@
             const tradeSeen = {};
             txns.forEach(function(t) {
                 if (t.type === 'waiver' || t.type === 'free_agent') {
+                    // Only pickups cost $1 -- drop-only moves (releasing a player
+                    // without adding anyone) are free.
+                    if (!t.adds || !t.adds.length) return;
                     (t.owners||[]).forEach(function(o) {
                         var key = lookup[(o||'').toLowerCase()];
                         if (key && fees[key]) fees[key].waiver++;
