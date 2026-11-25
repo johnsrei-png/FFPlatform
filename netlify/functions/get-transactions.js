@@ -92,18 +92,43 @@ exports.handler = async (event) => {
       });
     };
 
-    for (const season of chain) {
-      const [users, rosters] = await Promise.all([
-        fetchJson(`https://api.sleeper.app/v1/league/${season.league_id}/users`),
-        fetchJson(`https://api.sleeper.app/v1/league/${season.league_id}/rosters`)
-      ]);
+    // Fetch users + rosters for every season up front so we can resolve each
+    // Sleeper user_id (which never changes) to ONE stable person name, no matter
+    // how many times that person has renamed their team.
+    const seasonMeta = await Promise.all(chain.map(season => Promise.all([
+      fetchJson(`https://api.sleeper.app/v1/league/${season.league_id}/users`),
+      fetchJson(`https://api.sleeper.app/v1/league/${season.league_id}/rosters`)
+    ])));
+
+    // user_id -> real person name. If ANY season's team name for that user is in
+    // TEAM_OWNER_MAP we use the mapped name (e.g. "Reid") for ALL seasons;
+    // otherwise fall back to their Sleeper display name (username).
+    const personByUserId = {};
+    const displayByUserId = {};
+    seasonMeta.forEach(([users]) => {
+      (users || []).forEach(u => {
+        if (!u || !u.user_id) return;
+        if (u.display_name && !displayByUserId[u.user_id]) displayByUserId[u.user_id] = u.display_name;
+        const teamName = (u.metadata && u.metadata.team_name) || '';
+        const mapped = TEAM_OWNER_MAP[normalizeTeamName(teamName)] || TEAM_OWNER_MAP[normalizeTeamName(u.display_name)];
+        if (mapped && !personByUserId[u.user_id]) personByUserId[u.user_id] = mapped;
+      });
+    });
+    const personFor = (userId) => personByUserId[userId] || displayByUserId[userId] || null;
+
+    for (let si = 0; si < chain.length; si++) {
+      const season = chain[si];
+      const [users, rosters] = seasonMeta[si];
       if (!users || !rosters) continue;
 
-      // roster_id -> owner display name
+      // roster_id -> owner display name (team name, as before)
       const userById = {};
       users.forEach(u => { userById[u.user_id] = (u.metadata && u.metadata.team_name) || u.display_name || 'Unknown'; });
       const ownerByRoster = {};
       rosters.forEach(r => { ownerByRoster[r.roster_id] = userById[r.owner_id] || ('Roster ' + r.roster_id); });
+      // roster_id -> stable person name (unaffected by team renames)
+      const userByRoster = {};
+      rosters.forEach(r => { userByRoster[r.roster_id] = personFor(r.owner_id) || ownerByRoster[r.roster_id]; });
 
       for (let w = 1; w <= MAX_WEEKS; w++) {
         const txns = await fetchJson(`https://api.sleeper.app/v1/league/${season.league_id}/transactions/${w}`);
@@ -113,6 +138,7 @@ exports.handler = async (event) => {
           if (t.status !== 'complete') return;
           const rosterIds = t.roster_ids || [];
           const owners = rosterIds.map(rid => ownerByRoster[rid]).filter(Boolean);
+          const txnUsers = rosterIds.map(rid => userByRoster[rid]).filter(Boolean);
 
           // Behavioral stats
           owners.forEach(o => {
@@ -136,10 +162,11 @@ exports.handler = async (event) => {
             week: w,
             type: t.type,
             created: t.created,
-            owners: owners,
-            adds: t.adds ? Object.entries(t.adds).map(([pid, rid]) => ({ pid, name: nameFor(pid), owner: ownerByRoster[rid] })) : [],
-            drops: t.drops ? Object.entries(t.drops).map(([pid, rid]) => ({ pid, name: nameFor(pid), owner: ownerByRoster[rid] })) : [],
-            picks: (t.draft_picks || []).map(dp => ({ round: dp.round, season: dp.season, to: ownerByRoster[dp.owner_id], from: ownerByRoster[dp.previous_owner_id] }))
+            owners: owners,          // team names at the time (used by pot, ticker, log)
+            users: txnUsers,         // stable person names (survive team renames)
+            adds: t.adds ? Object.entries(t.adds).map(([pid, rid]) => ({ pid, name: nameFor(pid), owner: ownerByRoster[rid], user: userByRoster[rid] })) : [],
+            drops: t.drops ? Object.entries(t.drops).map(([pid, rid]) => ({ pid, name: nameFor(pid), owner: ownerByRoster[rid], user: userByRoster[rid] })) : [],
+            picks: (t.draft_picks || []).map(dp => ({ round: dp.round, season: dp.season, to: ownerByRoster[dp.owner_id], from: ownerByRoster[dp.previous_owner_id], toUser: userByRoster[dp.owner_id], fromUser: userByRoster[dp.previous_owner_id] }))
           });
         });
       }
